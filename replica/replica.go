@@ -19,8 +19,8 @@ import (
   "github.com/ethereum/go-ethereum/core/vm"
   "github.com/ethereum/go-ethereum/core/rawdb"
   "github.com/ethereum/go-ethereum/internal/ethapi"
-  "github.com/ethereum/go-ethereum/params"
   "github.com/ethereum/go-ethereum/log"
+  "github.com/ethereum/go-ethereum/params/types/ctypes"
   "github.com/Shopify/sarama"
   "time"
   "fmt"
@@ -33,7 +33,7 @@ import (
 type Replica struct {
   db ethdb.Database
   hc *core.HeaderChain
-  chainConfig *params.ChainConfig
+  chainConfig ctypes.ChainConfigurator
   bc *core.BlockChain
   transactionProducer TransactionProducer
   transactionConsumer TransactionConsumer
@@ -211,7 +211,7 @@ func NewReplica(db ethdb.Database, config *eth.Config, ctx *node.ServiceContext,
     db.Close()
     os.Exit(0)
   }
-  chainConfig, _, _ := core.SetupGenesisBlockWithOverride(db, config.Genesis, config.OverrideIstanbul, config.OverrideMuirGlacier)
+  chainConfig, _, _ := core.SetupGenesisBlockWithOverride(db, config.Genesis)
   engine := eth.CreateConsensusEngine(ctx, chainConfig, &config.Ethash, []string{}, true, db)
   hc, err := core.NewHeaderChain(db, chainConfig, engine, func() bool { return false })
   if err != nil {

@@ -35,8 +35,8 @@ func (api *PublicEthereumAPI) Hashrate() hexutil.Uint64 {
 func (api *PublicEthereumAPI) ChainId() hexutil.Uint64 {
 	chainID := new(big.Int)
 	latestBlock, _ := api.e.BlockByNumber(nil, rpc.LatestBlockNumber)
-	if config := api.e.chainConfig; config.IsEIP155(latestBlock.Number()) {
-		chainID = config.ChainID
+	if config := api.e.chainConfig; config.IsForked(config.GetEIP155Transition, latestBlock.Number()) {
+		chainID = config.GetChainID()
 	}
 	return (hexutil.Uint64)(chainID.Uint64())
 }

@@ -22,6 +22,8 @@ import (
   "github.com/ethereum/go-ethereum/core/state"
   "github.com/ethereum/go-ethereum/core/rawdb"
   "github.com/ethereum/go-ethereum/params"
+  "github.com/ethereum/go-ethereum/params/types/ctypes"
+  "github.com/ethereum/go-ethereum/params/vars"
   "github.com/ethereum/go-ethereum/log"
   "github.com/ethereum/go-ethereum/trie"
   "runtime"
@@ -33,7 +35,7 @@ type ReplicaBackend struct {
   db ethdb.Database
   indexDb ethdb.Database
   hc *core.HeaderChain
-  chainConfig *params.ChainConfig
+  chainConfig ctypes.ChainConfigurator
   bc *core.BlockChain
   transactionProducer TransactionProducer
   transactionConsumer TransactionConsumer
@@ -64,7 +66,7 @@ func (backend *ReplicaBackend) Downloader() *downloader.Downloader {								// S
   return backend.dl
 }
 func (backend *ReplicaBackend) ProtocolVersion() int {
-  return int(backend.chainConfig.ChainID.Int64())
+  return int(backend.chainConfig.GetChainID().Int64())
 }
 func (backend *ReplicaBackend) SuggestPrice(ctx context.Context) (*big.Int, error) {
   if ctx != nil { if err := ctx.Err(); err != nil { return nil, err } }
@@ -244,7 +246,7 @@ func (backend *ReplicaBackend) SendTx(ctx context.Context, signedTx *types.Trans
   }
 
   // Should supply enough intrinsic gas
-  gas, err := core.IntrinsicGas(signedTx.Data(), signedTx.To() == nil, true, backend.chainConfig.IsIstanbul(header.Number))
+  gas, err := core.IntrinsicGas(signedTx.Data(), signedTx.To() == nil, true, backend.chainConfig.IsForked(backend.chainConfig.GetEIP2028Transition, header.Number))
   if err != nil {
     return err
   }
@@ -260,7 +262,7 @@ func (backend *ReplicaBackend) BloomStatus() (uint64, uint64) {
 	if len(data) == 8 {
 		sections = binary.BigEndian.Uint64(data)
 	}
-  return params.BloomBitsBlocks, sections
+  return vars.BloomBitsBlocks, sections
 }
 
 func (backend *ReplicaBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
@@ -359,7 +361,7 @@ func (backend *ReplicaBackend) SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) 
   return backend.txPool.SubscribeNewTxsEvent(ch)
 }
 
-func (backend *ReplicaBackend) ChainConfig() *params.ChainConfig {
+func (backend *ReplicaBackend) ChainConfig() ctypes.ChainConfigurator {
   return backend.chainConfig
 }
 

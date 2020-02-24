@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/Azure/azure-storage-blob-go v0.8.0
 	github.com/Azure/go-autorest/autorest/adal v0.6.0 // indirect
+	github.com/Shopify/sarama v1.26.1
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/VictoriaMetrics/fastcache v1.5.4
 	github.com/aristanetworks/goarista v0.0.0-20170210015632-ea17b1a17847
@@ -60,8 +61,7 @@ require (
 	github.com/tidwall/pretty v1.0.0
 	github.com/tyler-smith/go-bip39 v0.0.0-20181017060643-dbb3b84ba2ef
 	github.com/wsddn/go-ecdh v0.0.0-20161211032359-48726bab9208
-	golang.org/x/crypto v0.0.0-20191219195013-becbf705a915
-	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
+	golang.org/x/crypto v0.0.0-20200204104054-c9f3fb736b72
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20191220220014-0732a990476f
 	golang.org/x/text v0.3.2

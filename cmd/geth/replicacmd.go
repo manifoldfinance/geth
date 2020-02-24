@@ -91,7 +91,6 @@ system and acts as an RPC node based on the replicated data.
 			utils.OverlayFlag,
 			utils.AncientFlag,
 			utils.OverrideIstanbulFlag,
-			utils.OverrideMuirGlacierFlag,
 			utils.CacheFlag,
 			utils.CacheTrieFlag,
 			utils.CacheGCFlag,

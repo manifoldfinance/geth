@@ -18,7 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	// "github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 )
 
 type Backend interface {
@@ -28,7 +28,7 @@ type Backend interface {
 
 // NewTxPool creates a new transaction pool to gather, sort and filter inbound
 // transactions from the network.
-func NewReplicaTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain blockChain, backend Backend) (*TxPool, error) {
+func NewReplicaTxPool(config TxPoolConfig, chainconfig ctypes.ChainConfigurator, chain blockChain, backend Backend) (*TxPool, error) {
 	// Sanitize the input to ensure no vulnerable gas prices are set
 	config = (&config).sanitize()
 
@@ -37,7 +37,7 @@ func NewReplicaTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chai
 		config:          config,
 		chainconfig:     chainconfig,
 		chain:           chain,
-		signer:          types.NewEIP155Signer(chainconfig.ChainID),
+		signer:          types.NewEIP155Signer(chainconfig.GetChainID()),
 		pending:         make(map[common.Address]*txList),
 		queue:           make(map[common.Address]*txList),
 		beats:           make(map[common.Address]time.Time),
