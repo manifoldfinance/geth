@@ -119,6 +119,7 @@ type Config struct {
 	DatabaseHandles    int  `toml:"-"`
 	DatabaseCache      int
 	DatabaseFreezer    string
+	DatabaseOverlay    string
 
 	TrieCleanCache int
 	TrieDirtyCache int
