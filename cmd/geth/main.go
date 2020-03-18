@@ -43,7 +43,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/rpc"
 	replicaModule "github.com/ethereum/go-ethereum/replica"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -250,6 +249,7 @@ func init() {
 		setHeadCommand,
 		verifyStateTrieCommand,
 		compactCommand,
+		stateMigrateCommand,
 		kafkaEventsCommand,
 		// See accountcmd.go:
 		accountCommand,
