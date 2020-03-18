@@ -223,6 +223,7 @@ func init() {
 		setHeadCommand,
 		verifyStateTrieCommand,
 		compactCommand,
+		stateMigrateCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,

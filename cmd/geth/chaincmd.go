@@ -234,6 +234,16 @@ Verify proofs of the latest block state trie. Exit 0 if correct, else exit 1`,
      Description: `
 Compacts the database`,
 	}
+	stateMigrateCommand = cli.Command{
+     Action:    utils.MigrateFlags(migrateState),
+     Name:      "migratestate",
+     Usage:     "Migrates the latest state from a DB+Ancient to a new  DB+Ancient",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Migrates state from one leveldb to another`,
+	}
 
 )
 
@@ -654,6 +664,69 @@ func verifyStateTrie(ctx *cli.Context) error {
   db.Close()
   // fmt.Printf("Rolled back chain to block %v\n", blockNumber)
   return nil
+}
+
+func migrateState(ctx *cli.Context) error {
+	if len(ctx.Args()) < 3 {
+    return fmt.Errorf("Usage: migrateState [ancients] [oldLeveldb] [newLeveldb]")
+  }
+	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[2], 16, 16, ctx.Args()[0], "new")
+	if err != nil { return err }
+	oldDb, err := rawdb.NewLevelDBDatabase(ctx.Args()[1], 16, 16, "old")
+	if err != nil { return err }
+	rawdb.InitDatabaseFromFreezer(newDb)
+	srcDb := state.NewDatabase(oldDb)
+	srcBlockHash := rawdb.ReadHeadFastBlockHash(newDb) // Find the latest blockhash migrated to the new database
+	if srcBlockHash == (common.Hash{}) {
+		return fmt.Errorf("Source block hash empty")
+	}
+	log.Info("srcBlockHash", "hash", srcBlockHash)
+	srcHeaderNumber := rawdb.ReadHeaderNumber(newDb, srcBlockHash)
+	log.Info("srcHeaderNumber", "num", *srcHeaderNumber)
+	srcHeader := rawdb.ReadHeader(newDb, srcBlockHash, *srcHeaderNumber)
+	log.Info("srcHeader", "header", srcHeader)
+
+
+	count := 10000
+	sched := state.NewStateSync(srcHeader.Root, newDb, trie.NewSyncBloom(1, newDb))
+	log.Info("Syncing", "root", srcHeader.Root)
+	queue := append([]common.Hash{}, sched.Missing(count)...)
+	total := 0
+	log.Info("stuff", "src", srcDb, "queue", queue, "total", total)
+	for len(queue) > 0 {
+		log.Info("Processing items", "completed", total)
+		results := make([]trie.SyncResult, len(queue))
+		for i, hash := range queue {
+			data, err := srcDb.TrieDB().Node(hash)
+			if err != nil {
+				return fmt.Errorf("failed to retrieve node data for %x", hash)
+			}
+			results[i] = trie.SyncResult{Hash: hash, Data: data}
+		}
+		if _, index, err := sched.Process(results); err != nil {
+			return fmt.Errorf("failed to process result #%d: %v", index, err)
+		}
+		batch := newDb.NewBatch()
+		if err := sched.Commit(batch); err != nil {
+			return fmt.Errorf("failed to commit data: %v", err)
+		}
+		batch.Write()
+		total += len(queue)
+		queue = append(queue[:0], sched.Missing(count)...)
+	}
+	log.Info("Canonical genesis", "new", rawdb.ReadCanonicalHash(newDb, 0), "old", rawdb.ReadCanonicalHash(oldDb, 0))
+
+
+	genesisHash := rawdb.ReadCanonicalHash(oldDb, 0)
+	block := rawdb.ReadBlock(oldDb, genesisHash, 0)
+	rawdb.WriteTd(newDb, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
+	rawdb.WriteBlock(newDb, block)
+	rawdb.WriteReceipts(newDb, block.Hash(), block.NumberU64(), nil)
+	rawdb.WriteCanonicalHash(newDb, block.Hash(), block.NumberU64())
+	rawdb.WriteChainConfig(newDb, block.Hash(), rawdb.ReadChainConfig(newDb, block.Hash()))
+
+	rawdb.WriteHeadBlockHash(newDb, srcBlockHash)
+	return nil
 }
 
 func compact(ctx *cli.Context) error {
