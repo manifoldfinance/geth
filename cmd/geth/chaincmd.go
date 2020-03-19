@@ -38,6 +38,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
@@ -810,33 +811,12 @@ func verifyStateTrie(ctx *cli.Context) error {
   return nil
 }
 
-func migrateState(ctx *cli.Context) error {
-	if len(ctx.Args()) < 3 {
-    return fmt.Errorf("Usage: migrateState [ancients] [oldLeveldb] [newLeveldb]")
-  }
-	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[2], 16, 16, ctx.Args()[0], "new")
-	if err != nil { return err }
-	oldDb, err := rawdb.NewLevelDBDatabase(ctx.Args()[1], 16, 16, "old")
-	if err != nil { return err }
-	rawdb.InitDatabaseFromFreezer(newDb)
-	srcDb := state.NewDatabase(oldDb)
-	srcBlockHash := rawdb.ReadHeadFastBlockHash(newDb) // Find the latest blockhash migrated to the new database
-	if srcBlockHash == (common.Hash{}) {
-		return fmt.Errorf("Source block hash empty")
-	}
-	log.Info("srcBlockHash", "hash", srcBlockHash)
-	srcHeaderNumber := rawdb.ReadHeaderNumber(newDb, srcBlockHash)
-	log.Info("srcHeaderNumber", "num", *srcHeaderNumber)
-	srcHeader := rawdb.ReadHeader(newDb, srcBlockHash, *srcHeaderNumber)
-	log.Info("srcHeader", "header", srcHeader)
-
-
+func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) error {
 	count := 10000
-	sched := state.NewStateSync(srcHeader.Root, newDb, trie.NewSyncBloom(1, newDb))
-	log.Info("Syncing", "root", srcHeader.Root)
+	sched := state.NewStateSync(root, newDb, trie.NewSyncBloom(1, newDb))
+	log.Info("Syncing", "root", root)
 	queue := append([]common.Hash{}, sched.Missing(count)...)
 	total := 0
-	log.Info("stuff", "src", srcDb, "queue", queue, "total", total)
 	for len(queue) > 0 {
 		log.Info("Processing items", "completed", total)
 		results := make([]trie.SyncResult, len(queue))
@@ -858,18 +838,69 @@ func migrateState(ctx *cli.Context) error {
 		total += len(queue)
 		queue = append(queue[:0], sched.Missing(count)...)
 	}
-	log.Info("Canonical genesis", "new", rawdb.ReadCanonicalHash(newDb, 0), "old", rawdb.ReadCanonicalHash(oldDb, 0))
+	return nil
+}
 
+func migrateState(ctx *cli.Context) error {
+	if len(ctx.Args()) < 3 {
+    return fmt.Errorf("Usage: migrateState [ancients] [oldLeveldb] [newLeveldb]")
+  }
+	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[2], 16, 16, ctx.Args()[0], "new")
+	if err != nil { return err }
+	oldDb, err := rawdb.NewLevelDBDatabase(ctx.Args()[1], 16, 16, "old")
+	if err != nil { return err }
+	rawdb.InitDatabaseFromFreezer(newDb)
+	srcDb := state.NewDatabase(oldDb)
 
 	genesisHash := rawdb.ReadCanonicalHash(oldDb, 0)
 	block := rawdb.ReadBlock(oldDb, genesisHash, 0)
+
+	if err := syncState(block.Root(), srcDb, newDb); err != nil { return err }
+	chainConfig := rawdb.ReadChainConfig(oldDb, block.Hash())
 	rawdb.WriteTd(newDb, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
 	rawdb.WriteBlock(newDb, block)
 	rawdb.WriteReceipts(newDb, block.Hash(), block.NumberU64(), nil)
 	rawdb.WriteCanonicalHash(newDb, block.Hash(), block.NumberU64())
-	rawdb.WriteChainConfig(newDb, block.Hash(), rawdb.ReadChainConfig(newDb, block.Hash()))
+	rawdb.WriteChainConfig(newDb, block.Hash(), chainConfig)
 
-	rawdb.WriteHeadBlockHash(newDb, srcBlockHash)
+
+	srcBlockHash := rawdb.ReadHeadFastBlockHash(newDb) // Find the latest blockhash migrated to the new database
+	if srcBlockHash == (common.Hash{}) {
+		return fmt.Errorf("Source block hash empty")
+	}
+	srcHeaderNumber := rawdb.ReadHeaderNumber(newDb, srcBlockHash)
+	block = rawdb.ReadBlock(newDb, srcBlockHash, *srcHeaderNumber)
+	for {
+		rawdb.WriteTd(newDb, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
+		rawdb.WriteBlock(newDb, block)
+		rawdb.WriteReceipts(newDb, block.Hash(), block.NumberU64(), rawdb.ReadReceipts(oldDb, block.Hash(), block.NumberU64(), chainConfig))
+		rawdb.WriteCanonicalHash(newDb, block.Hash(), block.NumberU64())
+		nextHash := rawdb.ReadCanonicalHash(oldDb, block.NumberU64() + 1)
+		if nextHash == (common.Hash{}) {
+			// There's an edge case where early blocks may still be in the freezer
+			// even though they didn't get migrated, and thus the olddb won't have the
+			// canonical hash but the newdb will
+			nextHash = rawdb.ReadCanonicalHash(newDb, block.NumberU64() + 1)
+			if nextHash == (common.Hash{}) {
+				log.Info("Migrated up to block", "number", block.NumberU64(), "hash", block.Hash(), "time", block.Time())
+				break
+			}
+		}
+		block = rawdb.ReadBlock(oldDb, nextHash, block.NumberU64() + 1)
+		if block.NumberU64() % 1000 == 0 {
+			log.Info("Migrating block", "number", block.NumberU64(), "hash", block.Hash())
+		}
+	}
+
+	log.Info("Syncing block state", "hash", block.Hash(), "root", block.Root())
+
+	if err := syncState(block.Root(), srcDb, newDb); err != nil { return err }
+
+	log.Info("Canonical genesis", "new", rawdb.ReadCanonicalHash(newDb, 0), "old", rawdb.ReadCanonicalHash(oldDb, 0))
+
+	rawdb.WriteHeadBlockHash(newDb, block.Hash())
+	rawdb.WriteHeadHeaderHash(newDb, block.Hash())
+	rawdb.WriteHeadFastBlockHash(newDb, block.Hash())
 	return nil
 }
 
