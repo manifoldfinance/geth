@@ -250,6 +250,7 @@ func init() {
 		setHeadCommand,
 		verifyStateTrieCommand,
 		compactCommand,
+		kafkaEventsCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,
