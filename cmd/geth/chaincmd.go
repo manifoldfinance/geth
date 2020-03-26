@@ -18,6 +18,7 @@ package main
 
 import (
 	"encoding/json"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -233,6 +234,19 @@ Verify proofs of the latest block state trie. Exit 0 if correct, else exit 1`,
      Category: "BLOCKCHAIN COMMANDS",
      Description: `
 Compacts the database`,
+	}
+	freezerDumpCommand = cli.Command{
+     Action:    utils.MigrateFlags(freezerDump),
+     Name:      "freezerdump",
+     Usage:     "Dump the freezer as jsonl",
+     Flags: []cli.Flag{
+       utils.DataDirFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Dump the freezer as jsonl`,
 	}
 
 )
@@ -612,6 +626,29 @@ func setHead(ctx *cli.Context) error {
 	chain.Stop()
 	db.Close()
 	fmt.Printf("Rolled back chain to block %v\n", blockNumber)
+	return nil
+}
+
+
+
+func freezerDump(ctx *cli.Context) error {
+	stack := makeFullNode(ctx)
+	_, db := utils.MakeChain(ctx, stack)
+	count, err := db.Ancients()
+	if err != nil { return err }
+	for i := uint64(0); i < count; i++ {
+		data := make(map[string]string)
+		data["index"] = fmt.Sprintf("%v", i)
+		for _, table := range []string{"headers","hashes","bodies","receipts","diffs"} {
+			raw, err := db.Ancient(table, i)
+			if err != nil { return fmt.Errorf("Error retrieving %v # %v: %v", table, i, err.Error()) }
+			data[table] = hex.EncodeToString(raw)
+		}
+		jsonData, err := json.Marshal(data)
+		if err != nil { return fmt.Errorf("Error marshalling %v: %v", i, err.Error()) }
+		os.Stdout.Write(jsonData)
+		os.Stdout.Write([]byte("\n"))
+	}
 	return nil
 }
 
