@@ -273,6 +273,7 @@ func init() {
 		replicaCommand,
 		// See txrelay.go
 		txrelayCommand,
+		freezerDumpCommand,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 
