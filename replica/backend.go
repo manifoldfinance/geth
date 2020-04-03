@@ -47,6 +47,7 @@ type ReplicaBackend struct {
   gpo *gasprice.Oracle
   blockHeads <-chan []byte
   logsFeed event.Feed
+  pendingLogsFeed event.Feed
   removedLogsFeed event.Feed
   chainFeed event.Feed
   chainHeadFeed event.Feed
@@ -190,6 +191,10 @@ func (backend *ReplicaBackend) GetLogs(ctx context.Context, blockHash common.Has
 
 func (backend *ReplicaBackend) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscription {
   return backend.logsFeed.Subscribe(ch)
+}
+
+func (backend *ReplicaBackend) SubscribePendingLogsEvent(ch chan<- []*types.Log) event.Subscription {
+  return backend.pendingLogsFeed.Subscribe(ch)
 }
 
 func (backend *ReplicaBackend) SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent) event.Subscription {
