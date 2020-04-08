@@ -924,10 +924,12 @@ func (pool *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 		for errs[nilSlot] != nil {
 			nilSlot++
 		}
-		pool.rejectTxFeed.Send(RejectedTxEvent{
-			Tx: txs[nilSlot],
-			Reason: err,
-		})
+		if err != nil {
+			pool.rejectTxFeed.Send(RejectedTxEvent{
+				Tx: txs[nilSlot],
+				Reason: err,
+			})
+		}
 		errs[nilSlot] = err
 		nilSlot++
 	}
