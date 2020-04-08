@@ -5,8 +5,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/rpc"
 
 )
@@ -14,45 +12,11 @@ import (
 type dropNotification struct {
 	TxHash common.Hash `json:"txhash"`
 	Reason string `json:"reason"`
-	Replacement string `json:"replacedby,omitempty"`
 }
 
 type rejectNotification struct {
-	Tx *ethapi.RPCTransaction `json:"tx"`
+	Tx *types.Transaction
 	Reason string `json:"reason"`
-}
-
-// newRPCTransaction returns a transaction that will serialize to the RPC
-// representation, with the given location metadata set (if available).
-func newRPCPendingTransaction(tx *types.Transaction) *ethapi.RPCTransaction {
-	var signer types.Signer = types.FrontierSigner{}
-	if tx.Protected() {
-		signer = types.NewEIP155Signer(tx.ChainId())
-	}
-	from, _ := types.Sender(signer, tx)
-	v, r, s := tx.RawSignatureValues()
-
-	result := &ethapi.RPCTransaction{
-		From:     from,
-		Gas:      hexutil.Uint64(tx.Gas()),
-		GasPrice: (*hexutil.Big)(tx.GasPrice()),
-		Hash:     tx.Hash(),
-		Input:    hexutil.Bytes(tx.Data()),
-		Nonce:    hexutil.Uint64(tx.Nonce()),
-		To:       tx.To(),
-		Value:    (*hexutil.Big)(tx.Value()),
-		V:        (*hexutil.Big)(v),
-		R:        (*hexutil.Big)(r),
-		S:        (*hexutil.Big)(s),
-	}
-	return result
-}
-
-func replacementHashString(h common.Hash) string {
-	if h == (common.Hash{}) {
-		return ""
-	}
-	return h.String()
 }
 
 // DroppedTransactions send a notification each time a transaction is dropped from the mempool
@@ -72,7 +36,7 @@ func (api *PublicFilterAPI) DroppedTransactions(ctx context.Context) (*rpc.Subsc
 			select {
 			case d := <-dropped:
 				for _, tx := range d.Txs {
-					notifier.Notify(rpcSub.ID, &dropNotification{TxHash: tx.Hash(), Reason: d.Reason, Replacement: replacementHashString(d.Replacement) })
+					notifier.Notify(rpcSub.ID, &dropNotification{TxHash: tx.Hash(), Reason: d.Reason})
 				}
 			case <-rpcSub.Err():
 				droppedSub.Unsubscribe()
@@ -103,11 +67,7 @@ func (api *PublicFilterAPI) RejectedTransactions(ctx context.Context) (*rpc.Subs
 		for {
 			select {
 			case d := <-rejected:
-				reason := ""
-				if d.Reason != nil {
-					reason = d.Reason.Error()
-				}
-				notifier.Notify(rpcSub.ID, &rejectNotification{Tx: newRPCPendingTransaction(d.Tx), Reason: reason})
+				notifier.Notify(rpcSub.ID, &rejectNotification{Tx: d.Tx, Reason: d.Reason.Error()})
 			case <-rpcSub.Err():
 				rejectedSub.Unsubscribe()
 				return
