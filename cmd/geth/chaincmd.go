@@ -699,13 +699,27 @@ func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) err
 
 func migrateState(ctx *cli.Context) error {
 	if len(ctx.Args()) < 3 {
-    return fmt.Errorf("Usage: migrateState [ancients] [oldLeveldb] [newLeveldb]")
+    return fmt.Errorf("Usage: migrateState [ancients] [oldLeveldb] [newLeveldb] [?kafkaTopic]")
   }
 	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[2], 16, 16, ctx.Args()[0], "new")
 	if err != nil { return err }
+	frozen, err := db.Ancients()
+	if err != nil { return err }
+	if frozen == 0 {
+		return fmt.Errorf("Freezer is empty")
+	}
 	oldDb, err := rawdb.NewLevelDBDatabase(ctx.Args()[1], 16, 16, "old")
 	if err != nil { return err }
-	rawdb.InitDatabaseFromFreezer(newDb)
+	if len(ctx.Args()) == 4 {
+		key := fmt.Sprintf("cdc-log-%v-offset", ctx.Args()[3])
+		offset, err := oldDb.Get([]byte(key))
+		if err != nil { return err }
+		if err := newDb.Put([]byte(key), offset); err != nil { return err }
+		log.Info("Copied offset", "key", key)
+	}
+	start := time.Now()
+	if err := rawdb.InitDatabaseFromFreezer(newDb); err != nil { return err }
+	log.Info("Initialized from freezer", "elapsed", time.Since(start))
 	srcDb := state.NewDatabase(oldDb)
 
 	genesisHash := rawdb.ReadCanonicalHash(oldDb, 0)
