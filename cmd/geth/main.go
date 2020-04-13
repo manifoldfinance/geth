@@ -250,6 +250,7 @@ func init() {
 		verifyStateTrieCommand,
 		compactCommand,
 		stateMigrateCommand,
+		repairMigrationCommand,
 		kafkaEventsCommand,
 		// See accountcmd.go:
 		accountCommand,
