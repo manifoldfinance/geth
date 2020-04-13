@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -244,6 +245,16 @@ Compacts the database`,
      Category: "BLOCKCHAIN COMMANDS",
      Description: `
 Migrates state from one leveldb to another`,
+	}
+	repairMigrationCommand = cli.Command{
+     Action:    utils.MigrateFlags(repairMigration),
+     Name:      "repairmigration",
+     Usage:     "Migrates the latest state from a DB+Ancient to a new  DB+Ancient",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Repairs earlier migrations`,
 	}
 
 )
@@ -667,6 +678,13 @@ func verifyStateTrie(ctx *cli.Context) error {
   return nil
 }
 
+type trieRequest struct {
+	hash common.Hash
+	i int
+	data []byte
+	err error
+}
+
 func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) error {
 	count := 10000
 	sched := state.NewStateSync(root, newDb, trie.NewSyncBloom(1, newDb))
@@ -674,14 +692,36 @@ func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) err
 	queue := append([]common.Hash{}, sched.Missing(count)...)
 	total := 0
 	for len(queue) > 0 {
-		log.Info("Processing items", "completed", total)
+		log.Info("Processing items", "completed", total, "known", sched.Pending())
 		results := make([]trie.SyncResult, len(queue))
-		for i, hash := range queue {
-			data, err := srcDb.TrieDB().Node(hash)
-			if err != nil {
-				return fmt.Errorf("failed to retrieve node data for %x", hash)
+		var wg sync.WaitGroup
+		ch := make(chan trieRequest, runtime.NumCPU())
+		popCh := make(chan trieRequest, runtime.NumCPU())
+		for i := 0; i < runtime.NumCPU(); i++ {
+			wg.Add(1)
+			go func(wg *sync.WaitGroup) {
+				defer wg.Done()
+				for r := range ch {
+					r.data, r.err = srcDb.TrieDB().Node(r.hash)
+					popCh <- r
+				}
+			}(&wg)
+		}
+		go func(wg *sync.WaitGroup) {
+			wg.Wait()
+			close(popCh)
+		}(&wg)
+		go func() {
+			for i, hash := range queue {
+				ch <- trieRequest{hash: hash, i: i}
 			}
-			results[i] = trie.SyncResult{Hash: hash, Data: data}
+			close(ch)
+		}()
+		for r := range popCh {
+			if r.err != nil {
+				return r.err
+			}
+			results[r.i] = trie.SyncResult{Hash: r.hash, Data: r.data}
 		}
 		if _, index, err := sched.Process(results); err != nil {
 			return fmt.Errorf("failed to process result #%d: %v", index, err)
@@ -697,13 +737,40 @@ func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) err
 	return nil
 }
 
+// repairMigration adds in Hash -> Number mappings and TxLookupEntries, which
+// were inadvertently omitted from an earlier iteration of the state migration
+// tool.
+func repairMigration(ctx *cli.Context) error {
+	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	frozen, err := newDb.Ancients()
+	if err != nil { return err }
+	if frozen == 0 {
+		return fmt.Errorf("Freezer is empty")
+	}
+	hash := rawdb.ReadCanonicalHash(newDb, frozen)
+	block := rawdb.ReadBlock(newDb, hash, frozen)
+	for {
+		batch := newDb.NewBatch()
+		rawdb.WriteHeaderNumber(batch, block.Hash(), block.NumberU64())
+		rawdb.WriteTxLookupEntries(batch, block)
+		batch.Write()
+		nextHash := rawdb.ReadCanonicalHash(newDb, block.NumberU64() + 1)
+		block = rawdb.ReadBlock(newDb, nextHash, block.NumberU64() + 1)
+		if block == nil { return nil }
+		if block.NumberU64() % 1000 == 0 {
+			log.Info("Repairing block", "number", block.NumberU64(), "hash", block.Hash())
+		}
+	}
+
+}
+
 func migrateState(ctx *cli.Context) error {
 	if len(ctx.Args()) < 3 {
     return fmt.Errorf("Usage: migrateState [ancients] [oldLeveldb] [newLeveldb] [?kafkaTopic]")
   }
 	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[2], 16, 16, ctx.Args()[0], "new")
 	if err != nil { return err }
-	frozen, err := db.Ancients()
+	frozen, err := newDb.Ancients()
 	if err != nil { return err }
 	if frozen == 0 {
 		return fmt.Errorf("Freezer is empty")
@@ -718,8 +785,10 @@ func migrateState(ctx *cli.Context) error {
 		log.Info("Copied offset", "key", key)
 	}
 	start := time.Now()
-	if err := rawdb.InitDatabaseFromFreezer(newDb); err != nil { return err }
-	log.Info("Initialized from freezer", "elapsed", time.Since(start))
+	if os.Getenv("SKIP_INIT_FREEZER") != "true" {
+		if err := rawdb.InitDatabaseFromFreezer(newDb); err != nil { return err }
+		log.Info("Initialized from freezer", "elapsed", time.Since(start))
+	}
 	srcDb := state.NewDatabase(oldDb)
 
 	genesisHash := rawdb.ReadCanonicalHash(oldDb, 0)
@@ -727,11 +796,15 @@ func migrateState(ctx *cli.Context) error {
 
 	if err := syncState(block.Root(), srcDb, newDb); err != nil { return err }
 	chainConfig := rawdb.ReadChainConfig(oldDb, block.Hash())
-	rawdb.WriteTd(newDb, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
-	rawdb.WriteBlock(newDb, block)
-	rawdb.WriteReceipts(newDb, block.Hash(), block.NumberU64(), nil)
-	rawdb.WriteCanonicalHash(newDb, block.Hash(), block.NumberU64())
-	rawdb.WriteChainConfig(newDb, block.Hash(), chainConfig)
+	batch := newDb.NewBatch()
+	rawdb.WriteTd(batch, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
+	rawdb.WriteBlock(batch, block)
+	rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), nil)
+	rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
+	rawdb.WriteChainConfig(batch, block.Hash(), chainConfig)
+	rawdb.WriteHeaderNumber(batch, block.Hash(), block.NumberU64())
+	rawdb.WriteTxLookupEntries(batch, block)
+	batch.Write()
 
 
 	srcBlockHash := rawdb.ReadHeadFastBlockHash(newDb) // Find the latest blockhash migrated to the new database
@@ -741,10 +814,14 @@ func migrateState(ctx *cli.Context) error {
 	srcHeaderNumber := rawdb.ReadHeaderNumber(newDb, srcBlockHash)
 	block = rawdb.ReadBlock(newDb, srcBlockHash, *srcHeaderNumber)
 	for {
-		rawdb.WriteTd(newDb, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
-		rawdb.WriteBlock(newDb, block)
-		rawdb.WriteReceipts(newDb, block.Hash(), block.NumberU64(), rawdb.ReadReceipts(oldDb, block.Hash(), block.NumberU64(), chainConfig))
-		rawdb.WriteCanonicalHash(newDb, block.Hash(), block.NumberU64())
+		batch := newDb.NewBatch()
+		rawdb.WriteTd(batch, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
+		rawdb.WriteBlock(batch, block)
+		rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), rawdb.ReadReceipts(oldDb, block.Hash(), block.NumberU64(), chainConfig))
+		rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
+		rawdb.WriteHeaderNumber(batch, block.Hash(), block.NumberU64())
+		rawdb.WriteTxLookupEntries(batch, block)
+		batch.Write()
 		nextHash := rawdb.ReadCanonicalHash(oldDb, block.NumberU64() + 1)
 		if nextHash == (common.Hash{}) {
 			// There's an edge case where early blocks may still be in the freezer

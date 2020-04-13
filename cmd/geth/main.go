@@ -224,6 +224,7 @@ func init() {
 		verifyStateTrieCommand,
 		compactCommand,
 		stateMigrateCommand,
+		repairMigrationCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,
