@@ -829,56 +829,63 @@ type trieRequest struct {
 	err error
 }
 
-func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) error {
-	count := 10000
-	sched := state.NewStateSync(root, newDb, trie.NewSyncBloom(1, newDb))
-	log.Info("Syncing", "root", root)
-	queue := append([]common.Hash{}, sched.Missing(count)...)
-	total := 0
-	for len(queue) > 0 {
-		log.Info("Processing items", "completed", total, "known", sched.Pending())
-		results := make([]trie.SyncResult, len(queue))
-		var wg sync.WaitGroup
-		ch := make(chan trieRequest, runtime.NumCPU())
-		popCh := make(chan trieRequest, runtime.NumCPU())
-		for i := 0; i < runtime.NumCPU(); i++ {
-			wg.Add(1)
+func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) <-chan error {
+	errCh := make(chan error)
+	go func() {
+		count := 10000
+		sched := state.NewStateSync(root, newDb, trie.NewSyncBloom(1, newDb))
+		log.Info("Syncing", "root", root)
+		queue := append([]common.Hash{}, sched.Missing(count)...)
+		total := 0
+		for len(queue) > 0 {
+			log.Info("Processing items", "completed", total, "known", sched.Pending())
+			results := make([]trie.SyncResult, len(queue))
+			var wg sync.WaitGroup
+			ch := make(chan trieRequest, runtime.NumCPU())
+			popCh := make(chan trieRequest, runtime.NumCPU())
+			for i := 0; i < runtime.NumCPU(); i++ {
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					defer wg.Done()
+					for r := range ch {
+						r.data, r.err = srcDb.TrieDB().Node(r.hash)
+						popCh <- r
+					}
+				}(&wg)
+			}
 			go func(wg *sync.WaitGroup) {
-				defer wg.Done()
-				for r := range ch {
-					r.data, r.err = srcDb.TrieDB().Node(r.hash)
-					popCh <- r
-				}
+				wg.Wait()
+				close(popCh)
 			}(&wg)
-		}
-		go func(wg *sync.WaitGroup) {
-			wg.Wait()
-			close(popCh)
-		}(&wg)
-		go func() {
-			for i, hash := range queue {
-				ch <- trieRequest{hash: hash, i: i}
+			go func() {
+				for i, hash := range queue {
+					ch <- trieRequest{hash: hash, i: i}
+				}
+				close(ch)
+			}()
+			for r := range popCh {
+				if r.err != nil {
+					errCh <- r.err
+					return
+				}
+				results[r.i] = trie.SyncResult{Hash: r.hash, Data: r.data}
 			}
-			close(ch)
-		}()
-		for r := range popCh {
-			if r.err != nil {
-				return r.err
+			if _, index, err := sched.Process(results); err != nil {
+				errCh <- fmt.Errorf("failed to process result #%d: %v", index, err)
+				return
 			}
-			results[r.i] = trie.SyncResult{Hash: r.hash, Data: r.data}
+			batch := newDb.NewBatch()
+			if err := sched.Commit(batch); err != nil {
+				errCh <- fmt.Errorf("failed to commit data: %v", err)
+				return
+			}
+			batch.Write()
+			total += len(queue)
+			queue = append(queue[:0], sched.Missing(count)...)
 		}
-		if _, index, err := sched.Process(results); err != nil {
-			return fmt.Errorf("failed to process result #%d: %v", index, err)
-		}
-		batch := newDb.NewBatch()
-		if err := sched.Commit(batch); err != nil {
-			return fmt.Errorf("failed to commit data: %v", err)
-		}
-		batch.Write()
-		total += len(queue)
-		queue = append(queue[:0], sched.Missing(count)...)
-	}
-	return nil
+	}()
+
+	return errCh
 }
 
 // repairMigration adds in Hash -> Number mappings and TxLookupEntries, which
@@ -929,16 +936,32 @@ func migrateState(ctx *cli.Context) error {
 		log.Info("Copied offset", "key", key)
 	}
 	start := time.Now()
+	ancientErrCh := make(chan error, 1)
 	if os.Getenv("SKIP_INIT_FREEZER") != "true" {
-		if err := rawdb.InitDatabaseFromFreezer(newDb); err != nil { return err }
-		log.Info("Initialized from freezer", "elapsed", time.Since(start))
+		go func() {
+			ancientErrCh <- rawdb.InitDatabaseFromFreezer(newDb)
+			log.Info("Initialized from freezer", "elapsed", time.Since(start))
+		}()
+	} else {
+		ancientErrCh <- nil
 	}
 	srcDb := state.NewDatabase(oldDb)
 
 	genesisHash := rawdb.ReadCanonicalHash(oldDb, 0)
 	block := rawdb.ReadBlock(oldDb, genesisHash, 0)
 
-	if err := syncState(block.Root(), srcDb, newDb); err != nil { return err }
+	latestBlockHash := rawdb.ReadHeadFastBlockHash(oldDb) // Find the latest blockhash migrated to the new database
+	if latestBlockHash == (common.Hash{}) {
+		return fmt.Errorf("Source block hash empty")
+	}
+	latestHeaderNumber := rawdb.ReadHeaderNumber(oldDb, latestBlockHash)
+	latestBlock = rawdb.ReadBlock(newDb, latestBlockHash, *latestHeaderNumber)
+
+	log.Info("Syncing genesis block state", "hash", block.Hash(), "root", block.Root())
+	genesisErrCh := syncState(block.Root(), srcDb, newDb)
+	log.Info("Syncing latest block state", "hash", latestBlock.Hash(), "root", latestBlock.Root())
+	latestErrCh := syncState(latestBlock.Root(), srcDb, newDb)
+
 	chainConfig := rawdb.ReadChainConfig(oldDb, block.Hash())
 	batch := newDb.NewBatch()
 	rawdb.WriteTd(batch, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
@@ -950,7 +973,7 @@ func migrateState(ctx *cli.Context) error {
 	rawdb.WriteTxLookupEntries(batch, block)
 	batch.Write()
 
-
+	if err := <-ancientErrCh; err != nil { return err }
 	srcBlockHash := rawdb.ReadHeadFastBlockHash(newDb) // Find the latest blockhash migrated to the new database
 	if srcBlockHash == (common.Hash{}) {
 		return fmt.Errorf("Source block hash empty")
@@ -983,12 +1006,8 @@ func migrateState(ctx *cli.Context) error {
 		}
 	}
 
-	log.Info("Syncing block state", "hash", block.Hash(), "root", block.Root())
-
-	if err := syncState(block.Root(), srcDb, newDb); err != nil { return err }
-
-	log.Info("Canonical genesis", "new", rawdb.ReadCanonicalHash(newDb, 0), "old", rawdb.ReadCanonicalHash(oldDb, 0))
-
+	if err := <-genesisErrCh; err != nil { return err }
+	if err := <-latestErrCh; err != nil { return err }
 	rawdb.WriteHeadBlockHash(newDb, block.Hash())
 	rawdb.WriteHeadHeaderHash(newDb, block.Hash())
 	rawdb.WriteHeadFastBlockHash(newDb, block.Hash())
