@@ -274,6 +274,7 @@ func init() {
 		// See txrelay.go
 		txrelayCommand,
 		freezerDumpCommand,
+		freezerLoadCommand,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 

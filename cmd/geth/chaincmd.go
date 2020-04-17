@@ -17,9 +17,11 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -279,10 +281,25 @@ Compacts the database`,
        utils.DataDirFlag,
        utils.CacheFlag,
        utils.SyncModeFlag,
+       utils.AncientFlag,
      },
      Category: "BLOCKCHAIN COMMANDS",
      Description: `
 Dump the freezer as jsonl`,
+	}
+	freezerLoadCommand = cli.Command{
+     Action:    utils.MigrateFlags(freezerLoad),
+     Name:      "freezerload",
+     Usage:     "Load jsonl from stdin to an ancients store",
+     Flags: []cli.Flag{
+       utils.DataDirFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+			 utils.AncientFlag,
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Load jsonl from stdin to ancients`,
 	}
 
 )
@@ -704,6 +721,42 @@ func freezerDump(ctx *cli.Context) error {
 		os.Stdout.Write([]byte("\n"))
 	}
 	return nil
+}
+
+func freezerLoad(ctx *cli.Context) error {
+	stack := makeFullNode(ctx)
+	_, db := utils.MakeChain(ctx, stack)
+	count, err := db.Ancients()
+	if err != nil { return err }
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadBytes('\n')
+	for err == nil {
+		if len(line) == 0 {
+			line, err = reader.ReadBytes('\n')
+			continue
+		}
+		data := make(map[string]string)
+		if err := json.Unmarshal(line, &data); err != nil { return err }
+		blockNumber, err := strconv.Atoi(data["index"])
+		if err != nil { return err }
+		if uint64(blockNumber) != count { return fmt.Errorf("Unexpected block: %d != %d", blockNumber, count) }
+		hash, err := hex.DecodeString(data["hashes"])
+		if err != nil { return err }
+		header, err := hex.DecodeString(data["headers"])
+		if err != nil { return err }
+		body, err := hex.DecodeString(data["bodies"])
+		if err != nil { return err }
+		receipts, err := hex.DecodeString(data["receipts"])
+		if err != nil { return err }
+		td, err := hex.DecodeString(data["diffs"])
+		if err != nil { return err }
+		err = db.AppendAncient(uint64(blockNumber), hash, header, body, receipts, td)
+		count++
+		line, err = reader.ReadBytes('\n')
+	}
+	db.Sync()
+	if err != io.EOF { return err }
+	return rawdb.InitDatabaseFromFreezer(db)
 }
 
 func verifyStateTrie(ctx *cli.Context) error {

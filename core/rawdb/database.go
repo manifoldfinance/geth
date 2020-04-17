@@ -105,9 +105,15 @@ func NewDatabase(db ethdb.KeyValueStore) ethdb.Database {
 // NewDatabaseWithFreezer creates a high level database on top of a given key-
 // value data store with a freezer moving immutable chain segments into cold
 // storage.
-func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezerStr string, namespace string) (ethdb.Database, error) {
+func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezerPath string, namespace string) (ethdb.Database, error) {
 	// Create the idle freezer instance
-	frdb, err := newFreezer(freezerStr, namespace)
+	var frdb ethdb.AncientStore
+	var err error
+	if strings.HasPrefix("s3://", freezerPath) {
+		frdb, err = NewS3Freezer(freezerPath, 128) // TODO: Configurable cache size?
+	} else {
+		frdb, err = newFreezer(freezerPath, namespace)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +160,12 @@ func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezerStr string, namespace
 		validateErr = validateFreezerVsKV(frdb, db)
 	} else if validateErr != nil {
 		return nil, validateErr
+	}
+	// Freezer is consistent with the key-value database, permit combining the two
+	switch v := frdb.(type) {
+	case *freezer:
+		go v.freeze(db)
+	default:
 	}
 
 	if validateErr != nil {
