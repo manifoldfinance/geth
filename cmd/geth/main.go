@@ -226,6 +226,8 @@ func init() {
 		verifyStateTrieCommand,
 		compactCommand,
 		kafkaEventsCommand,
+		stateMigrateCommand,
+		repairMigrationCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,
