@@ -24,10 +24,15 @@ const (
 type chainEventProvider interface {
   GetChainEvent(common.Hash, uint64) (core.ChainEvent, error)
   GetBlock(common.Hash) (*types.Block, error)
+  GetHeadBlockHash() (common.Hash)
 }
 
 type dbChainEventProvider struct {
   db ethdb.Database
+}
+
+func (cep *dbChainEventProvider) GetHeadBlockHash() common.Hash {
+  return rawdb.ReadHeadBlockHash(cep.db)
 }
 
 func (cep *dbChainEventProvider) GetBlock(h common.Hash) (*types.Block, error) {
@@ -100,9 +105,27 @@ type ChainEventSubscriber interface {
   SubscribeChainEvent(chan<- core.ChainEvent) event.Subscription
 }
 
+func (producer *KafkaEventProducer) ReprocessEvents(ceCh chan<- core.ChainEvent, n int) error {
+  hash := producer.cep.GetHeadBlockHash()
+  block, err := producer.cep.GetBlock(hash)
+  if err != nil { return err }
+  events := make([]core.ChainEvent, n)
+  events[n-1], err = producer.cep.GetChainEvent(block.Hash(), block.NumberU64())
+  if err != nil { return err }
+  for i := n - 1; i > 0 && events[i].Block.NumberU64() > 0; i-- {
+    events[i-1], err =  producer.cep.GetChainEvent(events[i].Block.ParentHash(), events[i].Block.NumberU64() - 1)
+    if err != nil { return err }
+  }
+  for _, ce := range events {
+    ceCh <- ce
+  }
+  return nil
+}
+
 func (producer *KafkaEventProducer) RelayEvents(bc ChainEventSubscriber) {
   go func() {
     ceCh := make(chan core.ChainEvent, 100)
+    go producer.ReprocessEvents(ceCh, 10)
     subscription := bc.SubscribeChainEvent(ceCh)
     recentHashes := make(map[common.Hash]struct{})
     olderHashes := make(map[common.Hash]struct{})
@@ -198,6 +221,7 @@ type KafkaEventConsumer struct {
   chainHeadFeed event.Feed
   chainSideFeed event.Feed
   offsetFeed event.Feed
+  startingOffset int64
   consumer sarama.PartitionConsumer
   oldMap map[common.Hash]*core.ChainEvent
   currentMap map[common.Hash]*core.ChainEvent
@@ -221,7 +245,7 @@ func (consumer *KafkaEventConsumer) SubscribeChainHeadEvent(ch chan<- core.Chain
 func (consumer *KafkaEventConsumer) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription {
   return consumer.chainSideFeed.Subscribe(ch)
 }
-func (consumer *KafkaEventConsumer) SubscribeOffsets(ch chan<- int64) event.Subscription {
+func (consumer *KafkaEventConsumer) SubscribeOffsets(ch chan<- OffsetHash) event.Subscription {
   return consumer.offsetFeed.Subscribe(ch)
 }
 
@@ -316,6 +340,11 @@ func (consumer *KafkaEventConsumer) Ready() chan struct{} {
   return consumer.ready
 }
 
+type OffsetHash struct {
+  Offset int64
+  Hash common.Hash
+}
+
 func (consumer *KafkaEventConsumer) Start() {
   inputChannel := consumer.consumer.Messages()
   go func() {
@@ -330,11 +359,21 @@ func (consumer *KafkaEventConsumer) Start() {
       }
       msgType := input.Value[0]
       msg := input.Value[1:]
+      if msgType == EmitMsg && input.Offset < consumer.startingOffset {
+        // During the initial startup, we start several thousand or so messages
+        // before we actually want to resume to make sure we have the blocks in
+        // memory to handle a reorg. We don't want to re-emit these blocks, we
+        // just want to populate our caches.
+        continue
+      }
       if err := consumer.processEvent(msgType, msg); err != nil {
-        log.Error("Error processing input:", "err", err, "msgType", msgType, "msg", msg, "offset", input.Offset)
+        if input.Offset >= consumer.startingOffset {
+          // Don't bother logging errors if we haven't reached the starting offset.
+          log.Error("Error processing input:", "err", err, "msgType", msgType, "msg", msg, "offset", input.Offset)
+        }
       }
       if msgType == EmitMsg {
-        consumer.offsetFeed.Send(input.Offset)
+        consumer.offsetFeed.Send(OffsetHash{input.Offset, common.BytesToHash(msg)})
       }
     }
   }()
@@ -406,9 +445,18 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
   if err != nil {
     return nil, err
   }
-  partitionConsumer, err := consumer.ConsumePartition(topic, 0, offset)
+  startOffset := offset
+  if startOffset > 5000 {
+    startOffset -= 5000
+  }
+  partitionConsumer, err := consumer.ConsumePartition(topic, 0, startOffset)
   if err != nil {
-    return nil, err
+    // We may not have been able to roll back 1000 messages, so just try with
+    // the provided offset
+    partitionConsumer, err = consumer.ConsumePartition(topic, 0, offset)
+    if err != nil {
+      return nil, err
+    }
   }
   return &KafkaEventConsumer{
     recoverySize: 128, // Geth keeps 128 generations of state trie to handle reorgs, we'll keep at least 128 blocks in memory to be able to handle reorgs.
@@ -417,5 +465,6 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
     currentMap: make(map[common.Hash]*core.ChainEvent),
     ready: make(chan struct{}),
     lastEmittedBlock: common.Hash{},
+    startingOffset: offset,
   }, nil
 }
