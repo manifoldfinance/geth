@@ -722,14 +722,20 @@ func setHead(ctx *cli.Context) error {
 	return nil
 }
 
-
-
 func freezerDump(ctx *cli.Context) error {
-	stack := makeFullNode(ctx)
-	_, db := utils.MakeChain(ctx, stack)
+	if len(ctx.Args()) < 2 {
+		return fmt.Errorf("Usage: freezerDump [ancients] [leveldb]")
+	}
+	startIndex := 0
+	if len(ctx.Args()) == 3 {
+		startIndex, _ = strconv.Atoi(ctx.Args()[2])
+	}
+	db, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	if err != nil { return err }
 	count, err := db.Ancients()
 	if err != nil { return err }
-	for i := uint64(0); i < count; i++ {
+	log.Info("Loading ancients", "count", count)
+	for i := uint64(startIndex); i < count; i++ {
 		data := make(map[string]string)
 		data["index"] = fmt.Sprintf("%v", i)
 		for _, table := range []string{"headers","hashes","bodies","receipts","diffs"} {
@@ -746,12 +752,16 @@ func freezerDump(ctx *cli.Context) error {
 }
 
 func freezerLoad(ctx *cli.Context) error {
-	stack := makeFullNode(ctx)
-	_, db := utils.MakeChain(ctx, stack)
+	if len(ctx.Args()) != 2 {
+		return fmt.Errorf("Usage: freezerDump [ancients] [leveldb]")
+	}
+	db, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	if err != nil { return err }
 	count, err := db.Ancients()
 	if err != nil { return err }
 	reader := bufio.NewReader(os.Stdin)
 	line, err := reader.ReadBytes('\n')
+	log.Info("Starting load", "freezer size", count)
 	for err == nil {
 		if len(line) == 0 {
 			line, err = reader.ReadBytes('\n')
@@ -773,11 +783,13 @@ func freezerLoad(ctx *cli.Context) error {
 		td, err := hex.DecodeString(data["diffs"])
 		if err != nil { return err }
 		err = db.AppendAncient(uint64(blockNumber), hash, header, body, receipts, td)
+		if err != nil { return err }
 		count++
 		line, err = reader.ReadBytes('\n')
 	}
 	db.Sync()
 	if err != io.EOF { return err }
+	log.Info("Ancient sync done. Indexing freezer")
 	return rawdb.InitDatabaseFromFreezer(db)
 }
 
