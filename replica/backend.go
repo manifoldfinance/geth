@@ -351,7 +351,11 @@ func (backend *ReplicaBackend) Stats() (pending int, queued int) {
 
 func (backend *ReplicaBackend) RPCGasCap() *big.Int {
   // TODO: Make configurable
-  return big.NewInt(int64(math.MaxUint64 / 2))
+  header, err := backend.HeaderByNumber(context.Background(), rpc.LatestBlockNumber)
+  if err != nil {
+    return big.NewInt(int64(math.MaxUint64 / 2))
+  }
+  return big.NewInt(int64(header.GasLimit * 1000))
 }
 
 	// Return empty maps
@@ -503,7 +507,7 @@ func (backend *ReplicaBackend) consumeTransactions(transactionConsumer Transacti
     go func() {
       for tx := range transactionConsumer.Messages() {
         if err := backend.txPool.AddRemote(tx); err != nil && !strings.HasPrefix(err.Error(), "known transaction") {
-          log.Warn("Error adding tx to pool", "tx", tx.Hash(), "error", err)
+          log.Debug("Error adding tx to pool", "tx", tx.Hash(), "error", err)
         }
       }
       }()
