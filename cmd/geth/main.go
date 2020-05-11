@@ -38,7 +38,6 @@ import (
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/internal/openrpc"
 	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
@@ -249,9 +248,10 @@ func init() {
 		setHeadCommand,
 		verifyStateTrieCommand,
 		compactCommand,
+		kafkaEventsCommand,
 		stateMigrateCommand,
 		repairMigrationCommand,
-		kafkaEventsCommand,
+		repairFreezerIndexCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,

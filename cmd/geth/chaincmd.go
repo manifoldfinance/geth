@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -274,6 +275,36 @@ Verify proofs of the latest block state trie. Exit 0 if correct, else exit 1`,
      Category: "BLOCKCHAIN COMMANDS",
      Description: `
 Compacts the database`,
+	}
+	stateMigrateCommand = cli.Command{
+     Action:    utils.MigrateFlags(migrateState),
+     Name:      "migratestate",
+     Usage:     "Migrates the latest state from a DB+Ancient to a new  DB+Ancient",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Migrates state from one leveldb to another`,
+	}
+	repairMigrationCommand = cli.Command{
+     Action:    utils.MigrateFlags(repairMigration),
+     Name:      "repairmigration",
+     Usage:     "Repairs earlier migrations",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Repairs earlier migrations`,
+	}
+	repairFreezerIndexCommand = cli.Command{
+     Action:    utils.MigrateFlags(repairFreezerIndex),
+     Name:      "repairfreezerindex",
+     Usage:     "Reindexes the freezer",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Repairs a broken freezer index`,
 	}
 	freezerDumpCommand = cli.Command{
      Action:    utils.MigrateFlags(freezerDump),
@@ -724,7 +755,7 @@ func setHead(ctx *cli.Context) error {
 
 func freezerDump(ctx *cli.Context) error {
 	if len(ctx.Args()) < 2 {
-		return fmt.Errorf("Usage: freezerDump [ancients] [leveldb]")
+		return fmt.Errorf("Usage: freezerDump [ancients] [leveldb] [?offset]")
 	}
 	startIndex := 0
 	if len(ctx.Args()) == 3 {
@@ -755,13 +786,20 @@ func freezerLoad(ctx *cli.Context) error {
 	if len(ctx.Args()) != 2 {
 		return fmt.Errorf("Usage: freezerDump [ancients] [leveldb]")
 	}
-	db, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	var db ethdb.AncientStore
+	var err error
+	if strings.HasPrefix(ctx.Args()[0], "s3://") {
+		db, err = rawdb.NewS3Freezer(ctx.Args()[0], 128)
+	} else {
+		db, err = rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	}
+	// db, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
 	if err != nil { return err }
 	count, err := db.Ancients()
 	if err != nil { return err }
+	log.Info("Starting load", "freezer size", count)
 	reader := bufio.NewReader(os.Stdin)
 	line, err := reader.ReadBytes('\n')
-	log.Info("Starting load", "freezer size", count)
 	for err == nil {
 		if len(line) == 0 {
 			line, err = reader.ReadBytes('\n')
@@ -790,7 +828,8 @@ func freezerLoad(ctx *cli.Context) error {
 	db.Sync()
 	if err != io.EOF { return err }
 	log.Info("Ancient sync done. Indexing freezer")
-	return rawdb.InitDatabaseFromFreezer(db)
+	// return rawdb.InitDatabaseFromFreezer(db)
+	return nil
 }
 
 func verifyStateTrie(ctx *cli.Context) error {
@@ -924,7 +963,16 @@ func repairMigration(ctx *cli.Context) error {
 			log.Info("Repairing block", "number", block.NumberU64(), "hash", block.Hash())
 		}
 	}
+}
 
+func repairFreezerIndex(ctx *cli.Context) error {
+	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	if err != nil { return err }
+	hash := rawdb.ReadHeadFastBlockHash(newDb)
+	if err := rawdb.InitDatabaseFromFreezer(newDb); err != nil { return err }
+	rawdb.WriteHeadHeaderHash(newDb, hash)
+	rawdb.WriteHeadFastBlockHash(newDb, hash)
+	return nil
 }
 
 func migrateState(ctx *cli.Context) error {
@@ -967,7 +1015,7 @@ func migrateState(ctx *cli.Context) error {
 		return fmt.Errorf("Source block hash empty")
 	}
 	latestHeaderNumber := rawdb.ReadHeaderNumber(oldDb, latestBlockHash)
-	latestBlock = rawdb.ReadBlock(newDb, latestBlockHash, *latestHeaderNumber)
+	latestBlock := rawdb.ReadBlock(newDb, latestBlockHash, *latestHeaderNumber)
 
 	log.Info("Syncing genesis block state", "hash", block.Hash(), "root", block.Root())
 	genesisErrCh := syncState(block.Root(), srcDb, newDb)
