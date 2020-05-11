@@ -7,6 +7,7 @@ import (
   "runtime"
   "strings"
   "strconv"
+  "sync"
   lru "github.com/hashicorp/golang-lru"
   "github.com/aws/aws-sdk-go/aws"
   "github.com/aws/aws-sdk-go/aws/session"
@@ -35,6 +36,7 @@ type s3freezer struct {
   count uint64
   uploadCh chan s3record
   concurrency int
+  wg sync.WaitGroup
 }
 
 type s3record struct {
@@ -75,6 +77,7 @@ func NewS3Freezer(path string, cacheSize int) (ethdb.AncientStore, error) {
   if len(output.CommonPrefixes) == 0 {
     // Fresh freezer
     freezer.count = 0
+    freezer.uploader()
     return freezer, nil
   }
   for output.NextContinuationToken != nil {
@@ -174,7 +177,7 @@ func (f *s3freezer) AncientSize(kind string) (uint64, error) {
 // AppendAncient injects all binary blobs belong to block at the end of the
 // append-only immutable table files.
 func (f *s3freezer) AppendAncient(number uint64, hash, header, body, receipt, td []byte) error {
-  log.Info("Appending")
+  log.Debug("Appending")
   f.uploadCh <- s3record{
     Hash: hash,
     Header: header,
@@ -183,17 +186,21 @@ func (f *s3freezer) AppendAncient(number uint64, hash, header, body, receipt, td
     Td: td,
     number: number,
   }
-  log.Info("Appended")
+  log.Debug("Appended")
   f.count++
   return nil
 }
 
 func (f *s3freezer) uploader() {
   for i := 0; i < f.concurrency; i++ {
-    go func() {
+    go func(i int) {
+      log.Info("Starting uploader thread", "id", i)
+      defer log.Info("Stopping uploader thread", "id", i)
+
       errCount := 0
       for record := range f.uploadCh {
-        log.Info("Processing record")
+        f.wg.Add(1)
+        log.Debug("Processing record")
         if exists, _ := f.HasAncient("bodies", record.number); !exists {
           data, err := json.Marshal(record)
           if err != nil {
@@ -220,8 +227,9 @@ func (f *s3freezer) uploader() {
             errCount = 0
           }
         }
+        f.wg.Done()
       }
-    }()
+    }(i)
   }
 }
 
@@ -235,6 +243,7 @@ func (f *s3freezer) TruncateAncients(n uint64) error {
 
 // Sync is a no-op, as we will write content as AppendAncient is called
 func (f *s3freezer) Sync() error {
+  f.wg.Wait()
   return nil
 }
 
