@@ -228,6 +228,7 @@ func init() {
 		kafkaEventsCommand,
 		stateMigrateCommand,
 		repairMigrationCommand,
+		repairFreezerIndexCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,
