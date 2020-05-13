@@ -112,6 +112,10 @@ func NewS3Freezer(path string, cacheSize int) (ethdb.AncientStore, error) {
 // HasAncient returns an indicator whether the specified data exists in the
 // ancient store.
 func (f *s3freezer) HasAncient(kind string, number uint64) (bool, error) {
+  if number > f.count + uint64(f.concurrency) {
+    // If the requested number is too high, we definitely won't have it
+    return false, fmt.Errorf("Requested %v (%v) exceeds max (%v)", kind, number, f.count)
+  }
   key := numToPath(number)
   svc := s3.New(f.sess)
   if _, ok := f.cache.Get(key); ok { return true, nil }
@@ -124,6 +128,10 @@ func (f *s3freezer) HasAncient(kind string, number uint64) (bool, error) {
 
 // Ancient retrieves an ancient binary blob from the append-only immutable files.
 func (f *s3freezer) Ancient(kind string, number uint64) ([]byte, error) {
+  if number > f.count + uint64(f.concurrency) {
+    // If the requested number is too high, we definitely won't have it.
+    return []byte{}, fmt.Errorf("Requested %v (%v) exceeds max (%v)", kind, number, f.count)
+  }
   key := numToPath(number)
   var content []byte
   svc := s3.New(f.sess)
@@ -197,35 +205,33 @@ func (f *s3freezer) uploader() {
       log.Info("Starting uploader thread", "id", i)
       defer log.Info("Stopping uploader thread", "id", i)
 
-      errCount := 0
       for record := range f.uploadCh {
         f.wg.Add(1)
-        log.Debug("Processing record")
-        if exists, _ := f.HasAncient("bodies", record.number); !exists {
-          data, err := json.Marshal(record)
-          if err != nil {
-            log.Error("Error marshalling record", "number", record.number)
-          }
-          buff := &bytes.Buffer{}
-          writer := snappy.NewWriter(buff)
-          writer.Write(data)
-          writer.Flush()
-          svc := s3.New(f.sess)
-          key := numToPath(record.number)
-          _, err = svc.PutObject(&s3.PutObjectInput{
-            Bucket: &f.bucket,
-            Key: aws.String(path.Join(f.root, key)),
-            Body: bytes.NewReader(buff.Bytes()),
-          })
-          if err != nil {
-            log.Error("Error recording block", "number", record.number, "bucket", f.bucket, "key", path.Join(f.root, key))
-            errCount++
-            if errCount > 5 {
-              panic("Repeated freezer failures")
+        for i := 0; true; i++ {
+          time.Sleep(100 * time.Duration(i) * time.Millisecond) // Backoff on failure
+          log.Debug("Processing record")
+          if exists, _ := f.HasAncient("bodies", record.number); !exists {
+            data, err := json.Marshal(record)
+            if err != nil {
+              log.Error("Error marshalling record", "number", record.number)
             }
-          } else {
-            errCount = 0
+            buff := &bytes.Buffer{}
+            writer := snappy.NewWriter(buff)
+            writer.Write(data)
+            writer.Flush()
+            svc := s3.New(f.sess)
+            key := numToPath(record.number)
+            _, err = svc.PutObject(&s3.PutObjectInput{
+              Bucket: &f.bucket,
+              Key: aws.String(path.Join(f.root, key)),
+              Body: bytes.NewReader(buff.Bytes()),
+            })
+            if err != nil {
+              log.Error("Error recording block", "number", record.number, "bucket", f.bucket, "key", path.Join(f.root, key), "err", err)
+              continue
+            }
           }
+          break
         }
         f.wg.Done()
       }
