@@ -648,6 +648,9 @@ func (n *Node) OpenDatabaseWithFreezer(name string, cache, handles int, freezer,
 			freezer = filepath.Join(root, "ancient")
 		case strings.HasPrefix(freezer, "s3://"):
 			log.Info("S3 freezer", "path", freezer)
+		case strings.HasPrefix(freezer, "s3:/"):
+			freezer = fmt.Sprintf("s3://%v", strings.TrimPrefix(freezer, "s3:/"))
+			log.Info("S3 freezer", "path", freezer)
 		case !filepath.IsAbs(freezer):
 			log.Info("Non-s3 path", "path", freezer)
 			freezer = n.config.ResolvePath(freezer)
