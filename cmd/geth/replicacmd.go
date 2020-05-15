@@ -62,7 +62,7 @@ The Geth replica captures a Geth node's write operations via a change-data-captu
 system and acts as an RPC node based on the replicated data.
 `,
 		Flags: []cli.Flag{
-			utils.TestnetFlag,
+			utils.LegacyTestnetFlag,
 			utils.RinkebyFlag,
 			utils.GoerliFlag,
 			utils.ClassicFlag,
@@ -77,10 +77,10 @@ system and acts as an RPC node based on the replicated data.
 			utils.KafkaTransactionPoolTopicFlag,
 			utils.DataDirFlag,
 			utils.ReplicaSyncShutdownFlag,
-			utils.RPCEnabledFlag,
-			utils.RPCPortFlag,
-			utils.RPCListenAddrFlag,
-			utils.RPCCORSDomainFlag,
+			utils.LegacyRPCEnabledFlag,
+			utils.LegacyRPCPortFlag,
+			utils.LegacyRPCListenAddrFlag,
+			utils.LegacyRPCCORSDomainFlag,
 			utils.WSEnabledFlag,
 			utils.WSListenAddrFlag,
 			utils.WSPortFlag,
@@ -97,7 +97,6 @@ system and acts as an RPC node based on the replicated data.
 			utils.ReplicaWarmAddressesFlag,
 			utils.OverlayFlag,
 			utils.AncientFlag,
-			utils.OverrideIstanbulFlag,
 			utils.CacheFlag,
 			utils.CacheTrieFlag,
 			utils.CacheGCFlag,
@@ -177,9 +176,6 @@ func makeReplicaNode(ctx *cli.Context) (*node.Node, gethConfig) {
 		Shh:       whisper.DefaultConfig,
 		Node:      replicaNodeConfig(),
 		// Dashboard: dashboard.DefaultConfig,
-	}
-	if ctx.GlobalIsSet(utils.OverrideIstanbulFlag.Name) {
-		cfg.Eth.OverrideIstanbul = new(big.Int).SetUint64(ctx.GlobalUint64(utils.OverrideIstanbulFlag.Name))
 	}
 
 	// Load config file.

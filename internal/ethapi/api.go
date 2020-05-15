@@ -27,6 +27,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/accounts/scwallet"
 	"github.com/ethereum/go-ethereum/common"
@@ -748,6 +749,8 @@ func (args *CallArgs) ToMessage(globalGasCap *big.Int) types.Message {
 	}
 
 	// Set default gas & gas price if none were set
+	// gas := uint64(math.MaxUint64 / 2)
+	// Default is 1% of the global gas cap, but you can get more by specifying
 	gas := globalGasCap.Uint64() / 100
 	if args.Gas != nil {
 		gas = uint64(*args.Gas)
@@ -860,10 +863,10 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 	if evm.Cancelled() {
 		return nil, fmt.Errorf("execution aborted (timeout = %v)", timeout)
 	}
-	if result.Failed() && result.UsedGas() >= msg.Gas() {
+	if result.Failed() && result.UsedGas >= msg.Gas() {
 		return result, fmt.Errorf("out of gas")
 	}
-	return result, fmt.Errorf("out of gas")
+	return result, err
 }
 
 // Call executes the given transaction on the state for the given block number.
@@ -884,6 +887,7 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 	if timeout < 5 * time.Second {
 		timeout = 5 * time.Second
 	}
+
 	result, err := DoCall(ctx, s.b, args, blockNrOrHash, accounts, vm.Config{}, timeout, s.b.RPCGasCap())
 	if err != nil {
 		return nil, err

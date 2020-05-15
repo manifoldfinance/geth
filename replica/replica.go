@@ -225,13 +225,13 @@ func NewReplica(db ethdb.Database, config *eth.Config, ctx *node.ServiceContext,
     db.Close()
     os.Exit(0)
   }
-  chainConfig, _, _ := core.SetupGenesisBlockWithOverride(db, config.Genesis)
+  chainConfig, _, _ := core.SetupGenesisBlock(db, config.Genesis)
   engine := eth.CreateConsensusEngine(ctx, chainConfig, &config.Ethash, []string{}, true, db)
   hc, err := core.NewHeaderChain(db, chainConfig, engine, func() bool { return false })
   if err != nil {
     return nil, err
   }
-  bc, err := core.NewBlockChain(db, &core.CacheConfig{}, chainConfig, engine, vm.Config{}, nil)
+  bc, err := core.NewBlockChain(db, &core.CacheConfig{}, chainConfig, engine, vm.Config{}, nil, &config.TxLookupLimit)
   if err != nil {
     return nil, err
   }
