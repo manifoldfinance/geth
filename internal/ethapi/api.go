@@ -863,9 +863,12 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, blockNrOrHash rpc.Blo
 	if evm.Cancelled() {
 		return nil, fmt.Errorf("execution aborted (timeout = %v)", timeout)
 	}
-	if failed && usedGas >= gas {
-		return res, usedGas, failed, fmt.Errorf("out of gas")
+	if result.Failed() && result.UsedGas >= msg.Gas() {
+		return result, fmt.Errorf("out of gas")
 	}
+	// if failed && usedGas >= gas {
+	// 	return res, usedGas, failed, fmt.Errorf("out of gas")
+	// }
 	return result, err
 }
 

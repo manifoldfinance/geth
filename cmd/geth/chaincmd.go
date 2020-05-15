@@ -702,7 +702,7 @@ func setHead(ctx *cli.Context) error {
 		utils.Fatalf("This command requires an argument.")
 	}
 	stack := makeFullNode(ctx)
-	chain, db := utils.MakeChain(ctx, stack)
+	chain, db := utils.MakeChain(ctx, stack, false)
 	arg := ctx.Args()[0]
 	blockNumber, err := strconv.Atoi(arg)
 	if err != nil {
@@ -804,7 +804,7 @@ func freezerLoad(ctx *cli.Context) error {
 
 func verifyStateTrie(ctx *cli.Context) error {
   stack := makeFullNode(ctx)
-  bc, db := utils.MakeChain(ctx, stack)
+  bc, db := utils.MakeChain(ctx, stack, false)
   latestHash := rawdb.ReadHeadBlockHash(db)
   block := bc.GetBlockByHash(latestHash)
 
@@ -939,7 +939,7 @@ func repairFreezerIndex(ctx *cli.Context) error {
 	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
 	if err != nil { return err }
 	hash := rawdb.ReadHeadFastBlockHash(newDb)
-	if err := rawdb.InitDatabaseFromFreezer(newDb); err != nil { return err }
+	rawdb.InitDatabaseFromFreezer(newDb)
 	rawdb.WriteHeadHeaderHash(newDb, hash)
 	rawdb.WriteHeadFastBlockHash(newDb, hash)
 	return nil
@@ -969,7 +969,8 @@ func migrateState(ctx *cli.Context) error {
 	ancientErrCh := make(chan error, 1)
 	if os.Getenv("SKIP_INIT_FREEZER") != "true" {
 		go func() {
-			ancientErrCh <- rawdb.InitDatabaseFromFreezer(newDb)
+			rawdb.InitDatabaseFromFreezer(newDb)
+			ancientErrCh <- nil
 			log.Info("Initialized from freezer", "elapsed", time.Since(start))
 		}()
 	} else {
@@ -1046,7 +1047,7 @@ func migrateState(ctx *cli.Context) error {
 
 func compact(ctx *cli.Context) error {
   stack := makeFullNode(ctx)
-  _, db := utils.MakeChain(ctx, stack)
+  _, db := utils.MakeChain(ctx, stack, false)
 	start := time.Now()
 	err := db.Compact(nil, nil)
 	log.Info("Done", "time", time.Since(start))
