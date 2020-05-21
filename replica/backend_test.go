@@ -52,7 +52,7 @@ func testReplicaBackend() (*ReplicaBackend, *MockTransactionProducer, error) {
   if err != nil {
     return nil, nil, err
   }
-  bc, err := core.NewBlockChain(db, nil, gspec.Config, ethash.NewFaker(), vm.Config{}, nil)
+  bc, err := core.NewBlockChain(db, nil, gspec.Config, ethash.NewFaker(), vm.Config{}, nil, nil)
   if err != nil {
     return nil, nil, err
   }
