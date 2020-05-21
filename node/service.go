@@ -89,7 +89,7 @@ func (ctx *ServiceContext) OpenDatabaseWithFreezer(name string, cache int, handl
 // OpenDatabaseWithFreezer, but it will never be wrapped to send write
 // operations to Kafka.
 func (ctx *ServiceContext) OpenRawDatabaseWithFreezer(name string, cache int, handles int, freezer string, namespace string) (ethdb.Database, error) {
-	if ctx.config.DataDir == "" {
+	if ctx.Config.DataDir == "" {
 		return rawdb.NewMemoryDatabase(), nil
 	}
 	root := ctx.Config.ResolvePath(name)

@@ -107,7 +107,7 @@ func NewDatabase(db ethdb.KeyValueStore) ethdb.Database {
 // storage.
 func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezerPath string, namespace string) (ethdb.Database, error) {
 	// Create the idle freezer instance
-	var frdb ethdb.AncientStore
+	var frdb freezeInterface
 	var err error
 	if strings.HasPrefix(freezerPath, "s3://") {
 		frdb, err = NewS3Freezer(freezerPath, 128) // TODO: Configurable cache size?
@@ -140,12 +140,18 @@ func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezerPath string, namespac
 	if validateErr != nil {
 
 		log.Warn("Freezer/KV validation error, attempting freezer repair", "error", validateErr)
-		if reperr := frdb.repair(); reperr != nil {
-			log.Warn("Freezer repair errored", "error", reperr)
+		switch repairable := frdb.(type) {
+		case *freezer:
+			if reperr := repairable.repair(); reperr != nil {
+				log.Warn("Freezer repair errored", "error", reperr)
 
-			// Repair did error, AND the validation errored, so return both together because that's double bad.
-			return nil, fmt.Errorf("freezer/kv error=%v freezer repair error=%v", validateErr, reperr)
+				// Repair did error, AND the validation errored, so return both together because that's double bad.
+				return nil, fmt.Errorf("freezer/kv error=%v freezer repair error=%v", validateErr, reperr)
+			}
+		default:
+			return nil, validateErr
 		}
+
 
 		log.Warn("Freezer repair OK")
 
@@ -365,7 +371,7 @@ func InspectDatabase(db ethdb.Database) error {
 	return nil
 }
 
-func validateFreezerVsKV(freezerdb *freezer, db ethdb.KeyValueStore) error {
+func validateFreezerVsKV(freezerdb ethdb.AncientStore, db ethdb.KeyValueStore) error {
 	// If the genesis hash is empty, we have a new key-value store, so nothing to
 	// validate in this method. If, however, the genesis hash is not nil, compare
 	// it to the freezer content.
@@ -411,7 +417,7 @@ func validateFreezerVsKV(freezerdb *freezer, db ethdb.KeyValueStore) error {
 	return nil
 }
 
-func truncateKVtoFreezer(freezerdb *freezer, db ethdb.KeyValueStore) {
+func truncateKVtoFreezer(freezerdb ethdb.AncientStore, db ethdb.KeyValueStore) {
 	hhh := ReadHeadHeaderHash(db)
 	n := *ReadHeaderNumber(db, hhh)
 	frozen, _ := freezerdb.Ancients()

@@ -251,7 +251,7 @@ func (backend *ReplicaBackend) SendTx(ctx context.Context, signedTx *types.Trans
   }
 
   // Should supply enough intrinsic gas
-  gas, err := core.IntrinsicGas(signedTx.Data(), signedTx.To() == nil, true, backend.chainConfig.IsForked(backend.chainConfig.GetEIP2028Transition, header.Number))
+  gas, err := core.IntrinsicGas(signedTx.Data(), signedTx.To() == nil, true, backend.chainConfig.IsEnabled(backend.chainConfig.GetEIP2028Transition, header.Number))
   if err != nil {
     return err
   }

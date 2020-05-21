@@ -289,16 +289,6 @@ Compacts the database`,
      Description: `
 Migrates state from one leveldb to another`,
 	}
-	repairMigrationCommand = cli.Command{
-     Action:    utils.MigrateFlags(repairMigration),
-     Name:      "repairmigration",
-     Usage:     "Repairs earlier migrations",
-     Flags: []cli.Flag{
-     },
-     Category: "BLOCKCHAIN COMMANDS",
-     Description: `
-Repairs earlier migrations`,
-	}
 	repairFreezerIndexCommand = cli.Command{
      Action:    utils.MigrateFlags(repairFreezerIndex),
      Name:      "repairfreezerindex",
@@ -336,16 +326,6 @@ Dump the freezer as jsonl`,
      Category: "BLOCKCHAIN COMMANDS",
      Description: `
 Load jsonl from stdin to ancients`,
-	}
-	stateMigrateCommand = cli.Command{
-     Action:    utils.MigrateFlags(migrateState),
-     Name:      "migratestate",
-     Usage:     "Migrates the latest state from a DB+Ancient to a new  DB+Ancient",
-     Flags: []cli.Flag{
-     },
-     Category: "BLOCKCHAIN COMMANDS",
-     Description: `
-Migrates state from one leveldb to another`,
 	}
 	repairMigrationCommand = cli.Command{
      Action:    utils.MigrateFlags(repairMigration),

@@ -17,7 +17,7 @@ import (
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/ethdb"
   "github.com/ethereum/go-ethereum/log"
-  "github.com/ethereum/go-ethereum/params"
+  "github.com/ethereum/go-ethereum/params/vars"
   "io/ioutil"
   "path"
   "time"
@@ -54,7 +54,7 @@ func numToPath(number uint64) string {
   return path.Join(h[:x-4], h[x-4:x-2], h[x-2:])
 }
 
-func NewS3Freezer(path string, cacheSize int) (ethdb.AncientStore, error) {
+func NewS3Freezer(path string, cacheSize int) (freezeInterface, error) {
   path = strings.TrimPrefix(path, "s3://")
   parts := strings.SplitN(path, "/", 2)
   cache, err := lru.New(cacheSize)
@@ -276,12 +276,12 @@ func (f *s3freezer) freeze(db ethdb.KeyValueStore) {
 			time.Sleep(freezerRecheckInterval)
 			continue
 
-		case *number < params.ImmutabilityThreshold:
-			log.Debug("Current full block not old enough", "number", *number, "hash", hash, "delay", params.ImmutabilityThreshold)
+		case *number < vars.ImmutabilityThreshold:
+			log.Debug("Current full block not old enough", "number", *number, "hash", hash, "delay", vars.ImmutabilityThreshold)
 			time.Sleep(freezerRecheckInterval)
 			continue
 
-		case *number-params.ImmutabilityThreshold <= f.count:
+		case *number-vars.ImmutabilityThreshold <= f.count:
 			log.Debug("Ancient blocks frozen already", "number", *number, "hash", hash, "frozen", f.count)
 			time.Sleep(freezerRecheckInterval)
 			continue
@@ -293,7 +293,7 @@ func (f *s3freezer) freeze(db ethdb.KeyValueStore) {
 			continue
 		}
 		// Seems we have data ready to be frozen, process in usable batches
-		limit := *number - params.ImmutabilityThreshold
+		limit := *number - vars.ImmutabilityThreshold
 		if limit-f.count > freezerBatchLimit {
 			limit = f.count + freezerBatchLimit
 		}

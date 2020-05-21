@@ -38,10 +38,12 @@ import (
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/internal/debug"
+	"github.com/ethereum/go-ethereum/internal/openrpc"
 	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/rpc"
 	replicaModule "github.com/ethereum/go-ethereum/replica"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -535,7 +537,7 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 			log.Info("Broker url missing")
 		}
 
-		threads := ctx.GlobalInt(utils.MinerLegacyThreadsFlag.Name)
+		threads := ctx.GlobalInt(utils.LegacyMinerThreadsFlag.Name)
 		if ctx.GlobalIsSet(utils.LegacyMinerThreadsFlag.Name) && !ctx.GlobalIsSet(utils.MinerThreadsFlag.Name) {
 			threads = ctx.GlobalInt(utils.LegacyMinerThreadsFlag.Name)
 			log.Warn("The flag --minerthreads is deprecated and will be removed in the future, please use --miner.threads")

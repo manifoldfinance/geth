@@ -34,7 +34,7 @@ var (
 )
 
 func opAdd(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
-	x, y := caallContext.stack.pop(), callContext.stack.peek()
+	x, y := callContext.stack.pop(), callContext.stack.peek()
 	math.U256(y.Add(x, y))
 
 	interpreter.intPool.putOne(x)
