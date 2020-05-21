@@ -14,6 +14,7 @@ import (
   "github.com/ethereum/go-ethereum/core/types"
   "github.com/ethereum/go-ethereum/core/vm"
   "github.com/ethereum/go-ethereum/params"
+  "github.com/ethereum/go-ethereum/params/types/genesisT"
   // "github.com/ethereum/go-ethereum/node"
   "github.com/ethereum/go-ethereum/rpc"
   "testing"
@@ -42,12 +43,13 @@ func testReplicaBackend() (*ReplicaBackend, *MockTransactionProducer, error) {
   var (
 		db      = rawdb.NewMemoryDatabase()
     // funds   = big.NewInt(1000000000)
-    gspec   = &core.Genesis{
+    gspec   = &genesisT.Genesis{
 			Config: params.TestChainConfig,
-			Alloc:  core.GenesisAlloc{},
+			Alloc:  genesisT.GenesisAlloc{},
 		}
 	)
-  _ = new(core.Genesis).MustCommit(db)
+  core.SetupGenesisBlock(db, gspec)
+  // _ = new(genesisT.Genesis).MustCommit(db)
   hc, err := core.NewHeaderChain(db, gspec.Config, ethash.NewFaker(), func() (bool) { return true })
   if err != nil {
     return nil, nil, err
@@ -65,8 +67,8 @@ func TestProtocolVersion(t *testing.T) {
   if err != nil {
     t.Fatalf(err.Error())
   }
-  if netId := backend.ProtocolVersion(); netId != 1337 {
-    t.Errorf("Network ID, expected 1337 got %v", netId)
+  if netId := backend.ProtocolVersion(); netId != 1137 {
+    t.Errorf("Network ID, expected 1137 got %v", netId)
   }
 }
 
@@ -481,8 +483,8 @@ func TestChainConfig(t *testing.T) {
     t.Fatalf(err.Error())
   }
   chainConfig := backend.ChainConfig()
-  if chainConfig.ChainID.Int64() != 1337 {
-    t.Errorf("Unexpected chainConfig value %v != 1337", chainConfig.ChainID)
+  if chainConfig.GetChainID().Int64() != 1137 {
+    t.Errorf("Unexpected chainConfig value %v != 1137", chainConfig.GetChainID())
   }
 }
 
