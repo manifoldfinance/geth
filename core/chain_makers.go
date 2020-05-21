@@ -219,7 +219,7 @@ func GenerateChain(config ctypes.ChainConfigurator, parent *types.Block, engine 
 			block, _ := b.engine.FinalizeAndAssemble(chainreader, b.header, statedb, b.txs, b.uncles, b.receipts)
 
 			// Write state changes to db
-			root, err := statedb.Commit(config.IsForked(config.GetEIP161dTransition, b.header.Number))
+			root, err := statedb.Commit(config.IsEnabled(config.GetEIP161dTransition, b.header.Number))
 			if err != nil {
 				panic(fmt.Sprintf("state write error: %v", err))
 			}
@@ -231,7 +231,7 @@ func GenerateChain(config ctypes.ChainConfigurator, parent *types.Block, engine 
 		return nil, nil
 	}
 	for i := 0; i < n; i++ {
-		statedb, err := state.New(parent.Root(), state.NewDatabase(db))
+		statedb, err := state.New(parent.Root(), state.NewDatabase(db), nil)
 		if err != nil {
 			panic(err)
 		}
@@ -252,7 +252,7 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 	}
 
 	return &types.Header{
-		Root:       state.IntermediateRoot(chain.Config().IsForked(chain.Config().GetEIP161dTransition, parent.Number())),
+		Root:       state.IntermediateRoot(chain.Config().IsEnabled(chain.Config().GetEIP161dTransition, parent.Number())),
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
 		Difficulty: engine.CalcDifficulty(chain, time, &types.Header{

@@ -18,6 +18,7 @@ package params
 import (
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params/types/ctypes"
 	"github.com/ethereum/go-ethereum/params/types/multigeth"
 )
@@ -51,23 +52,28 @@ var (
 		EIP214FBlock: big.NewInt(0),
 		EIP658FBlock: big.NewInt(0),
 
-		// Constantinople eq
+		// Constantinople eq, aka Agharta
 		EIP145FBlock:  big.NewInt(301243),
 		EIP1014FBlock: big.NewInt(301243),
 		EIP1052FBlock: big.NewInt(301243),
 
-		// Istanbul eq
-		EIP152FBlock:  big.NewInt(778507),
-		EIP1108FBlock: big.NewInt(778507),
-		EIP1344FBlock: big.NewInt(778507),
-		EIP1884FBlock: nil,
-		EIP2028FBlock: big.NewInt(778507),
-		EIP2200FBlock: big.NewInt(778507), // RePetersburg (== re-1283)
+		// Istanbul eq, aka Phoenix
+		// ECIP-1088
+		EIP152FBlock:  big.NewInt(999_983),
+		EIP1108FBlock: big.NewInt(999_983),
+		EIP1344FBlock: big.NewInt(999_983),
+		EIP1884FBlock: big.NewInt(999_983),
+		EIP2028FBlock: big.NewInt(999_983),
+		EIP2200FBlock: big.NewInt(999_983), // RePetersburg (== re-1283)
 
 		DisposalBlock:      big.NewInt(0),
 		ECIP1017FBlock:     big.NewInt(0),
 		ECIP1017EraRounds:  big.NewInt(2000000),
 		ECIP1010PauseBlock: nil,
 		ECIP1010Length:     nil,
+		RequireBlockHashes: map[uint64]common.Hash{
+			840013: common.HexToHash("0x2ceada2b191879b71a5bcf2241dd9bc50d6d953f1640e62f9c2cee941dc61c9d"),
+			840014: common.HexToHash("0x8ec29dd692c8985b82410817bac232fc82805b746538d17bc924624fe74a0fcf"),
+		},
 	}
 )

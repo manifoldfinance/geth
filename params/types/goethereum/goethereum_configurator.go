@@ -326,6 +326,17 @@ func (c *ChainConfig) SetEIP2200Transition(n *uint64) error {
 	return nil
 }
 
+func (c *ChainConfig) GetEIP2200DisableTransition() *uint64 {
+	return nil
+}
+
+func (c *ChainConfig) SetEIP2200DisableTransition(n *uint64) error {
+	if n == nil {
+		return nil
+	}
+	return ctypes.ErrUnsupportedConfigFatal
+}
+
 func (c *ChainConfig) GetEIP1344Transition() *uint64 {
 	return bigNewU64(c.IstanbulBlock)
 }
@@ -371,7 +382,7 @@ func (c *ChainConfig) SetEIP1706Transition(n *uint64) error {
 	return nil
 }
 
-func (c *ChainConfig) IsForked(fn func() *uint64, n *big.Int) bool {
+func (c *ChainConfig) IsEnabled(fn func() *uint64, n *big.Int) bool {
 	f := fn()
 	if f == nil || n == nil {
 		return false

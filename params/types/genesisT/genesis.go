@@ -488,6 +488,14 @@ func (g *Genesis) SetEIP2200Transition(n *uint64) error {
 	return g.Config.SetEIP2200Transition(n)
 }
 
+func (g *Genesis) GetEIP2200DisableTransition() *uint64 {
+	return g.Config.GetEIP2200DisableTransition()
+}
+
+func (g *Genesis) SetEIP2200DisableTransition(n *uint64) error {
+	return g.Config.SetEIP2200DisableTransition(n)
+}
+
 func (g *Genesis) GetEIP1344Transition() *uint64 {
 	return g.Config.GetEIP1344Transition()
 }
@@ -528,8 +536,8 @@ func (g Genesis) SetEIP1706Transition(n *uint64) error {
 	return g.Config.SetEIP1706Transition(n)
 }
 
-func (g *Genesis) IsForked(fn func() *uint64, n *big.Int) bool {
-	return g.Config.IsForked(fn, n)
+func (g *Genesis) IsEnabled(fn func() *uint64, n *big.Int) bool {
+	return g.Config.IsEnabled(fn, n)
 }
 
 func (g *Genesis) GetForkCanonHash(n uint64) common.Hash {

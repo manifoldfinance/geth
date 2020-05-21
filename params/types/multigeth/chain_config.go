@@ -151,7 +151,8 @@ type MultiGethChainConfig struct {
 	// EIP-2200: Rebalance net-metered SSTORE gas cost with consideration of SLOAD gas cost change
 	// It's a combined version of EIP-1283 + EIP-1706, with a structured definition so as to make it
 	// interoperable with other gas changes such as EIP-1884.
-	EIP2200FBlock *big.Int `json:"eip2200FBlock,omitempty"`
+	EIP2200FBlock        *big.Int `json:"eip2200FBlock,omitempty"`
+	EIP2200DisableFBlock *big.Int `json:"eip2200DisableFBlock,omitempty"`
 
 	// EIP-2384: Difficulty Bomb Delay (Muir Glacier)
 	eip2384Inferred bool
@@ -168,9 +169,10 @@ type MultiGethChainConfig struct {
 	ECIP1017FBlock     *big.Int `json:"ecip1017FBlock,omitempty"`
 	ECIP1017EraRounds  *big.Int `json:"ecip1017EraRounds,omitempty"` // ECIP1017 era rounds
 	ECIP1080FBlock     *big.Int `json:"ecip1080FBlock,omitempty"`
-	DisposalBlock      *big.Int `json:"disposalBlock,omitempty"`    // Bomb disposal HF block
-	SocialBlock        *big.Int `json:"socialBlock,omitempty"`      // Ethereum Social Reward block
-	EthersocialBlock   *big.Int `json:"ethersocialBlock,omitempty"` // Ethersocial Reward block
+
+	DisposalBlock    *big.Int `json:"disposalBlock,omitempty"`    // Bomb disposal HF block
+	SocialBlock      *big.Int `json:"socialBlock,omitempty"`      // Ethereum Social Reward block
+	EthersocialBlock *big.Int `json:"ethersocialBlock,omitempty"` // Ethersocial Reward block
 
 	// Various consensus engines
 	Ethash *ctypes.EthashConfig `json:"ethash,omitempty"`

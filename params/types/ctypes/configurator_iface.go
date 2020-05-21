@@ -42,14 +42,14 @@ type Configurator interface {
 }
 
 type ChainConfigurator interface {
-	CatHerder
+	ProtocolSpecifier
 	Forker
 	ConsensusEnginator // Consensus Engine
 	// CHTer
 }
 
-// CatHerder defines protocol interfaces that are agnostic of consensus engine.
-type CatHerder interface {
+// ProtocolSpecifier defines protocol interfaces that are agnostic of consensus engine.
+type ProtocolSpecifier interface {
 	GetAccountStartNonce() *uint64
 	SetAccountStartNonce(n *uint64) error
 	GetMaximumExtraDataSize() *uint64
@@ -108,6 +108,8 @@ type CatHerder interface {
 	SetEIP1108Transition(n *uint64) error
 	GetEIP2200Transition() *uint64
 	SetEIP2200Transition(n *uint64) error
+	GetEIP2200DisableTransition() *uint64
+	SetEIP2200DisableTransition(n *uint64) error
 	GetEIP1344Transition() *uint64
 	SetEIP1344Transition(n *uint64) error
 	GetEIP1884Transition() *uint64
@@ -121,9 +123,9 @@ type CatHerder interface {
 }
 
 type Forker interface {
-	// IsForked tells if interface has met or exceeded a fork block number.
-	// eg. IsForked(c.GetEIP1108Transition, big.NewInt(42)))
-	IsForked(fn func() *uint64, n *big.Int) bool
+	// IsEnabled tells if interface has met or exceeded a fork block number.
+	// eg. IsEnabled(c.GetEIP1108Transition, big.NewInt(42)))
+	IsEnabled(fn func() *uint64, n *big.Int) bool
 
 	// ForkCanonHash yields arbitrary number/hash pairs.
 	// This is an abstraction derived from the original EIP150 implementation.

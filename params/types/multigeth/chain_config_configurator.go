@@ -318,6 +318,15 @@ func (c *MultiGethChainConfig) SetEIP2200Transition(n *uint64) error {
 	return nil
 }
 
+func (c *MultiGethChainConfig) GetEIP2200DisableTransition() *uint64 {
+	return bigNewU64(c.EIP2200DisableFBlock)
+}
+
+func (c *MultiGethChainConfig) SetEIP2200DisableTransition(n *uint64) error {
+	c.EIP2200DisableFBlock = setBig(c.EIP2200DisableFBlock, n)
+	return nil
+}
+
 func (c *MultiGethChainConfig) GetEIP1344Transition() *uint64 {
 	return bigNewU64(c.EIP1344FBlock)
 }
@@ -363,7 +372,7 @@ func (c *MultiGethChainConfig) SetEIP1706Transition(n *uint64) error {
 	return nil
 }
 
-func (c *MultiGethChainConfig) IsForked(fn func() *uint64, n *big.Int) bool {
+func (c *MultiGethChainConfig) IsEnabled(fn func() *uint64, n *big.Int) bool {
 	f := fn()
 	if f == nil || n == nil {
 		return false

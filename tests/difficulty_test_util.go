@@ -49,8 +49,8 @@ var (
 )
 
 var difficultyChainConfigurations = map[string]ctypes.ChainConfigurator{
-	"Ropsten":  params.TestnetChainConfig,
-	"Morden":   params.TestnetChainConfig,
+	"Ropsten":  params.RopstenChainConfig,
+	"Morden":   params.RopstenChainConfig,
 	"Frontier": &goethereum.ChainConfig{},
 	"Homestead": &goethereum.ChainConfig{
 		Ethash:         new(ctypes.EthashConfig),
@@ -98,6 +98,14 @@ var difficultyChainConfigurations = map[string]ctypes.ChainConfigurator{
 		EIP2200FBlock: big.NewInt(0), // Petersburg
 		DisposalBlock: big.NewInt(0),
 	},
+	"EIP2384": &goethereum.ChainConfig{
+		Ethash:              new(ctypes.EthashConfig),
+		HomesteadBlock:      big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		IstanbulBlock:       big.NewInt(0),
+		MuirGlacierBlock:    big.NewInt(0),
+	},
 }
 
 type DifficultyTest struct {
@@ -139,10 +147,11 @@ func (test *DifficultyTest) Run(config ctypes.ChainConfigurator) error {
 	actual := ethash.CalcDifficulty(config, test.CurrentTimestamp, parent)
 	exp := test.CurrentDifficulty
 
+	b, _ := json.Marshal(config)
 	if actual.Cmp(exp) != 0 {
 		return fmt.Errorf(`%s got: %v, want: %v
 test: %v
-config: %s`, test.Name, actual, exp, test, config)
+config: %s`, test.Name, actual, exp, test, string(b))
 	}
 	return nil
 

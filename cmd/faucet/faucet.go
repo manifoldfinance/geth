@@ -114,7 +114,7 @@ func faucetDirFromConfig(chainConfig ctypes.ChainConfigurator) string {
 		params.SocialChainConfig:      "social",
 		params.EthersocialChainConfig: "ethersocial",
 		params.MixChainConfig:         "mix",
-		params.TestnetChainConfig:     "testnet",
+		params.RopstenChainConfig:     "ropsten",
 		params.RinkebyChainConfig:     "rinkeby",
 		params.GoerliChainConfig:      "goerli",
 		params.KottiChainConfig:       "kotti",
@@ -217,8 +217,8 @@ func main() {
 			},
 			{
 				*testnetFlag,
-				params.DefaultTestnetGenesisBlock(),
-				params.TestnetBootnodes,
+				params.DefaultRopstenGenesisBlock(),
+				params.RopstenBootnodes,
 			},
 			{
 				*rinkebyFlag,
@@ -480,11 +480,14 @@ func (f *faucet) apiHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Send over the initial stats and the latest header
+	f.lock.RLock()
+	reqs := f.reqs
+	f.lock.RUnlock()
 	if err = send(conn, map[string]interface{}{
 		"funds":    new(big.Int).Div(balance, ether),
 		"funded":   nonce,
 		"peers":    f.stack.Server().PeerCount(),
-		"requests": f.reqs,
+		"requests": reqs,
 	}, 3*time.Second); err != nil {
 		log.Warn("Failed to send initial stats to client", "err", err)
 		return

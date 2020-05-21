@@ -62,7 +62,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		gp       = new(GasPool).AddGas(block.GasLimit())
 	)
 	// Mutate the block and state according to any hard-fork specs
-	if p.config.IsForked(p.config.GetEthashEIP779Transition, block.Number()) {
+	if p.config.IsEnabled(p.config.GetEthashEIP779Transition, block.Number()) {
 		misc.ApplyDAOHardFork(statedb)
 	}
 	// Iterate over and process the individual transactions
@@ -96,25 +96,25 @@ func ApplyTransaction(config ctypes.ChainConfigurator, bc ChainContext, author *
 	// about the transaction and calling mechanisms.
 	vmenv := vm.NewEVM(context, statedb, config, cfg)
 	// Apply the transaction to the current state (included in the env)
-	_, gas, failed, err := ApplyMessage(vmenv, msg, gp)
+	result, err := ApplyMessage(vmenv, msg, gp)
 	if err != nil {
 		return nil, err
 	}
 	// Update the state with pending changes
 	var root []byte
-	eip161d := config.IsForked(config.GetEIP161dTransition, header.Number)
-	if config.IsForked(config.GetEIP658Transition, header.Number) {
+	eip161d := config.IsEnabled(config.GetEIP161dTransition, header.Number)
+	if config.IsEnabled(config.GetEIP658Transition, header.Number) {
 		statedb.Finalise(eip161d)
 	} else {
 		root = statedb.IntermediateRoot(eip161d).Bytes()
 	}
-	*usedGas += gas
+	*usedGas += result.UsedGas
 
 	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
 	// based on the eip phase, we're passing whether the root touch-delete accounts.
-	receipt := types.NewReceipt(root, failed, *usedGas)
+	receipt := types.NewReceipt(root, result.Failed(), *usedGas)
 	receipt.TxHash = tx.Hash()
-	receipt.GasUsed = gas
+	receipt.GasUsed = result.UsedGas
 	// if the transaction created a contract, store the creation address in the receipt.
 	if msg.To() == nil {
 		receipt.ContractAddress = crypto.CreateAddress(vmenv.Context.Origin, tx.Nonce())

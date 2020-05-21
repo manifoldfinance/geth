@@ -17,7 +17,6 @@
 package vm
 
 import (
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/params/types/ctypes"
@@ -25,14 +24,11 @@ import (
 )
 
 type (
-	executionFunc func(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error)
+	executionFunc func(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error)
 	gasFunc       func(*EVM, *Contract, *Stack, *Memory, uint64) (uint64, error) // last parameter is the requested memory size as a uint64
 	// memorySizeFunc returns the required size, and whether the operation overflowed a uint64
 	memorySizeFunc func(*Stack) (size uint64, overflow bool)
 )
-
-var errGasUintOverflow = errors.New("gas uint64 overflow")
-var errGasLeftTooLow = errors.New("insufficient gas left")
 
 type operation struct {
 	// execute is the operation function
@@ -65,7 +61,7 @@ func instructionSetForConfig(config ctypes.ChainConfigurator, bn *big.Int) JumpT
 	instructionSet := newBaseInstructionSet()
 
 	// Homestead
-	if config.IsForked(config.GetEIP7Transition, bn) {
+	if config.IsEnabled(config.GetEIP7Transition, bn) {
 		instructionSet[DELEGATECALL] = operation{
 			execute:     opDelegateCall,
 			dynamicGas:  gasDelegateCall,
@@ -78,7 +74,7 @@ func instructionSetForConfig(config ctypes.ChainConfigurator, bn *big.Int) JumpT
 		}
 	}
 	// Tangerine Whistle
-	if config.IsForked(config.GetEIP150Transition, bn) {
+	if config.IsEnabled(config.GetEIP150Transition, bn) {
 		instructionSet[BALANCE].constantGas = vars.BalanceGasEIP150
 		instructionSet[EXTCODESIZE].constantGas = vars.ExtcodeSizeGasEIP150
 		instructionSet[SLOAD].constantGas = vars.SloadGasEIP150
@@ -88,11 +84,11 @@ func instructionSetForConfig(config ctypes.ChainConfigurator, bn *big.Int) JumpT
 		instructionSet[DELEGATECALL].constantGas = vars.CallGasEIP150
 	}
 	// Spurious Dragon
-	if config.IsForked(config.GetEIP160Transition, bn) {
+	if config.IsEnabled(config.GetEIP160Transition, bn) {
 		instructionSet[EXP].dynamicGas = gasExpEIP158
 	}
 	// Byzantium
-	if config.IsForked(config.GetEIP140Transition, bn) {
+	if config.IsEnabled(config.GetEIP140Transition, bn) {
 		instructionSet[REVERT] = operation{
 			execute:    opRevert,
 			dynamicGas: gasRevert,
@@ -104,7 +100,7 @@ func instructionSetForConfig(config ctypes.ChainConfigurator, bn *big.Int) JumpT
 			returns:    true,
 		}
 	}
-	if config.IsForked(config.GetEIP214Transition, bn) {
+	if config.IsEnabled(config.GetEIP214Transition, bn) {
 		instructionSet[STATICCALL] = operation{
 			execute:     opStaticCall,
 			constantGas: vars.CallGasEIP150,
@@ -116,7 +112,7 @@ func instructionSetForConfig(config ctypes.ChainConfigurator, bn *big.Int) JumpT
 			returns:     true,
 		}
 	}
-	if config.IsForked(config.GetEIP211Transition, bn) {
+	if config.IsEnabled(config.GetEIP211Transition, bn) {
 		instructionSet[RETURNDATASIZE] = operation{
 			execute:     opReturnDataSize,
 			constantGas: GasQuickStep,
@@ -135,7 +131,7 @@ func instructionSetForConfig(config ctypes.ChainConfigurator, bn *big.Int) JumpT
 		}
 	}
 	// Constantinople
-	if config.IsForked(config.GetEIP145Transition, bn) {
+	if config.IsEnabled(config.GetEIP145Transition, bn) {
 		instructionSet[SHL] = operation{
 			execute:     opSHL,
 			constantGas: GasFastestStep,
@@ -158,7 +154,7 @@ func instructionSetForConfig(config ctypes.ChainConfigurator, bn *big.Int) JumpT
 			valid:       true,
 		}
 	}
-	if config.IsForked(config.GetEIP1014Transition, bn) {
+	if config.IsEnabled(config.GetEIP1014Transition, bn) {
 		instructionSet[CREATE2] = operation{
 			execute:     opCreate2,
 			constantGas: vars.Create2Gas,
@@ -171,7 +167,7 @@ func instructionSetForConfig(config ctypes.ChainConfigurator, bn *big.Int) JumpT
 			returns:     true,
 		}
 	}
-	if config.IsForked(config.GetEIP1052Transition, bn) {
+	if config.IsEnabled(config.GetEIP1052Transition, bn) {
 		instructionSet[EXTCODEHASH] = operation{
 			execute:     opExtCodeHash,
 			constantGas: vars.ExtcodeHashGasConstantinople,
@@ -180,16 +176,17 @@ func instructionSetForConfig(config ctypes.ChainConfigurator, bn *big.Int) JumpT
 			valid:       true,
 		}
 	}
-	if config.IsForked(config.GetEIP1344Transition, bn) {
+	if config.IsEnabled(config.GetEIP1344Transition, bn) {
 		enable1344(&instructionSet) // ChainID opcode - https://eips.ethereum.org/EIPS/eip-1344
 	}
-	if config.IsForked(config.GetEIP1884Transition, bn) {
+	if config.IsEnabled(config.GetEIP1884Transition, bn) {
 		enable1884(&instructionSet) // Reprice reader opcodes - https://eips.ethereum.org/EIPS/eip-1884
 	}
-	if config.IsForked(config.GetECIP1080Transition, bn) {
+	if config.IsEnabled(config.GetECIP1080Transition, bn) {
 		enableSelfBalance(&instructionSet)
 	}
-	if config.IsForked(config.GetEIP2200Transition, bn) {
+
+	if config.IsEnabled(config.GetEIP2200Transition, bn) && !config.IsEnabled(config.GetEIP2200DisableTransition, bn) {
 		enable2200(&instructionSet) // Net metered SSTORE - https://eips.ethereum.org/EIPS/eip-2200
 	}
 	return instructionSet
