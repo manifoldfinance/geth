@@ -1012,12 +1012,13 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 		if failed {
 			lo = mid
 		} else {
+			validState = prevS
 			hi = mid
 		}
 	}
 	// Reject the transaction as invalid if it still fails at the highest allowance
 	if hi == cap {
-		failed, result, err := executable(hi)
+		failed, result, prevS, err := executable(hi)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -1041,8 +1042,9 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 			// Otherwise, the specified gas cap is too low
 			return 0, nil, estimateGasError{error: fmt.Sprintf("gas required exceeds allowance (%d)", cap)}
 		}
+		validState = prevS
 	}
-	return hexutil.Uint64(hi), stateData, nil
+	return hexutil.Uint64(hi), validState, nil
 }
 
 func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, argsInterface interface{}) (interface{}, error) {
@@ -1050,7 +1052,7 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, argsInterface int
 	var (
 		gas       hexutil.Uint64
 		err       error
-		stateData *PreviousState
+		prevState *state.StateDB
 	)
 	getCallArgs := func(inter map[string]interface{}) CallArgs {
 		marshalled, _ := json.Marshal(inter)
@@ -1060,12 +1062,12 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, argsInterface int
 	}
 	switch args := argsInterface.(type) {
 	case map[string]interface{}:
-		gas, _, err = DoEstimateGas(ctx, s.b, getCallArgs(args), stateData, blockNrOrHash, s.b.RPCGasCap())
+		gas, _, err = DoEstimateGas(ctx, s.b, getCallArgs(args), nil, blockNrOrHash, s.b.RPCGasCap())
 		return gas, err
 	case []interface{}:
 		returnVals := make([]hexutil.Uint64, len(args))
 		for idx, argData := range args {
-			gas, stateData, err = DoEstimateGas(ctx, s.b, getCallArgs(argData.(map[string]interface{})), stateData, blockNrOrHash, s.b.RPCGasCap())
+			gas, prevState, err = DoEstimateGas(ctx, s.b, getCallArgs(argData.(map[string]interface{})), prevState, blockNrOrHash, s.b.RPCGasCap())
 			if err != nil {
 				return nil, err
 			}
