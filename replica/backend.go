@@ -526,7 +526,9 @@ func (backend *ReplicaBackend) handleBlockUpdates() {
       lastBlock = block
     }
   }
-  backend.snaps.Journal(lastBlock.Root())
+  if lastBlock != nil && backend.snaps != nil {
+    backend.snaps.Journal(lastBlock.Root())
+  }
 }
 
 func (backend *ReplicaBackend) consumeTransactions(transactionConsumer TransactionConsumer) error {
@@ -614,7 +616,7 @@ func (backend *ReplicaBackend) initSnapshot() {
     log.Warn("Snapshot init failed", "err", err)
     return
   }
-  backend.snaps = snapshot.New(backend.db, trie.NewDatabase(backend.db), 0, header.Root, true)
+  backend.snaps = snapshot.New(backend.db, trie.NewDatabase(backend.db), 256, header.Root, true)
 }
 
 func NewTestReplicaBackend(db ethdb.Database, hc *core.HeaderChain, bc *core.BlockChain, tp TransactionProducer) (*ReplicaBackend) {
