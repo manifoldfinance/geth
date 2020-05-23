@@ -20,12 +20,14 @@ import (
   "github.com/ethereum/go-ethereum/core/types"
   "github.com/ethereum/go-ethereum/core/vm"
   "github.com/ethereum/go-ethereum/core/state"
+  "github.com/ethereum/go-ethereum/core/state/snapshot"
   "github.com/ethereum/go-ethereum/core/rawdb"
   "github.com/ethereum/go-ethereum/params"
   "github.com/ethereum/go-ethereum/log"
   "github.com/ethereum/go-ethereum/trie"
   "runtime"
   "strings"
+  "sync"
   "time"
 )
 
@@ -52,6 +54,7 @@ type ReplicaBackend struct {
   chainSideFeed event.Feed
   evmSemaphore chan struct{}
   txPool *core.TxPool
+  snaps *snapshot.Tree
 }
 
 	// General Ethereum API
@@ -480,6 +483,32 @@ func (backend *ReplicaBackend) handleBlockUpdates() {
       backend.chainSideFeed.Send(core.ChainSideEvent{Block: block})
     }
     for _, block := range newBlocks {
+      var wg sync.WaitGroup
+      if backend.snaps != nil {
+        wg.Add(1)
+        go func() {
+          defer wg.Done()
+          parentHeader, err := backend.HeaderByHash(context.Background(), block.ParentHash())
+          if err != nil {
+            log.Warn("Could not get parent block. Rebuilding.", "block", block.Hash(), "parent", block.ParentHash(), "err", err)
+            backend.snaps.Rebuild(block.Root())
+            return
+          }
+          destructs, accounts, storage, err := DiffTries(backend.db, block.Root(), parentHeader.Root)
+          if err != nil {
+            log.Warn("Could not generate diff. Rebuilding.", "block", block.Hash(), "parent", block.ParentHash(), "err", err)
+            backend.snaps.Rebuild(block.Root())
+            return
+          }
+          err = backend.snaps.Update(block.Root(), parentHeader.Root, destructs, accounts, storage)
+          if err != nil {
+            log.Warn("Could not apply diff. Rebuilding.", "block", block.Hash(), "parent", block.ParentHash(), "err", err)
+            backend.snaps.Rebuild(block.Root())
+            return
+          }
+          backend.snaps.Cap(block.Root(), 128)
+        }()
+      }
       logs, err := backend.GetLogs(context.Background(), block.Hash())
       if err != nil {
         log.Warn("Error getting logs", "block", block.Hash(), "err", err.Error())
@@ -493,8 +522,11 @@ func (backend *ReplicaBackend) handleBlockUpdates() {
       }
       backend.chainFeed.Send(core.ChainEvent{block, block.Hash(), allLogs})
       backend.chainHeadFeed.Send(core.ChainHeadEvent{block})
+      wg.Wait()
+      lastBlock = block
     }
   }
+  backend.snaps.Journal(lastBlock.Root())
 }
 
 func (backend *ReplicaBackend) consumeTransactions(transactionConsumer TransactionConsumer) error {
@@ -574,6 +606,15 @@ func (backend *ReplicaBackend) StateAndHeaderByNumberOrHash(ctx context.Context,
     return backend.StateAndHeaderByNumber(ctx, rpc.BlockNumber(header.Number.Int64()))
   }
   return nil, nil, fmt.Errorf("Invalid block number or hash")
+}
+
+func (backend *ReplicaBackend) initSnapshot() {
+  header, err := backend.HeaderByNumber(context.Background(), rpc.LatestBlockNumber)
+  if err != nil {
+    log.Warn("Snapshot init failed", "err", err)
+    return
+  }
+  backend.snaps = snapshot.New(backend.db, trie.NewDatabase(backend.db), 0, header.Root, true)
 }
 
 func NewTestReplicaBackend(db ethdb.Database, hc *core.HeaderChain, bc *core.BlockChain, tp TransactionProducer) (*ReplicaBackend) {
