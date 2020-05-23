@@ -103,6 +103,7 @@ system and acts as an RPC node based on the replicated data.
 			utils.CacheTrieFlag,
 			utils.CacheGCFlag,
 			utils.CacheDatabaseFlag,
+			utils.SnapshotFlag,
 		},
 	}
 	replicaTxPoolConfig = core.TxPoolConfig{
@@ -265,6 +266,7 @@ func makeReplicaNode(ctx *cli.Context) (*node.Node, gethConfig) {
 			cfg.Node.HTTPTimeouts,
 			int(ctx.GlobalInt64(utils.ReplicaEVMConcurrencyFlag.Name)),
 			ctx.GlobalString(utils.ReplicaWarmAddressesFlag.Name),
+			ctx.GlobalBool(utils.SnapshotFlag.Name),
 		)
 	})
 	return stack, cfg
