@@ -480,7 +480,10 @@ func (backend *ReplicaBackend) handleBlockUpdates() {
       }
       allLogs := []*types.Log{}
       for _, deletedLogs := range logs {
-        allLogs = append(allLogs, deletedLogs...)
+        for _, deletedLog := range deletedLogs {
+          deletedLog.Removed = true
+          allLogs = append(allLogs, deletedLog)
+        }
       }
       if len(allLogs) > 0 {
         backend.removedLogsFeed.Send(core.RemovedLogsEvent{allLogs})
