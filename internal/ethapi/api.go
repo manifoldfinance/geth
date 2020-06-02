@@ -19,7 +19,6 @@ package ethapi
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -1012,13 +1011,12 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 		if failed {
 			lo = mid
 		} else {
-			validState = prevS
 			hi = mid
 		}
 	}
 	// Reject the transaction as invalid if it still fails at the highest allowance
 	if hi == cap {
-		failed, result, prevS, err := executable(hi)
+		failed, result, err := executable(hi)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -1042,41 +1040,34 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 			// Otherwise, the specified gas cap is too low
 			return 0, nil, estimateGasError{error: fmt.Sprintf("gas required exceeds allowance (%d)", cap)}
 		}
-		validState = prevS
 	}
-	return hexutil.Uint64(hi), validState, nil
+	return hexutil.Uint64(hi), stateData, nil
 }
 
-func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, argsInterface interface{}) (interface{}, error) {
+// EstimateGas returns an estimate of the amount of gas needed to execute the
+// given transaction against the current pending block.
+func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (hexutil.Uint64, error) {
+	blockNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+	gas, _, err := DoEstimateGas(ctx, s.b, args, nil, blockNrOrHash, s.b.RPCGasCap())
+	return gas, err
+}
+
+func (s *PublicBlockChainAPI) EstimateGasList(ctx context.Context, argsList []CallArgs) ([]hexutil.Uint64, error) {
 	blockNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 	var (
 		gas       hexutil.Uint64
 		err       error
-		prevState *state.StateDB
+		stateData *PreviousState
 	)
-	getCallArgs := func(inter map[string]interface{}) CallArgs {
-		marshalled, _ := json.Marshal(inter)
-		callArgs := CallArgs{}
-		json.Unmarshal(marshalled, &callArgs)
-		return callArgs
-	}
-	switch args := argsInterface.(type) {
-	case map[string]interface{}:
-		gas, _, err = DoEstimateGas(ctx, s.b, getCallArgs(args), nil, blockNrOrHash, s.b.RPCGasCap())
-		return gas, err
-	case []interface{}:
-		returnVals := make([]hexutil.Uint64, len(args))
-		for idx, argData := range args {
-			gas, prevState, err = DoEstimateGas(ctx, s.b, getCallArgs(argData.(map[string]interface{})), prevState, blockNrOrHash, s.b.RPCGasCap())
-			if err != nil {
-				return nil, err
-			}
-			returnVals[idx] = gas
+	returnVals := make([]hexutil.Uint64, len(argsList))
+	for idx, args := range argsList {
+		gas, stateData, err = DoEstimateGas(ctx, s.b, args, stateData, blockNrOrHash, s.b.RPCGasCap())
+		if err != nil {
+			return nil, err
 		}
-		return returnVals, nil
-	default:
-		return nil, estimateGasError{error: "unknown input"}
+		returnVals[idx] = gas
 	}
+	return returnVals, nil
 }
 
 // ExecutionResult groups all structured logs emitted by the EVM
