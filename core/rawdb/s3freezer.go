@@ -300,7 +300,7 @@ func (f *s3freezer) freeze(db ethdb.KeyValueStore) {
 		var (
 			start    = time.Now()
 			first    = f.count
-			ancients = make([]common.Hash, 0, limit)
+			ancients = make([]common.Hash, 0, limit - f.count)
 		)
 		for f.count < limit {
 			// Retrieves all the components of the canonical block
