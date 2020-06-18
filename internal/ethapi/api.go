@@ -878,9 +878,10 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, prevState *PreviousSt
 		return nil, nil, fmt.Errorf("execution aborted (timeout = %v)", timeout)
 	}
 	if result.Failed() && result.UsedGas >= msg.Gas() {
-		return result, fmt.Errorf("out of gas")
+		return result, nil, fmt.Errorf("out of gas")
 	}
-	prevState.header.Root = prevState.state.IntermediateRoot(b.ChainConfig().IsEIP158(prevState.header.Number))
+
+	prevState.header.Root = prevState.state.IntermediateRoot(b.ChainConfig().IsEnabled(b.ChainConfig().GetEIP161dTransition, prevState.header.Number))
 	return result, prevState, err
 
 }
@@ -931,7 +932,7 @@ func (e estimateGasError) Error() string {
 func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *PreviousState, blockNrOrHash rpc.BlockNumberOrHash, gasCap *big.Int) (hexutil.Uint64, *PreviousState, error) {
 	// Binary search the gas requirement, as it may be higher than the amount used
 	var (
-		lo        uint64 = params.TxGas - 1
+		lo        uint64 = vars.TxGas - 1
 		hi        uint64
 		cap       uint64
 		stateData *PreviousState
