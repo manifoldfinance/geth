@@ -1052,27 +1052,27 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 	return gas, err
 }
 
-// EstimateGasList returns an estimate of the amount of gas needed to execute list of
-// given transactions against the current pending block.
-func (s *PublicBlockChainAPI) EstimateGasList(ctx context.Context, argsList []CallArgs) ([]hexutil.Uint64, error) {
-	blockNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-	var (
-		gas       hexutil.Uint64
-		err       error
-		stateData *PreviousState
-		gasCap    = s.b.RPCGasCap()
-	)
-	returnVals := make([]hexutil.Uint64, len(argsList))
-	for idx, args := range argsList {
-		gas, stateData, err = DoEstimateGas(ctx, s.b, args, stateData, blockNrOrHash, gasCap)
-		if err != nil {
-			return nil, err
-		}
-		gasCap.Sub(gasCap, new(big.Int).SetUint64(uint64(gas)))
-		returnVals[idx] = gas
-	}
-	return returnVals, nil
-}
+// // EstimateGasList returns an estimate of the amount of gas needed to execute list of
+// // given transactions against the current pending block.
+// func (s *PublicBlockChainAPI) EstimateGasList(ctx context.Context, argsList []CallArgs) ([]hexutil.Uint64, error) {
+// 	blockNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+// 	var (
+// 		gas       hexutil.Uint64
+// 		err       error
+// 		stateData *PreviousState
+// 		gasCap    = s.b.RPCGasCap()
+// 	)
+// 	returnVals := make([]hexutil.Uint64, len(argsList))
+// 	for idx, args := range argsList {
+// 		gas, stateData, err = DoEstimateGas(ctx, s.b, args, stateData, blockNrOrHash, gasCap)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		gasCap.Sub(gasCap, new(big.Int).SetUint64(uint64(gas)))
+// 		returnVals[idx] = gas
+// 	}
+// 	return returnVals, nil
+// }
 
 // ExecutionResult groups all structured logs emitted by the EVM
 // while replaying a transaction in debug mode as well as transaction
