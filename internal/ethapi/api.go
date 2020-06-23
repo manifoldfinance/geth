@@ -798,6 +798,16 @@ type PreviousState struct {
 	header *types.Header
 }
 
+func (prevState *PreviousState) copy() *PreviousState {
+	if prevState == nil { return nil }
+	state := prevState.state
+	if state != nil { state = state.Copy() }
+	return &PreviousState{
+		state: state,
+		header: prevState.header,
+	}
+}
+
 func DoCall(ctx context.Context, b Backend, args CallArgs, prevState *PreviousState, blockNrOrHash rpc.BlockNumberOrHash, overrides map[common.Address]account, vmCfg vm.Config, timeout time.Duration, globalGasCap *big.Int) (*core.ExecutionResult, *PreviousState, error) {
 	defer func(start time.Time) { log.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
 	if prevState == nil {
@@ -880,8 +890,6 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, prevState *PreviousSt
 	if result.Failed() && result.UsedGas >= msg.Gas() {
 		return result, nil, fmt.Errorf("out of gas")
 	}
-
-	prevState.header.Root = prevState.state.IntermediateRoot(b.ChainConfig().IsEnabled(b.ChainConfig().GetEIP161dTransition, prevState.header.Number))
 	return result, prevState, err
 
 }
@@ -988,7 +996,7 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 	executable := func(gas uint64) (bool, *core.ExecutionResult, error) {
 		args.Gas = (*hexutil.Uint64)(&gas)
 
-		result, prevS, err := DoCall(ctx, b, args, prevState, blockNrOrHash, nil, vm.Config{}, 0, gasCap)
+		result, prevS, err := DoCall(ctx, b, args, prevState.copy(), blockNrOrHash, nil, vm.Config{}, 0, gasCap)
 		stateData = prevS
 		if err != nil {
 			if err == core.ErrIntrinsicGas {
