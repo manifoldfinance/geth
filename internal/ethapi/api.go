@@ -887,7 +887,7 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, prevState *PreviousSt
 	if evm.Cancelled() {
 		return nil, nil, fmt.Errorf("execution aborted (timeout = %v)", timeout)
 	}
-	if result.Failed() && result.UsedGas >= msg.Gas() {
+	if result != nil && result.Failed() && result.UsedGas >= msg.Gas() {
 		return result, nil, fmt.Errorf("out of gas")
 	}
 	return result, prevState, err
