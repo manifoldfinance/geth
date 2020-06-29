@@ -168,12 +168,6 @@ func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezerPath string, namespac
 	} else if validateErr != nil {
 		return nil, validateErr
 	}
-	// Freezer is consistent with the key-value database, permit combining the two
-	switch v := frdb.(type) {
-	case freezeInterface:
-		go v.freeze(db)
-	default:
-	}
 
 	if validateErr != nil {
 		// If this fails, there's nothing left for us to do.
