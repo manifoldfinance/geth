@@ -37,6 +37,7 @@ type s3freezer struct {
   uploadCh chan s3record
   concurrency int
   wg sync.WaitGroup
+  quit chan struct{}
 }
 
 type s3record struct {
@@ -66,6 +67,7 @@ func NewS3Freezer(path string, cacheSize int) (freezeInterface, error) {
     root: strings.TrimSuffix(parts[1], "/") + "/",
     concurrency: runtime.NumCPU(),
     uploadCh: make(chan s3record),
+    quit: make(chan struct{}),
   }
   svc := s3.New(freezer.sess)
   output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{
@@ -255,41 +257,56 @@ func (f *s3freezer) Sync() error {
 
 func (f *s3freezer) Close() error {
   close(f.uploadCh)
+  f.quit <- struct{}{}
   return nil
 }
 
 func (f *s3freezer) freeze(db ethdb.KeyValueStore) {
 	nfdb := &nofreezedb{KeyValueStore: db}
-
+ 	backoff := false
 	for {
+   		select {
+		case <-f.quit:
+			log.Info("Freezer shutting down")
+			return
+		default:
+		}
+		if backoff {
+			select {
+			case <-time.NewTimer(freezerRecheckInterval).C:
+				backoff = false
+			case <-f.quit:
+				return
+			}
+		}
 		// Retrieve the freezing threshold.
 		hash := ReadHeadBlockHash(nfdb)
 		if hash == (common.Hash{}) {
 			log.Debug("Current full block hash unavailable") // new chain, empty database
-			time.Sleep(freezerRecheckInterval)
+			backoff = true
 			continue
 		}
 		number := ReadHeaderNumber(nfdb, hash)
 		switch {
 		case number == nil:
 			log.Error("Current full block number unavailable", "hash", hash)
-			time.Sleep(freezerRecheckInterval)
+			backoff = true
 			continue
 
 		case *number < vars.FullImmutabilityThreshold:
 			log.Debug("Current full block not old enough", "number", *number, "hash", hash, "delay", vars.FullImmutabilityThreshold)
-			time.Sleep(freezerRecheckInterval)
+			backoff = true
 			continue
 
 		case *number-vars.FullImmutabilityThreshold <= f.count:
 			log.Debug("Ancient blocks frozen already", "number", *number, "hash", hash, "frozen", f.count)
-			time.Sleep(freezerRecheckInterval)
+			backoff = true
 			continue
 		}
 		head := ReadHeader(nfdb, hash, *number)
 		if head == nil {
 			log.Error("Current full block unavailable", "number", *number, "hash", hash)
-			time.Sleep(freezerRecheckInterval)
+			backoff = true
 			continue
 		}
 		// Seems we have data ready to be frozen, process in usable batches
