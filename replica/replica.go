@@ -74,7 +74,9 @@ func (r *Replica) GetBackend() *ReplicaBackend {
       evmSemaphore: evmSemaphore,
     }
     if r.enableSnapshot {
-      r.backend.initSnapshot()
+      if err := r.backend.initSnapshot(); err != nil {
+        log.Warn("Error initializing snapshot", "err", err)
+      }
     }
     if err := r.backend.consumeTransactions(r.transactionConsumer); err != nil {
       log.Warn("Error consuming transactions")

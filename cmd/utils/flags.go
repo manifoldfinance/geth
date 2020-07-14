@@ -1812,7 +1812,7 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node) ethdb.Database {
 	if ctx.GlobalString(SyncModeFlag.Name) == "light" {
 		name = "lightchaindata"
 	}
-	chainDb, err := stack.OpenDatabaseWithFreezer(name, cache, handles, ctx.GlobalString(AncientFlag.Name), "")
+	chainDb, err := stack.OpenDatabaseWithOverlayAndFreezer(name, cache * 3/4, cache / 4, handles, ctx.GlobalString(AncientFlag.Name), ctx.GlobalString(OverlayFlag.Name), "")
 	if err != nil {
 		Fatalf("Could not open database: %v", err)
 	}

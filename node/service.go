@@ -26,6 +26,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/ethdb/cdc"
+	"github.com/ethereum/go-ethereum/ethdb/devnull"
+	"github.com/ethereum/go-ethereum/ethdb/memorydb"
+	"github.com/ethereum/go-ethereum/ethdb/overlay"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -63,6 +66,57 @@ func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int, nam
 		}
 	}
 	return db, err
+}
+
+func (ctx *ServiceContext) OpenDatabaseWithOverlayAndFreezer(name string, underlayCache, overlayCache, handles int, freezer, overlayPath, namespace string) (ethdb.Database, error) {
+	var chainKv ethdb.KeyValueStore
+	var err error
+	chainKv, err = rawdb.NewLevelDBDatabase(ctx.ResolvePath(name), underlayCache, handles, namespace)
+	// chainKv, err := sctx.OpenRawDatabaseWithFreezer("chaindata", cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles, freezer, "eth/db/chaindata/")
+	if err != nil { return nil, err  }
+	if overlayPath != "" {
+		log.Info("Opening overlay folder", "path", overlayPath)
+		var overlayKv ethdb.KeyValueStore
+		var err error
+		if overlayPath == "null" {
+			overlayKv = devnull.New()
+		} else if overlayPath == "mem" {
+			overlayKv = memorydb.New()
+		} else {
+			log.Info("Cache size", "dbcache", overlayCache)
+			overlayKv, err = rawdb.NewLevelDBDatabase(overlayPath, overlayCache, handles, "eth/db/chaindata/overlay")
+		}
+		if err != nil {
+			return nil, err
+		}
+		log.Info("Constructing Overlay")
+		chainKv = overlay.NewOverlayWrapperDB(overlayKv, chainKv)
+	}
+	root := ctx.ResolvePath("chaindata")
+	switch {
+	case freezer == "":
+		freezer = filepath.Join(root, "ancient")
+	case strings.HasPrefix(freezer, "s3://"):
+		log.Info("S3 freezer", "path", freezer)
+	case strings.HasPrefix(freezer, "s3:/"):
+		// For some reason the flags system is dropping the second slash
+		freezer = "s3://" + strings.TrimPrefix(freezer, "s3:/")
+	case !filepath.IsAbs(freezer):
+		log.Info("Non-s3 path", "path", freezer)
+		freezer = ctx.ResolvePath(freezer)
+	}
+	db, err := rawdb.NewDatabaseWithFreezer(chainKv, freezer, "eth/db/chaindata")
+	if err != nil { return nil, err }
+	if ctx.Config.KafkaLogBroker != "" {
+    producer, err := cdc.NewKafkaLogProducerFromURL(
+            ctx.Config.KafkaLogBroker,
+            ctx.Config.KafkaLogTopic,
+    )
+    if err != nil { return nil, err }
+    // TODO: Add options for a readStream
+    db = cdc.NewDBWrapper(db, producer, nil)
+  }
+	return db, nil
 }
 
 // OpenDatabaseWithFreezer opens an existing database with the given name (or
