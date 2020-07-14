@@ -261,6 +261,8 @@ func init() {
 		stateMigrateCommand,
 		repairMigrationCommand,
 		repairFreezerIndexCommand,
+		diffBlocksCommand,
+		resetToSnapshotCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,

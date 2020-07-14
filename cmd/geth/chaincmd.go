@@ -38,6 +38,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/state/snapshot"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -248,6 +249,7 @@ Use "ethereum dump 0" to dump the genesis block.`,
 		ArgsUsage: "[<blockHash> | <blockNum> | <-blockCount>]...",
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
+			utils.OverlayFlag,
 			utils.AncientFlag,
 			utils.CacheFlag,
 			utils.SyncModeFlag,
@@ -268,6 +270,7 @@ Use "ethereum sethead -2" to drop the two most recent blocks`,
 			 utils.AncientFlag,
        utils.CacheFlag,
        utils.SyncModeFlag,
+			 utils.OverlayFlag,
      },
      Category: "BLOCKCHAIN COMMANDS",
      Description: `
@@ -296,6 +299,16 @@ Compacts the database`,
      Category: "BLOCKCHAIN COMMANDS",
      Description: `
 Migrates state from one leveldb to another`,
+	}
+	repairMigrationCommand = cli.Command{
+     Action:    utils.MigrateFlags(repairMigration),
+     Name:      "repairmigration",
+     Usage:     "Repairs earlier migrations",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Repairs earlier migrations`,
 	}
 	repairFreezerIndexCommand = cli.Command{
      Action:    utils.MigrateFlags(repairFreezerIndex),
@@ -335,17 +348,36 @@ Dump the freezer as jsonl`,
      Description: `
 Load jsonl from stdin to ancients`,
 	}
-	repairMigrationCommand = cli.Command{
-     Action:    utils.MigrateFlags(repairMigration),
-     Name:      "repairmigration",
-     Usage:     "Migrates the latest state from a DB+Ancient to a new  DB+Ancient",
+	diffBlocksCommand = cli.Command{
+     Action:    utils.MigrateFlags(diffBlocks),
+     Name:      "diffblocks",
+     Usage:     "Compare two blocks by number, reporting the number of state changes between blocks",
      Flags: []cli.Flag{
+       utils.DataDirFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+			 utils.AncientFlag,
      },
      Category: "BLOCKCHAIN COMMANDS",
      Description: `
-Repairs earlier migrations`,
+Compare blocks`,
 	}
 
+	resetToSnapshotCommand = cli.Command{
+     Action:    utils.MigrateFlags(resetToSnapshot),
+     Name:      "resettosnapshot",
+     Usage:     "Reset leveldb to match the disk layer snapshot",
+     Flags: []cli.Flag{
+       utils.DataDirFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+			 utils.AncientFlag,
+			 utils.OverlayFlag,
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Reset leveldb to match the disk layer snapshot`,
+	}
 )
 
 // initGenesis will initialise the given JSON format genesis file and writes it as
@@ -1161,6 +1193,70 @@ func compact(ctx *cli.Context) error {
 	log.Info("Done", "time", time.Since(start))
 	return err
 }
+
+func diffBlocks(ctx *cli.Context) error {
+	stack := makeFullNode(ctx)
+	db := utils.MakeChainDatabase(ctx, stack)
+	sourceBlockNumber, err := strconv.Atoi(ctx.Args()[0])
+	if err != nil { return err }
+	dstBlockNumber, err := strconv.Atoi(ctx.Args()[1])
+	if err != nil { return err }
+	sourceHash := rawdb.ReadCanonicalHash(db, uint64(sourceBlockNumber))
+	dstHash := rawdb.ReadCanonicalHash(db, uint64(dstBlockNumber))
+  sourceBlock := rawdb.ReadHeader(db, sourceHash, uint64(sourceBlockNumber))
+  dstBlock := rawdb.ReadHeader(db, dstHash, uint64(dstBlockNumber))
+	destructs, accounts, _, err := snapshot.DiffTries(db, sourceBlock.Root, dstBlock.Root)
+	log.Info("Diff", "destructs", len(destructs), "accounts", len(accounts))
+	return err
+}
+
+func resetToSnapshot(ctx *cli.Context) error {
+	stack := makeFullNode(ctx)
+	diskdb := utils.MakeChainDatabase(ctx, stack)
+	baseRoot := rawdb.ReadSnapshotRoot(diskdb)
+	if baseRoot == (common.Hash{}) {
+		return fmt.Errorf("missing or corrupted snapshot")
+	}
+	headHash := rawdb.ReadHeadHeaderHash(diskdb)
+	headNumber := *(rawdb.ReadHeaderNumber(diskdb, headHash))
+	header := rawdb.ReadHeader(diskdb, headHash, headNumber)
+	limit := 256
+	counter := 0
+	for header.Root != baseRoot {
+		header = rawdb.ReadHeader(diskdb, header.ParentHash, header.Number.Uint64() - 1)
+		counter++
+		if counter > limit { return fmt.Errorf("No header matching root %#x within limit", baseRoot)}
+	}
+	snaps, err := snapshot.LoadDiskLayerSnapshot(diskdb, trie.NewDatabase(diskdb), 256)
+	if err != nil { return err }
+	snaps.Journal(baseRoot)
+	rawdb.WriteHeadBlockHash(diskdb, header.Hash())
+	rawdb.WriteHeadHeaderHash(diskdb, header.Hash())
+	rawdb.WriteHeadFastBlockHash(diskdb, header.Hash())
+	return nil
+}
+
+// func revertToSnapshot(ctx *cli.Context) error {
+//   stack := makeFullNode(ctx)
+//   db := utils.MakeChainDatabase(ctx, stack, false)
+// 	root := rawdb.ReadSnapshotRoot(db)
+// 	statedb := state.NewDatabase(db)
+// 	_, err := statedb.OpenTrie(root)
+// 	if err != nil { return err }
+// 	log.Info("Root exists in database", "root", root)
+// 	headHash := rawdb.ReadHeadHeaderHash(db)
+// 	headNumber := *(rawdb.ReadHeaderNumber(db, headHash))
+// 	header := rawdb.ReadHeader(db, headHash, headNumber)
+// 	headers := []types.Header{header}
+// 	limit := 256
+// 	for header.Root != root {
+// 		header = rawdb.ReadHeader(db, header.ParentHash, header.Number.Uint64() - 1)
+// 		headers = append(headers, header)
+// 		if len(headers) > limit { return fmt.Errorf("No header matching root %#x within limit", root)}
+// 	}
+// 	log.Info("Found matching block", "hash", header.Hash())
+// 	return nil
+// }
 
 
 func inspect(ctx *cli.Context) error {

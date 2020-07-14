@@ -836,9 +836,8 @@ func MakeDataDir(ctx *cli.Context) string {
 			legacyPath := filepath.Join(path, "testnet")
 			if _, err := os.Stat(legacyPath); !os.IsNotExist(err) {
 				return legacyPath
-			} else {
-				return filepath.Join(path, "ropsten")
 			}
+			return filepath.Join(path, "ropsten")
 		}
 		return dataDirPathForCtxChainConfig(ctx, path)
 	}
@@ -1997,7 +1996,11 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node) ethdb.Database {
 		chainDb, err = stack.OpenDatabase(name, cache, handles, "")
 	} else {
 		name := "chaindata"
-		chainDb, err = stack.OpenDatabaseWithFreezer(name, cache, handles, ctx.GlobalString(AncientFlag.Name), "")
+		if ctx.GlobalString(OverlayFlag.Name) != "" {
+			chainDb, err = stack.OpenDatabaseWithOverlayAndFreezer(name, cache * 3/4, cache / 4, handles, ctx.GlobalString(AncientFlag.Name), ctx.GlobalString(OverlayFlag.Name), "")
+		} else {
+			chainDb, err = stack.OpenDatabaseWithFreezer(name, cache, handles, ctx.GlobalString(AncientFlag.Name), "")
+		}
 	}
 	if err != nil {
 		Fatalf("Could not open database: %v", err)

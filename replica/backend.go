@@ -137,7 +137,8 @@ func (backend *ReplicaBackend) StateAndHeaderByNumber(ctx context.Context, block
   if block == nil || err != nil {
     return nil, nil, fmt.Errorf("stateAndHeaderByNumber: blockByNumber: %v", err)
   }
-  stateDB, err := backend.bc.StateAt(block.Root())
+  stateDB, err := state.New(block.Root(), backend.bc.StateCache(), backend.snaps)
+  // stateDB, err := backend.bc.StateAt(block.Root())
   if err != nil {
     err = fmt.Errorf("statendHeaderByNumber: stateAt: %v", err)
   }
@@ -618,13 +619,21 @@ func (backend *ReplicaBackend) StateAndHeaderByNumberOrHash(ctx context.Context,
   return nil, nil, fmt.Errorf("Invalid block number or hash")
 }
 
-func (backend *ReplicaBackend) initSnapshot() {
+func (backend *ReplicaBackend) initSnapshot() error {
   header, err := backend.HeaderByNumber(context.Background(), rpc.LatestBlockNumber)
   if err != nil {
     log.Warn("Snapshot init failed", "err", err)
-    return
   }
   backend.snaps = snapshot.New(backend.db, trie.NewDatabase(backend.db), 256, header.Root, true)
+  log.Info("Initialized snapshot", "snaps", backend.snaps)
+  return err
+
+  // var err error
+  // log.Info("Loading snapshot tree from disk")
+  // start := time.Now()
+  // backend.snaps, err = snapshot.LoadSnapshotWithoutJournal(backend.db, trie.NewDatabase(backend.db), 256)
+  // log.Info("Snapshot tree loaded", "time", time.Since(start), "err", err)
+  // return err
 }
 
 func NewTestReplicaBackend(db ethdb.Database, hc *core.HeaderChain, bc *core.BlockChain, tp TransactionProducer) (*ReplicaBackend) {
