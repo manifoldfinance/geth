@@ -25,7 +25,7 @@ func TestNetVersion(t *testing.T) {
     t.Fatalf(err.Error())
   }
   netAPI := NewReplicaNetAPI(backend)
-  if netAPI.Version() != fmt.Sprintf("%v", backend.chainConfig.GetNetworkID()) {
-    t.Errorf("Unexpected protocol version %v, wanted %v", netAPI.Version(), backend.ProtocolVersion())
+  if netAPI.Version() != fmt.Sprintf("%v", *backend.chainConfig.GetNetworkID()) {
+    t.Errorf("Unexpected protocol version %v, wanted %v", netAPI.Version(), *backend.chainConfig.GetNetworkID())
   }
 }

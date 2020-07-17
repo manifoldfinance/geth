@@ -26,5 +26,5 @@ func (s *ReplicaNetAPI) PeerCount() hexutil.Uint {
 
 // Version returns the current ethereum protocol version.
 func (s *ReplicaNetAPI) Version() string {
-	return fmt.Sprintf("%v", s.backend.chainConfig.GetNetworkID())
+	return fmt.Sprintf("%v", *s.backend.chainConfig.GetNetworkID())
 }
