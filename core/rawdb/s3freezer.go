@@ -276,12 +276,12 @@ func (f *s3freezer) freeze(db ethdb.KeyValueStore) {
 			time.Sleep(freezerRecheckInterval)
 			continue
 
-		case *number < params.ImmutabilityThreshold:
-			log.Debug("Current full block not old enough", "number", *number, "hash", hash, "delay", params.ImmutabilityThreshold)
+		case *number < params.FullImmutabilityThreshold:
+			log.Debug("Current full block not old enough", "number", *number, "hash", hash, "delay", params.FullImmutabilityThreshold)
 			time.Sleep(freezerRecheckInterval)
 			continue
 
-		case *number-params.ImmutabilityThreshold <= f.count:
+		case *number-params.FullImmutabilityThreshold <= f.count:
 			log.Debug("Ancient blocks frozen already", "number", *number, "hash", hash, "frozen", f.count)
 			time.Sleep(freezerRecheckInterval)
 			continue
@@ -293,7 +293,7 @@ func (f *s3freezer) freeze(db ethdb.KeyValueStore) {
 			continue
 		}
 		// Seems we have data ready to be frozen, process in usable batches
-		limit := *number - params.ImmutabilityThreshold
+		limit := *number - params.FullImmutabilityThreshold
 		if limit-f.count > freezerBatchLimit {
 			limit = f.count + freezerBatchLimit
 		}
