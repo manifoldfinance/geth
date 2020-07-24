@@ -293,12 +293,12 @@ func (f *s3freezer) freeze(db ethdb.KeyValueStore) {
 			backoff = true
 			continue
 
-		case *number < params.ImmutabilityThreshold:
-			log.Debug("Current full block not old enough", "number", *number, "hash", hash, "delay", params.ImmutabilityThreshold)
+		case *number < params.FullImmutabilityThreshold:
+			log.Debug("Current full block not old enough", "number", *number, "hash", hash, "delay", params.FullImmutabilityThreshold)
 			backoff = true
 			continue
 
-		case *number-params.ImmutabilityThreshold <= f.count:
+		case *number-params.FullImmutabilityThreshold <= f.count:
 			log.Debug("Ancient blocks frozen already", "number", *number, "hash", hash, "frozen", f.count)
 			backoff = true
 			continue
