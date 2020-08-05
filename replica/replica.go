@@ -148,6 +148,12 @@ func (r *Replica) APIs() []rpc.API {
       Service:   NewPublicEthereumAPI(r.GetBackend()),
       Public:    true,
     },
+    {
+      Namespace: "ethercattle",
+      Version: "1.0",
+      Service: ethapi.NewEtherCattleBlockChainAPI(r.GetBackend()),
+      Public: true,
+    },
 	}
 }
 func (r *Replica) Start(server *p2p.Server) error {
