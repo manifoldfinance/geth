@@ -772,8 +772,6 @@ func (args *CallArgs) ToMessage(globalGasCap uint64) types.Message {
 	}
 
 	// Set default gas & gas price if none were set
-	// gas := uint64(math.MaxUint64 / 2)
-	// Default is 1% of the global gas cap, but you can get more by specifying
 	gas := globalGasCap / 100
 	if args.Gas != nil {
 		gas = uint64(*args.Gas)
