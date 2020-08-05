@@ -1052,7 +1052,9 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 		args.Gas = (*hexutil.Uint64)(&gas)
 
 		result, prevS, err := DoCall(ctx, b, args, prevState.copy(), blockNrOrHash, nil, vm.Config{}, 0, gasCap)
-		if prevS != nil { stateData = prevS }
+		if prevS != nil && !result.Failed() {
+			stateData = prevS
+		}
 		if err != nil {
 			if errors.Is(err, core.ErrIntrinsicGas) {
 				return true, nil, nil // Special case, raise gas limit
