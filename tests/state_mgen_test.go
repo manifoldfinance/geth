@@ -34,10 +34,10 @@ import (
 )
 
 func TestGenState(t *testing.T) {
-	if os.Getenv(MG_GENERATE_STATE_TESTS_KEY) == "" {
+	if os.Getenv(CG_GENERATE_STATE_TESTS_KEY) == "" {
 		t.Skip()
 	}
-	if os.Getenv(MG_CHAINCONFIG_CHAINSPECS_PARITY_KEY) == "" {
+	if os.Getenv(CG_CHAINCONFIG_CHAINSPECS_OPENETHEREUM_KEY) == "" {
 		t.Fatal("Must use chainspec files for fork configurations.")
 	}
 
@@ -91,7 +91,7 @@ func withWritingTests(t *testing.T, name string, test *StateTest) {
 
 	// For tests using a config that does not have an associated chainspec file,
 	// then generate that file.
-	for _, subtest := range test.Subtests() {
+	for _, subtest := range test.Subtests(nil) {
 		subtest := subtest
 		if _, ok := MapForkNameChainspecFileState[subtest.Fork]; !ok {
 			genesis := test.genesis(Forks[subtest.Fork])
@@ -114,7 +114,7 @@ func withWritingTests(t *testing.T, name string, test *StateTest) {
 		}
 	}
 
-	for _, subtest := range test.Subtests() {
+	for _, subtest := range test.Subtests(nil) {
 		subtest := subtest
 
 		// Only proceed with test forks which are destined for writing.

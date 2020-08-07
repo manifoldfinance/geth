@@ -264,7 +264,7 @@ func TestGetTd(t *testing.T) {
   if err != nil {
     t.Fatalf(err.Error())
   }
-  td := backend.GetTd(header.Hash())
+  td := backend.GetTd(context.Background(), header.Hash())
   if td.Int64() != 0 {
     t.Fatalf("Got unexpected td: %v", td)
   }

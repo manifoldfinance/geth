@@ -21,29 +21,29 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"runtime"
 	godebug "runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/elastic/gosigar"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/console"
+	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/internal/debug"
+	"github.com/ethereum/go-ethereum/internal/flags"
 	"github.com/ethereum/go-ethereum/internal/openrpc"
 	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/rpc"
+	gopsutil "github.com/shirou/gopsutil/mem"
 	replicaModule "github.com/ethereum/go-ethereum/replica"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -58,7 +58,7 @@ var (
 	gitCommit = ""
 	gitDate   = ""
 	// The app that holds all commands and flags.
-	app = utils.NewApp(gitCommit, gitDate, "the ETC Core Go-Ethereum command line interface")
+	app = flags.NewApp(gitCommit, gitDate, "the ETC Core Go-Ethereum command line interface")
 	// flags that configure the node
 	nodeFlags = []cli.Flag{
 		utils.IdentityFlag,
@@ -104,11 +104,14 @@ var (
 		utils.LightEgressFlag,
 		utils.LightMaxPeersFlag,
 		utils.LegacyLightPeersFlag,
+		utils.LightNoPruneFlag,
 		utils.LightKDFFlag,
 		utils.UltraLightServersFlag,
 		utils.UltraLightFractionFlag,
 		utils.UltraLightOnlyAnnounceFlag,
 		utils.WhitelistFlag,
+		utils.ImmutabilityThresholdFullFlag,
+		utils.ImmutabilityThresholdLightFlag,
 		utils.CacheFlag,
 		utils.CacheDatabaseFlag,
 		utils.CacheTrieFlag,
@@ -152,6 +155,7 @@ var (
 		utils.RinkebyFlag,
 		utils.KottiFlag,
 		utils.GoerliFlag,
+		utils.YoloV1Flag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,
 		utils.EthStatsURLFlag,
@@ -209,6 +213,7 @@ var (
 		utils.IPCPathFlag,
 		utils.InsecureUnlockAllowedFlag,
 		utils.RPCGlobalGasCap,
+		utils.RPCGlobalTxFeeCap,
 	}
 
 	whisperFlags = []cli.Flag{
@@ -221,6 +226,8 @@ var (
 	metricsFlags = []cli.Flag{
 		utils.MetricsEnabledFlag,
 		utils.MetricsEnabledExpensiveFlag,
+		utils.MetricsHTTPFlag,
+		utils.MetricsPortFlag,
 		utils.MetricsEnableInfluxDBFlag,
 		utils.MetricsInfluxDBEndpointFlag,
 		utils.MetricsInfluxDBDatabaseFlag,
@@ -234,7 +241,7 @@ func init() {
 	// Initialize the CLI app and start Geth
 	app.Action = geth
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2013-2020 The ETC Core and Go-Ethereum Authors"
+	app.Copyright = "Copyright 2013-2020 The core-geth and go-ethereum Authors"
 	app.Commands = []cli.Command{
 		// See chaincmd.go:
 		initCommand,
@@ -294,7 +301,7 @@ func init() {
 	}
 	app.After = func(ctx *cli.Context) error {
 		debug.Exit()
-		console.Stdin.Close() // Resets terminal mode.
+		prompt.Stdin.Close() // Resets terminal mode.
 		return nil
 	}
 
@@ -310,10 +317,9 @@ func main() {
 	}
 }
 
-// prepare manipulates memory cache allowance and setups metric system.
-// This function should be called before launching devp2p stack.
-func prepare(ctx *cli.Context) {
-	// If we're running a known preset, log it for convenience.
+func checkMainnet(ctx *cli.Context) bool {
+	isMainnet := false
+
 	switch {
 	case ctx.GlobalIsSet(utils.LegacyTestnetFlag.Name):
 		log.Info("Starting Geth on Ropsten testnet...")
@@ -332,16 +338,46 @@ func prepare(ctx *cli.Context) {
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
 		log.Info("Starting Geth in ephemeral dev mode...")
 
+	case ctx.GlobalIsSet(utils.ClassicFlag.Name):
+		log.Info("Starting Geth on Ethereum Classic...")
+
+	case ctx.GlobalIsSet(utils.MordorFlag.Name):
+		log.Info("Starting Geth on Mordor testnet...")
+
+	case ctx.GlobalIsSet(utils.KottiFlag.Name):
+		log.Info("Starting Geth on Kotti testnet...")
+
+	case ctx.GlobalIsSet(utils.YoloV1Flag.Name):
+		log.Info("Starting Geth on YoloV1 testnet...")
+
+	case ctx.GlobalIsSet(utils.SocialFlag.Name):
+		log.Info("Starting Geth on Social network...")
+
+	case ctx.GlobalIsSet(utils.EthersocialFlag.Name):
+		log.Info("Starting Geth on EtherSocial network...")
+
+	case ctx.GlobalIsSet(utils.MixFlag.Name):
+		log.Info("Starting Geth on Mix network...")
+
 	case !ctx.GlobalIsSet(utils.NetworkIdFlag.Name):
 		log.Info("Starting Geth on Ethereum mainnet...")
+		isMainnet = true
 	}
 
-	// TODO:meowsbits
+	return isMainnet
+}
+
+// prepare manipulates memory cache allowance and setups metric system.
+// This function should be called before launching devp2p stack.
+func prepare(ctx *cli.Context) {
+	// If we're running a known preset, log it for convenience.
+
+	isMainnet := checkMainnet(ctx)
 
 	// If we're a full node on mainnet without --cache specified, bump default cache allowance
 	if ctx.GlobalString(utils.SyncModeFlag.Name) != "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) && !ctx.GlobalIsSet(utils.NetworkIdFlag.Name) {
 		// Make sure we're not on any supported preconfigured testnet either
-		if !ctx.GlobalIsSet(utils.LegacyTestnetFlag.Name) && !ctx.GlobalIsSet(utils.RopstenFlag.Name) && !ctx.GlobalIsSet(utils.RinkebyFlag.Name) && !ctx.GlobalIsSet(utils.GoerliFlag.Name) && !ctx.GlobalIsSet(utils.DeveloperFlag.Name) {
+		if isMainnet {
 			// Nope, we're really on mainnet. Bump that cache up!
 			log.Info("Bumping default cache on mainnet", "provided", ctx.GlobalInt(utils.CacheFlag.Name), "updated", 4096)
 			ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(4096))
@@ -353,20 +389,16 @@ func prepare(ctx *cli.Context) {
 		ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(128))
 	}
 	// Cap the cache allowance and tune the garbage collector
-	var mem gosigar.Mem
-	// Workaround until OpenBSD support lands into gosigar
-	// Check https://github.com/elastic/gosigar#supported-platforms
-	if runtime.GOOS != "openbsd" {
-		if err := mem.Get(); err == nil {
-			if 32<<(^uintptr(0)>>63) == 32 && mem.Total > 2*1024*1024*1024 {
-				log.Warn("Lowering memory allowance on 32bit arch", "available", mem.Total/1024/1024, "addressable", 2*1024)
-				mem.Total = 2 * 1024 * 1024 * 1024
-			}
-			allowance := int(mem.Total / 1024 / 1024 / 3)
-			if cache := ctx.GlobalInt(utils.CacheFlag.Name); cache > allowance {
-				log.Warn("Sanitizing cache to Go's GC limits", "provided", cache, "updated", allowance)
-				ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(allowance))
-			}
+	mem, err := gopsutil.VirtualMemory()
+	if err == nil {
+		if 32<<(^uintptr(0)>>63) == 32 && mem.Total > 2*1024*1024*1024 {
+			log.Warn("Lowering memory allowance on 32bit arch", "available", mem.Total/1024/1024, "addressable", 2*1024)
+			mem.Total = 2 * 1024 * 1024 * 1024
+		}
+		allowance := int(mem.Total / 1024 / 1024 / 3)
+		if cache := ctx.GlobalInt(utils.CacheFlag.Name); cache > allowance {
+			log.Warn("Sanitizing cache to Go's GC limits", "provided", cache, "updated", allowance)
+			ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(allowance))
 		}
 	}
 	// Ensure Go's GC ignores the database cache for trigger percentage
@@ -537,7 +569,7 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 			log.Info("Broker url missing")
 		}
 
-		threads := ctx.GlobalInt(utils.LegacyMinerThreadsFlag.Name)
+		threads := ctx.GlobalInt(utils.MinerThreadsFlag.Name)
 		if ctx.GlobalIsSet(utils.LegacyMinerThreadsFlag.Name) && !ctx.GlobalIsSet(utils.MinerThreadsFlag.Name) {
 			threads = ctx.GlobalInt(utils.LegacyMinerThreadsFlag.Name)
 			log.Warn("The flag --minerthreads is deprecated and will be removed in the future, please use --miner.threads")

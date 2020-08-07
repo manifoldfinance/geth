@@ -114,7 +114,7 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 	}
 
 	if config.PprofAddress != "" {
-		debug.StartPProf(config.PprofAddress)
+		debug.StartPProf(config.PprofAddress, true)
 	}
 
 	// Create the empty networking stack
@@ -166,6 +166,18 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 			genesis.Config = params.GoerliChainConfig
 			if config.EthereumNetworkID == 1 {
 				config.EthereumNetworkID = 5
+			}
+		}
+		if config.EthereumGenesis == KottiGenesis() {
+			genesis.Config = params.KottiChainConfig
+			if config.EthereumNetworkID == 1 {
+				config.EthereumNetworkID = 6
+			}
+		}
+		if config.EthereumGenesis == MordorGenesis() {
+			genesis.Config = params.MordorChainConfig
+			if config.EthereumNetworkID == 1 {
+				config.EthereumNetworkID = 7
 			}
 		}
 	}

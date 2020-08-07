@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/params/confp"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
 	"github.com/ethereum/go-ethereum/params/types/ctypes"
 	"github.com/ethereum/go-ethereum/params/types/genesisT"
 	"github.com/ethereum/go-ethereum/params/types/goethereum"
@@ -22,13 +23,16 @@ var gitDate = ""
 
 var (
 	chainspecFormatTypes = map[string]ctypes.Configurator{
-		"parity": &parity.ParityChainSpec{},
+		"coregeth": &genesisT.Genesis{
+			Config: &coregeth.CoreGethChainConfig{},
+		},
 		"multigeth": &genesisT.Genesis{
-			Config: &multigeth.MultiGethChainConfig{},
+			Config: &multigeth.ChainConfig{},
 		},
 		"geth": &genesisT.Genesis{
 			Config: &goethereum.ChainConfig{},
 		},
+		"parity": &parity.ParityChainSpec{},
 		// TODO
 		// "aleth"
 		// "retesteth"
@@ -52,6 +56,7 @@ var defaultChainspecValues = map[string]ctypes.Configurator{
 	"ropsten":    params.DefaultRopstenGenesisBlock(),
 	"rinkeby":    params.DefaultRinkebyGenesisBlock(),
 	"goerli":     params.DefaultGoerliGenesisBlock(),
+	"yolov1":     params.DefaultYoloV1GenesisBlock(),
 
 	"social":      params.DefaultSocialGenesisBlock(),
 	"ethersocial": params.DefaultEthersocialGenesisBlock(),
@@ -192,15 +197,15 @@ EXAMPLES:
 
 	Convert an external chain configuration between client formats (from STDIN)
 .
-		> cat my-parity-spec.json | {{.Name}} --inputf parity --outputf [geth|multigeth]
+		> cat my-parity-spec.json | {{.Name}} --inputf parity --outputf [geth|coregeth]
 
 	Convert an external chain configuration between client formats (from file).
 
-		> {{.Name}} --inputf parity --file my-parity-spec.json --outputf [geth|multigeth]
+		> {{.Name}} --inputf parity --file my-parity-spec.json --outputf [geth|coregeth]
 
-	Print a default Ethereum Classic network chain configuration in multigeth format:
+	Print a default Ethereum Classic network chain configuration in coregeth format:
 	
-		> {{.Name}} --default classic --outputf multigeth
+		> {{.Name}} --default classic --outputf coregeth
 
 	Validate a default Kotti network chain configuration for block #3000000:
 	

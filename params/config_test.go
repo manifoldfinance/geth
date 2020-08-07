@@ -22,10 +22,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params/confp"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
 	"github.com/ethereum/go-ethereum/params/types/ctypes"
 	"github.com/ethereum/go-ethereum/params/types/goethereum"
 	"github.com/ethereum/go-ethereum/params/types/multigeth"
-	"github.com/ethereum/go-ethereum/params/types/multigethv0"
 )
 
 func uint64P(n uint64) *uint64 {
@@ -42,14 +42,14 @@ func TestCheckCompatible(t *testing.T) {
 		{stored: AllEthashProtocolChanges, new: AllEthashProtocolChanges, head: 0, wantErr: nil},
 		{stored: AllEthashProtocolChanges, new: AllEthashProtocolChanges, head: 100, wantErr: nil},
 		{
-			stored:  &goethereum.ChainConfig{EIP150Block: big.NewInt(10)},
-			new:     &goethereum.ChainConfig{EIP150Block: big.NewInt(20)},
+			stored:  &goethereum.ChainConfig{Ethash: new(ctypes.EthashConfig), EIP150Block: big.NewInt(10)},
+			new:     &goethereum.ChainConfig{Ethash: new(ctypes.EthashConfig), EIP150Block: big.NewInt(20)},
 			head:    9,
 			wantErr: nil,
 		},
 		{
 			stored: AllEthashProtocolChanges,
-			new:    &goethereum.ChainConfig{HomesteadBlock: nil},
+			new:    &goethereum.ChainConfig{Ethash: new(ctypes.EthashConfig), HomesteadBlock: nil},
 			head:   3,
 			wantErr: &confp.ConfigCompatError{
 				What:         "Homestead fork block",
@@ -60,7 +60,7 @@ func TestCheckCompatible(t *testing.T) {
 		},
 		{
 			stored: AllEthashProtocolChanges,
-			new:    &goethereum.ChainConfig{HomesteadBlock: big.NewInt(1)},
+			new:    &goethereum.ChainConfig{Ethash: new(ctypes.EthashConfig), HomesteadBlock: big.NewInt(1)},
 			head:   3,
 			wantErr: &confp.ConfigCompatError{
 				What:         "Homestead fork block",
@@ -70,8 +70,8 @@ func TestCheckCompatible(t *testing.T) {
 			},
 		},
 		{
-			stored: &goethereum.ChainConfig{HomesteadBlock: big.NewInt(30), EIP150Block: big.NewInt(10)},
-			new:    &goethereum.ChainConfig{HomesteadBlock: big.NewInt(25), EIP150Block: big.NewInt(20)},
+			stored: &goethereum.ChainConfig{Ethash: new(ctypes.EthashConfig), HomesteadBlock: big.NewInt(30), EIP150Block: big.NewInt(10)},
+			new:    &goethereum.ChainConfig{Ethash: new(ctypes.EthashConfig), HomesteadBlock: big.NewInt(25), EIP150Block: big.NewInt(20)},
 			head:   25,
 			wantErr: &confp.ConfigCompatError{
 				What:         "EIP150 fork block",
@@ -81,8 +81,8 @@ func TestCheckCompatible(t *testing.T) {
 			},
 		},
 		{
-			stored: &multigeth.MultiGethChainConfig{EIP100FBlock: big.NewInt(30), EIP649FBlock: big.NewInt(30)},
-			new:    &multigeth.MultiGethChainConfig{EIP100FBlock: big.NewInt(24), EIP649FBlock: big.NewInt(24)},
+			stored: &coregeth.CoreGethChainConfig{Ethash: new(ctypes.EthashConfig), EIP100FBlock: big.NewInt(30), EIP649FBlock: big.NewInt(30)},
+			new:    &coregeth.CoreGethChainConfig{Ethash: new(ctypes.EthashConfig), EIP100FBlock: big.NewInt(24), EIP649FBlock: big.NewInt(24)},
 			head:   25,
 			wantErr: &confp.ConfigCompatError{
 				What:         "EIP100F fork block",
@@ -92,14 +92,14 @@ func TestCheckCompatible(t *testing.T) {
 			},
 		},
 		{
-			stored:  &goethereum.ChainConfig{ByzantiumBlock: big.NewInt(30)},
-			new:     &multigeth.MultiGethChainConfig{EIP211FBlock: big.NewInt(26)},
+			stored:  &goethereum.ChainConfig{Ethash: new(ctypes.EthashConfig), ByzantiumBlock: big.NewInt(30)},
+			new:     &coregeth.CoreGethChainConfig{Ethash: new(ctypes.EthashConfig), EIP211FBlock: big.NewInt(26)},
 			head:    25,
 			wantErr: nil,
 		},
 		{
-			stored:  &goethereum.ChainConfig{ByzantiumBlock: big.NewInt(30)},
-			new:     &multigeth.MultiGethChainConfig{EIP100FBlock: big.NewInt(26), EIP649FBlock: big.NewInt(26)},
+			stored:  &goethereum.ChainConfig{Ethash: new(ctypes.EthashConfig), ByzantiumBlock: big.NewInt(30)},
+			new:     &coregeth.CoreGethChainConfig{Ethash: new(ctypes.EthashConfig), EIP100FBlock: big.NewInt(26), EIP649FBlock: big.NewInt(26)},
 			head:    25,
 			wantErr: nil,
 		},
@@ -154,13 +154,15 @@ func TestCheckCompatible(t *testing.T) {
 		{
 			stored: func() ctypes.ChainConfigurator {
 				c := &goethereum.ChainConfig{
+					Ethash:         new(ctypes.EthashConfig),
 					DAOForkBlock:   big.NewInt(3),
 					DAOForkSupport: false,
 				}
 				return c
 			}(),
 			new: func() ctypes.ChainConfigurator {
-				c := &multigeth.MultiGethChainConfig{
+				c := &coregeth.CoreGethChainConfig{
+					Ethash:       new(ctypes.EthashConfig),
 					DAOForkBlock: nil,
 				}
 				return c
@@ -171,7 +173,7 @@ func TestCheckCompatible(t *testing.T) {
 		{
 			// v1.9.5 -> v1.9.7
 			stored: func() ctypes.ChainConfigurator {
-				c := &multigeth.MultiGethChainConfig{}
+				c := &coregeth.CoreGethChainConfig{}
 				*c = *ClassicChainConfig
 				c.SetEIP145Transition(nil)
 				c.SetEIP1014Transition(nil)
@@ -191,7 +193,7 @@ func TestCheckCompatible(t *testing.T) {
 		{
 			// v1.9.6 -> v1.9.7
 			stored: func() ctypes.ChainConfigurator {
-				c := &multigeth.MultiGethChainConfig{}
+				c := &coregeth.CoreGethChainConfig{}
 				*c = *ClassicChainConfig
 				c.SetEIP152Transition(nil)
 				c.SetEIP1108Transition(nil)
@@ -208,7 +210,7 @@ func TestCheckCompatible(t *testing.T) {
 		{
 			stored: MainnetChainConfig,
 			new: func() ctypes.ChainConfigurator {
-				c := &multigeth.MultiGethChainConfig{}
+				c := &coregeth.CoreGethChainConfig{}
 				err := confp.Convert(MainnetChainConfig, c)
 				if err != nil {
 					panic(err)
@@ -219,7 +221,7 @@ func TestCheckCompatible(t *testing.T) {
 		{
 			stored: func() ctypes.ChainConfigurator {
 				// ClassicChainConfig is the chain parameters to run a node on the Classic main network.
-				c := &multigethv0.ChainConfig{
+				c := &multigeth.ChainConfig{
 					ChainID:             big.NewInt(61),
 					HomesteadBlock:      big.NewInt(1150000),
 					DAOForkBlock:        big.NewInt(1920000),
@@ -230,15 +232,13 @@ func TestCheckCompatible(t *testing.T) {
 					EIP158Block:         big.NewInt(8772000),
 					ByzantiumBlock:      big.NewInt(8772000),
 					DisposalBlock:       big.NewInt(5900000),
-					SocialBlock:         nil,
-					EthersocialBlock:    nil,
 					ConstantinopleBlock: big.NewInt(9573000),
 					PetersburgBlock:     big.NewInt(9573000),
 					// As if client hasn't upgraded config to latest fork.
 					//IstanbulBlock:       big.NewInt(10500839),
 					//EIP1884DisableFBlock:big.NewInt(10500839),
-					ECIP1017EraRounds:  big.NewInt(5000000),
-					EIP160FBlock:       big.NewInt(3000000),
+					ECIP1017EraBlock:   big.NewInt(5000000),
+					EIP160Block:        big.NewInt(3000000),
 					ECIP1010PauseBlock: big.NewInt(3000000),
 					ECIP1010Length:     big.NewInt(2000000),
 					Ethash:             new(ctypes.EthashConfig),
@@ -252,28 +252,25 @@ func TestCheckCompatible(t *testing.T) {
 		{
 			stored: func() ctypes.ChainConfigurator {
 				// ClassicChainConfig is the chain parameters to run a node on the Classic main network.
-				c := &multigethv0.ChainConfig{
-					ChainID:              big.NewInt(61),
-					HomesteadBlock:       big.NewInt(1150000),
-					DAOForkBlock:         big.NewInt(1920000),
-					DAOForkSupport:       false,
-					EIP150Block:          big.NewInt(2500000),
-					EIP150Hash:           common.HexToHash("0xca12c63534f565899681965528d536c52cb05b7c48e269c2a6cb77ad864d878a"),
-					EIP155Block:          big.NewInt(3000000),
-					EIP158Block:          big.NewInt(8772000),
-					ByzantiumBlock:       big.NewInt(8772000),
-					DisposalBlock:        big.NewInt(5900000),
-					SocialBlock:          nil,
-					EthersocialBlock:     nil,
-					ConstantinopleBlock:  big.NewInt(9573000),
-					PetersburgBlock:      big.NewInt(9573000),
-					IstanbulBlock:        big.NewInt(10500839),
-					EIP1884DisableFBlock: big.NewInt(10500839),
-					ECIP1017EraRounds:    big.NewInt(5000000),
-					EIP160FBlock:         big.NewInt(3000000),
-					ECIP1010PauseBlock:   big.NewInt(3000000),
-					ECIP1010Length:       big.NewInt(2000000),
-					Ethash:               new(ctypes.EthashConfig),
+				c := &multigeth.ChainConfig{
+					ChainID:             big.NewInt(61),
+					HomesteadBlock:      big.NewInt(1150000),
+					DAOForkBlock:        big.NewInt(1920000),
+					DAOForkSupport:      false,
+					EIP150Block:         big.NewInt(2500000),
+					EIP150Hash:          common.HexToHash("0xca12c63534f565899681965528d536c52cb05b7c48e269c2a6cb77ad864d878a"),
+					EIP155Block:         big.NewInt(3000000),
+					EIP158Block:         big.NewInt(8772000),
+					ByzantiumBlock:      big.NewInt(8772000),
+					DisposalBlock:       big.NewInt(5900000),
+					ConstantinopleBlock: big.NewInt(9573000),
+					PetersburgBlock:     big.NewInt(9573000),
+					IstanbulBlock:       big.NewInt(10500839),
+					ECIP1017EraBlock:    big.NewInt(5000000),
+					EIP160Block:         big.NewInt(3000000),
+					ECIP1010PauseBlock:  big.NewInt(3000000),
+					ECIP1010Length:      big.NewInt(2000000),
+					Ethash:              new(ctypes.EthashConfig),
 				}
 				return c
 			}(),
@@ -306,5 +303,21 @@ func TestClassicIs649(t *testing.T) {
 	got := c.GetEthashEIP649Transition()
 	if got != nil {
 		t.Fatal("classic config doesn't support 649; difficulty bomb was disposed of")
+	}
+}
+
+func TestFoundationIsEIP779(t *testing.T) {
+	blockNumbers := []*big.Int{
+		big.NewInt(0),
+		big.NewInt(1_920_000),
+		big.NewInt(10_000_000),
+	}
+	for _, bn := range blockNumbers {
+		if bn.Cmp(big.NewInt(0)) > 0 && !MainnetChainConfig.IsEnabled(MainnetChainConfig.GetEthashEIP779Transition, bn) {
+			t.Fatal("bad")
+		}
+		if *MainnetChainConfig.GetEthashEIP779Transition() != 1_920_000 {
+			t.Fatal("bad")
+		}
 	}
 }

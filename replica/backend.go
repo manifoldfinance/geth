@@ -152,7 +152,7 @@ func (backend *ReplicaBackend) GetReceipts(ctx context.Context, blockHash common
   return backend.bc.GetReceiptsByHash(blockHash), nil
 }
 	// This can probably lean on core.HeaderChain
-func (backend *ReplicaBackend) GetTd(blockHash common.Hash) *big.Int {
+func (backend *ReplicaBackend) GetTd(ctx context.Context, blockHash common.Hash) *big.Int {
   return backend.hc.GetTdByHash(blockHash)
 }
 	// Use core.NewEVMContext and vm.NewEVM - Will need custom ChainContext implementation
@@ -351,13 +351,17 @@ func (backend *ReplicaBackend) Stats() (pending int, queued int) {
   return 0, 0
 }
 
-func (backend *ReplicaBackend) RPCGasCap() *big.Int {
+func (backend *ReplicaBackend) RPCGasCap() uint64 {
   // TODO: Make configurable
   header, err := backend.HeaderByNumber(context.Background(), rpc.LatestBlockNumber)
   if err != nil {
-    return big.NewInt(int64(math.MaxUint64 / 2))
+    return math.MaxUint64 / 2
   }
-  return big.NewInt(int64(header.GasLimit * 1000))
+  return header.GasLimit * 1000
+}
+
+func (b *ReplicaBackend) RPCTxFeeCap() float64 {
+  return 0
 }
 
 	// Return empty maps

@@ -106,6 +106,7 @@ type ParityChainSpec struct {
 		EIP1344Transition         *ParityU64 `json:"eip1344Transition,omitempty"`
 		EIP1884Transition         *ParityU64 `json:"eip1884Transition,omitempty"`
 		EIP2028Transition         *ParityU64 `json:"eip2028Transition,omitempty"`
+		EIP2537Transition         *ParityU64 `json:"eip2537Transition,omitempty"`
 		EIP1706Transition         *ParityU64 `json:"-"` // FIXME, when and if i'm implemented in Parity
 		ECIP1080Transition        *ParityU64 `json:"-"` // FIXME, when and if i'm implemented in Parity
 
@@ -313,6 +314,11 @@ type ParityChainSpecPricing struct {
 
 	// Blake2F is the price per round of Blake2 compression
 	Blake2F *ParityChainSpecBlakePricing `json:"blake2_f,omitempty"`
+
+	BLS12ConstOperation *ParityChainSpecBLS12ConstOperationPricing `json:"bls12_const_operations,omitempty"`
+	BLS12G1MultiExp     *ParityChainSpecBLS12MultiExpPricing       `json:"bls12_g1_multiexp,omitempty"`
+	BLS12G2MultiExp     *ParityChainSpecBLS12MultiExpPricing       `json:"bls12_g2_multiexp,omitempty"`
+	BLS12Pairing        *ParityChainSpecBLS12PairingPricing        `json:"bls12_pairing,omitempty"`
 }
 
 type ParityChainSpecLinearPricing struct {
@@ -338,6 +344,19 @@ type ParityChainSpecAltBnPairingPricing struct {
 
 type ParityChainSpecBlakePricing struct {
 	GasPerRound uint64 `json:"gas_per_round"`
+}
+
+type ParityChainSpecBLS12ConstOperationPricing struct {
+	Price uint64 `json:"price"`
+}
+
+type ParityChainSpecBLS12MultiExpPricing struct {
+	Base uint64 `json:"base"`
+}
+
+type ParityChainSpecBLS12PairingPricing struct {
+	Base uint64 `json:"base"`
+	Pair uint64 `json:"pair"`
 }
 
 func (spec *ParityChainSpec) GetPrecompile(address common.Address, pricing ParityChainSpecPricing) *ParityU64 {

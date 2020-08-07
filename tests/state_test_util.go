@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -138,11 +139,11 @@ type stTransactionMarshaling struct {
 	PrivateKey hexutil.Bytes
 }
 
-// getVMConfig takes a fork definition and returns a chain config.
+// GetChainConfig takes a fork definition and returns a chain config.
 // The fork definition can be
 // - a plain forkname, e.g. `Byzantium`,
 // - a fork basename, and a list of EIPs to enable; e.g. `Byzantium+1884+1283`.
-func getVMConfig(forkString string) (baseConfig ctypes.ChainConfigurator, eips []int, err error) {
+func GetChainConfig(forkString string) (baseConfig ctypes.ChainConfigurator, eips []int, err error) {
 	var (
 		splitForks            = strings.Split(forkString, "+")
 		ok                    bool
@@ -155,6 +156,9 @@ func getVMConfig(forkString string) (baseConfig ctypes.ChainConfigurator, eips [
 		if eipNum, err := strconv.Atoi(eip); err != nil {
 			return nil, nil, fmt.Errorf("syntax error, invalid eip number %v", eipNum)
 		} else {
+			if !vm.ValidEip(eipNum) {
+				return nil, nil, fmt.Errorf("syntax error, invalid eip number %v", eipNum)
+			}
 			eips = append(eips, eipNum)
 		}
 	}
@@ -162,9 +166,15 @@ func getVMConfig(forkString string) (baseConfig ctypes.ChainConfigurator, eips [
 }
 
 // Subtests returns all valid subtests of the test.
-func (t *StateTest) Subtests() []StateSubtest {
+func (t *StateTest) Subtests(skipForks []*regexp.Regexp) []StateSubtest {
 	var sub []StateSubtest
+outer:
 	for fork, pss := range t.json.Post {
+		for _, skip := range skipForks {
+			if skip.MatchString(fork) {
+				continue outer
+			}
+		}
 		for i := range pss {
 			sub = append(sub, StateSubtest{fork, i})
 		}
@@ -192,7 +202,7 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config, snapshotter bo
 
 // RunNoVerify runs a specific subtest and returns the statedb and post-state root
 func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapshotter bool) (*snapshot.Tree, *state.StateDB, common.Hash, error) {
-	config, eips, err := getVMConfig(subtest.Fork)
+	config, eips, err := GetChainConfig(subtest.Fork)
 	if err != nil {
 		return nil, nil, common.Hash{}, UnsupportedForkError{subtest.Fork}
 	}
@@ -207,6 +217,7 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 	}
 	context := core.NewEVMContext(msg, block.Header(), nil, &t.json.Env.Coinbase)
 	context.GetHash = vmTestBlockHash
+
 	evm := vm.NewEVM(context, statedb, config, vmconfig)
 
 	gaspool := new(core.GasPool)

@@ -57,14 +57,21 @@ func TestConsoleCmdNetworkIdentities(t *testing.T) {
 
 		// All other possible --<chain> values.
 		{[]string{"--testnet"}, 3, 3, params.RopstenGenesisHash.Hex()},
+		{[]string{"--ropsten"}, 3, 3, params.RopstenGenesisHash.Hex()},
 		{[]string{"--rinkeby"}, 4, 4, params.RinkebyGenesisHash.Hex()},
 		{[]string{"--goerli"}, 5, 5, params.GoerliGenesisHash.Hex()},
 		{[]string{"--kotti"}, 6, 6, params.KottiGenesisHash.Hex()},
 		{[]string{"--mordor"}, 7, 63, params.MordorGenesisHash.Hex()},
 		{[]string{"--social"}, 28, 28, params.SocialGenesisHash.Hex()},
 		{[]string{"--ethersocial"}, 1, 31102, params.EthersocialGenesisHash.Hex()},
+		{[]string{"--yolov1"}, 133519467574833, 133519467574833, params.YoloV1GenesisHash.Hex()},
 	}
 	for i, p := range chainIdentityCases {
+
+		// Disable networking, preventing false-negatives if in an environment without networking service
+		// or collisions with an existing geth service.
+		p.flags = append(p.flags, "--port", "0", "--maxpeers", "0", "--nodiscover", "--nat", "none")
+
 		t.Run(fmt.Sprintf("%d/%v/networkid", i, p.flags),
 			consoleCmdStdoutTest(p.flags, "admin.nodeInfo.protocols.eth.network", p.networkId))
 		t.Run(fmt.Sprintf("%d/%v/chainid", i, p.flags),
@@ -131,7 +138,7 @@ at block: 0 ({{niltime}})
 
 // Tests that a console can be attached to a running node via various means.
 func TestIPCAttachWelcome(t *testing.T) {
-	// Configure the instance for IPC attachement
+	// Configure the instance for IPC attachment
 	coinbase := "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
 	var ipc string
 	if runtime.GOOS == "windows" {
@@ -162,7 +169,7 @@ func TestHTTPAttachWelcome(t *testing.T) {
 	port := strconv.Itoa(trulyRandInt(1024, 65536)) // Yeah, sometimes this will fail, sorry :P
 	geth := runGeth(t,
 		"--port", "0", "--maxpeers", "0", "--nodiscover", "--nat", "none",
-		"--etherbase", coinbase, "--rpc", "--rpcport", port)
+		"--etherbase", coinbase, "--http", "--http.port", port)
 	defer func() {
 		geth.Interrupt()
 		geth.ExpectExit()
@@ -179,7 +186,7 @@ func TestWSAttachWelcome(t *testing.T) {
 
 	geth := runGeth(t,
 		"--port", "0", "--maxpeers", "0", "--nodiscover", "--nat", "none",
-		"--etherbase", coinbase, "--ws", "--wsport", port)
+		"--etherbase", coinbase, "--ws", "--ws.port", port)
 	defer func() {
 		geth.Interrupt()
 		geth.ExpectExit()

@@ -154,10 +154,8 @@ func configOrDefault(g *genesisT.Genesis, ghash common.Hash) ctypes.ChainConfigu
 		return params.MordorChainConfig
 	case ghash == params.RopstenGenesisHash:
 		return params.RopstenChainConfig
-	case ghash == params.RinkebyGenesisHash:
-		return params.RinkebyChainConfig
-	case ghash == params.GoerliGenesisHash:
-		return params.GoerliChainConfig
+	case ghash == params.YoloV1GenesisHash:
+		return params.YoloV1ChainConfig
 	default:
 		return params.AllEthashProtocolChanges
 	}
@@ -199,7 +197,7 @@ func GenesisToBlock(g *genesisT.Genesis, db ethdb.Database) *types.Block {
 		head.Difficulty = vars.GenesisDifficulty
 	}
 	statedb.Commit(false)
-	statedb.Database().TrieDB().Commit(root, true)
+	statedb.Database().TrieDB().Commit(root, true, nil)
 
 	return types.NewBlock(head, nil, nil, nil)
 }

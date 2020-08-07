@@ -459,21 +459,168 @@ func (spec *ParityChainSpec) SetEIP1108Transition(n *uint64) error {
 	return nil
 }
 
-func (c *ParityChainSpec) GetECIP1080Transition() *uint64 {
-	return c.Params.ECIP1080Transition.Uint64P()
+func (spec *ParityChainSpec) GetECIP1080Transition() *uint64 {
+	return spec.Params.ECIP1080Transition.Uint64P()
 }
 
-func (c *ParityChainSpec) SetECIP1080Transition(n *uint64) error {
-	c.Params.ECIP1080Transition = new(ParityU64).SetUint64(n)
+func (spec *ParityChainSpec) SetECIP1080Transition(n *uint64) error {
+	spec.Params.ECIP1080Transition = new(ParityU64).SetUint64(n)
 	return nil
 }
 
-func (c *ParityChainSpec) GetEIP1706Transition() *uint64 {
-	return c.Params.EIP1706Transition.Uint64P() // FIXME when+if upstream implements
+func (spec *ParityChainSpec) GetEIP1706Transition() *uint64 {
+	return spec.Params.EIP1706Transition.Uint64P() // FIXME when+if upstream implements
 }
 
-func (c *ParityChainSpec) SetEIP1706Transition(n *uint64) error {
-	c.Params.EIP1706Transition = new(ParityU64).SetUint64(n)
+func (spec *ParityChainSpec) SetEIP1706Transition(n *uint64) error {
+	spec.Params.EIP1706Transition = new(ParityU64).SetUint64(n)
+	return nil
+}
+
+// GetEIP2537Transition returns the EIP2537 activation, if any.
+// https://eips.ethereum.org/EIPS/eip-2537
+func (spec *ParityChainSpec) GetEIP2537Transition() *uint64 {
+	var eip2537Precompiles = map[string]*uint64{
+		"bls12_381_g1_add": spec.GetPrecompile(common.BytesToAddress([]byte{0xa}),
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 600,
+				},
+			}).Uint64P(),
+		"bls12_381_g1_mul": spec.GetPrecompile(common.BytesToAddress([]byte{0xb}),
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 12000,
+				},
+			}).Uint64P(),
+		"bls12_381_g1_multiexp": spec.GetPrecompile(common.BytesToAddress([]byte{0xc}),
+			ParityChainSpecPricing{
+				BLS12G1MultiExp: &ParityChainSpecBLS12MultiExpPricing{
+					Base: 12000,
+				},
+			}).Uint64P(),
+		"bls12_381_g2_add": spec.GetPrecompile(common.BytesToAddress([]byte{0xd}),
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 4500,
+				},
+			}).Uint64P(),
+		"bls12_381_g2_mul": spec.GetPrecompile(common.BytesToAddress([]byte{0xe}),
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 55000,
+				},
+			}).Uint64P(),
+		"bls12_381_g2_multiexp": spec.GetPrecompile(common.BytesToAddress([]byte{0xf}),
+			ParityChainSpecPricing{
+				BLS12G2MultiExp: &ParityChainSpecBLS12MultiExpPricing{
+					Base: 55000,
+				},
+			}).Uint64P(),
+		"bls12_381_pairing": spec.GetPrecompile(common.BytesToAddress([]byte{0x10}),
+			ParityChainSpecPricing{
+				BLS12Pairing: &ParityChainSpecBLS12PairingPricing{
+					Base: 115000,
+					Pair: 23000,
+				},
+			}).Uint64P(),
+		"bls12_381_fp_to_g1": spec.GetPrecompile(common.BytesToAddress([]byte{0x11}),
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 5500,
+				},
+			}).Uint64P(),
+		"bls12_381_fp2_to_g2": spec.GetPrecompile(common.BytesToAddress([]byte{0x12}),
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 110000,
+				},
+			}).Uint64P(),
+	}
+
+	var activation *uint64
+	for _, v := range eip2537Precompiles {
+		if v == nil {
+			return nil
+		}
+		if activation == nil {
+			activation = v
+			continue
+		}
+		if *v != *activation {
+			return nil
+		}
+	}
+	return activation
+}
+
+func (spec *ParityChainSpec) SetEIP2537Transition(n *uint64) error {
+	type setter struct {
+		name    string
+		pricing ParityChainSpecPricing
+	}
+	var eip2537Precompiles = []setter{
+		{"bls12_381_g1_add",
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 600,
+				},
+			}},
+		{"bls12_381_g1_mul",
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 12000,
+				},
+			}},
+		{"bls12_381_g1_multiexp",
+			ParityChainSpecPricing{
+				BLS12G1MultiExp: &ParityChainSpecBLS12MultiExpPricing{
+					Base: 12000,
+				},
+			}},
+		{"bls12_381_g2_add",
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 4500,
+				},
+			}},
+		{"bls12_381_g2_mul",
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 55000,
+				},
+			}},
+		{"bls12_381_g2_multiexp",
+			ParityChainSpecPricing{
+				BLS12G2MultiExp: &ParityChainSpecBLS12MultiExpPricing{
+					Base: 55000,
+				},
+			}},
+		{"bls12_381_pairing",
+			ParityChainSpecPricing{
+				BLS12Pairing: &ParityChainSpecBLS12PairingPricing{
+					Base: 115000,
+					Pair: 23000,
+				},
+			}},
+		{"bls12_381_fp_to_g1",
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 5500,
+				},
+			}},
+		{"bls12_381_fp2_to_g2",
+			ParityChainSpecPricing{
+				BLS12ConstOperation: &ParityChainSpecBLS12ConstOperationPricing{
+					Price: 110000,
+				},
+			}},
+	}
+
+	var addr uint8 = 0xa // EIP2537 BLS precompiles occupy 0xa:0x12 (9 total)
+	for i, v := range eip2537Precompiles {
+		spec.SetPrecompile2(common.BytesToAddress([]byte{addr + uint8(i)}), v.name, n, v.pricing)
+	}
 	return nil
 }
 
@@ -510,21 +657,42 @@ func (spec *ParityChainSpec) GetForkCanonHashes() map[uint64]common.Hash {
 	}
 }
 
+// GetConsensusEngineType uses select indicator fields to determine if the
+// config is Clique or Ethash. This is an important logic! Read it!
 func (spec *ParityChainSpec) GetConsensusEngineType() ctypes.ConsensusEngineT {
-	if !reflect.DeepEqual(spec.Engine.Ethash, reflect.Zero(reflect.TypeOf(spec.Engine.Ethash)).Interface()) {
-		return ctypes.ConsensusEngineT_Ethash
-	}
-	if !reflect.DeepEqual(spec.Engine.Clique, reflect.Zero(reflect.TypeOf(spec.Engine.Clique)).Interface()) {
+	if spec.Engine.Clique.Params.Period != nil && spec.Engine.Clique.Params.Epoch != nil {
 		return ctypes.ConsensusEngineT_Clique
+	}
+	if spec.Engine.Ethash.Params.MinimumDifficulty != nil {
+		return ctypes.ConsensusEngineT_Ethash
 	}
 	return ctypes.ConsensusEngineT_Unknown
 }
 
 func (spec *ParityChainSpec) MustSetConsensusEngineType(t ctypes.ConsensusEngineT) error {
+	var err error
 	switch t {
 	case ctypes.ConsensusEngineT_Ethash:
+		if spec.GetEthashMinimumDifficulty() == nil {
+			err = spec.SetEthashMinimumDifficulty(vars.MinimumDifficulty)
+			if err != nil {
+				return err
+			}
+		}
+		spec.Engine.Clique.Params.Period = nil
 		return nil
 	case ctypes.ConsensusEngineT_Clique:
+		if spec.Engine.Clique.Params.Period == nil {
+			err = spec.SetCliqueEpoch(30000)
+			if err != nil {
+				return err
+			}
+			err = spec.SetCliquePeriod(0)
+			if err != nil {
+				return err
+			}
+		}
+		spec.Engine.Ethash.Params.MinimumDifficulty = nil
 		return nil
 	default:
 		return ctypes.ErrUnsupportedConfigFatal
@@ -537,6 +705,7 @@ func (spec *ParityChainSpec) GetEthashMinimumDifficulty() *big.Int {
 
 func (spec *ParityChainSpec) SetEthashMinimumDifficulty(n *big.Int) error {
 	if n == nil {
+		spec.Engine.Ethash.Params.MinimumDifficulty = nil
 		return nil
 	}
 	spec.Engine.Ethash.Params.MinimumDifficulty = math.NewHexOrDecimal256(n.Int64())
@@ -568,6 +737,9 @@ func (spec *ParityChainSpec) SetEthashDurationLimit(n *big.Int) error {
 }
 
 func (spec *ParityChainSpec) GetEthashHomesteadTransition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	return spec.Engine.Ethash.Params.HomesteadTransition.Uint64P()
 }
 
@@ -576,16 +748,19 @@ func (spec *ParityChainSpec) SetEthashHomesteadTransition(n *uint64) error {
 	return nil
 }
 
-func (spec *ParityChainSpec) GetEthashEIP2Transition() *uint64 {
+func (spec *ParityChainSpec) GetEIP2Transition() *uint64 {
 	return spec.Engine.Ethash.Params.HomesteadTransition.Uint64P()
 }
 
-func (spec *ParityChainSpec) SetEthashEIP2Transition(n *uint64) error {
+func (spec *ParityChainSpec) SetEIP2Transition(n *uint64) error {
 	spec.Engine.Ethash.Params.HomesteadTransition = new(ParityU64).SetUint64(n)
 	return nil
 }
 
 func (spec *ParityChainSpec) GetEthashEIP779Transition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	return spec.Engine.Ethash.Params.DaoHardforkTransition.Uint64P()
 }
 
@@ -597,6 +772,9 @@ func (spec *ParityChainSpec) SetEthashEIP779Transition(n *uint64) error {
 }
 
 func (spec *ParityChainSpec) GetEthashEIP649Transition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	if spec.Engine.Ethash.Params.eip649Inferred {
 		return spec.Engine.Ethash.Params.eip649Transition.Uint64P()
 	}
@@ -636,6 +814,9 @@ func (spec *ParityChainSpec) SetEthashEIP649Transition(n *uint64) error {
 }
 
 func (spec *ParityChainSpec) GetEthashEIP1234Transition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	if spec.Engine.Ethash.Params.eip1234Inferred {
 		return spec.Engine.Ethash.Params.eip1234Transition.Uint64P()
 	}
@@ -673,6 +854,9 @@ func (spec *ParityChainSpec) SetEthashEIP1234Transition(n *uint64) error {
 }
 
 func (spec *ParityChainSpec) GetEthashEIP2384Transition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	if spec.Engine.Ethash.Params.eip2384Inferred {
 		return spec.Engine.Ethash.Params.eip2384Transition.Uint64P()
 	}
@@ -703,6 +887,9 @@ func (spec *ParityChainSpec) SetEthashEIP2384Transition(n *uint64) error {
 }
 
 func (spec *ParityChainSpec) GetEthashECIP1010PauseTransition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	return spec.Engine.Ethash.Params.ECIP1010PauseTransition.Uint64P()
 }
 
@@ -712,6 +899,9 @@ func (spec *ParityChainSpec) SetEthashECIP1010PauseTransition(n *uint64) error {
 }
 
 func (spec *ParityChainSpec) GetEthashECIP1010ContinueTransition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	return spec.Engine.Ethash.Params.ECIP1010ContinueTransition.Uint64P()
 }
 
@@ -724,6 +914,9 @@ func (spec *ParityChainSpec) SetEthashECIP1010ContinueTransition(n *uint64) erro
 // This is not per spec, but per implementation (it just so happened that the
 // ETC fork happened at block 5m and rounds are 5m.
 func (spec *ParityChainSpec) GetEthashECIP1017Transition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	return spec.Engine.Ethash.Params.ECIP1017EraRounds.Uint64P()
 }
 
@@ -735,6 +928,9 @@ func (spec *ParityChainSpec) SetEthashECIP1017Transition(n *uint64) error {
 }
 
 func (spec *ParityChainSpec) GetEthashECIP1017EraRounds() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	return spec.Engine.Ethash.Params.ECIP1017EraRounds.Uint64P()
 }
 
@@ -744,6 +940,9 @@ func (spec *ParityChainSpec) SetEthashECIP1017EraRounds(n *uint64) error {
 }
 
 func (spec *ParityChainSpec) GetEthashEIP100BTransition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	return spec.Engine.Ethash.Params.EIP100bTransition.Uint64P()
 }
 
@@ -753,6 +952,9 @@ func (spec *ParityChainSpec) SetEthashEIP100BTransition(n *uint64) error {
 }
 
 func (spec *ParityChainSpec) GetEthashECIP1041Transition() *uint64 {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	return spec.Engine.Ethash.Params.BombDefuseTransition.Uint64P()
 }
 
@@ -762,6 +964,9 @@ func (spec *ParityChainSpec) SetEthashECIP1041Transition(n *uint64) error {
 }
 
 func (spec *ParityChainSpec) GetEthashDifficultyBombDelaySchedule() ctypes.Uint64BigMapEncodesHex {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	if reflect.DeepEqual(spec.Engine.Ethash, reflect.Zero(reflect.TypeOf(spec.Engine.Ethash)).Interface()) {
 		return nil
 	}
@@ -774,6 +979,9 @@ func (spec *ParityChainSpec) SetEthashDifficultyBombDelaySchedule(input ctypes.U
 }
 
 func (spec *ParityChainSpec) GetEthashBlockRewardSchedule() ctypes.Uint64BigMapEncodesHex {
+	if spec.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+		return nil
+	}
 	if reflect.DeepEqual(spec.Engine.Ethash, reflect.Zero(reflect.TypeOf(spec.Engine.Ethash)).Interface()) {
 		return nil
 	}

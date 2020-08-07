@@ -29,8 +29,8 @@ import (
 	"github.com/ethereum/go-ethereum/params/confp/generic"
 	common0 "github.com/ethereum/go-ethereum/params/types/ctypes"
 	"github.com/ethereum/go-ethereum/params/types/goethereum"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
 	"github.com/ethereum/go-ethereum/params/types/multigeth"
-	"github.com/ethereum/go-ethereum/params/types/multigethv0"
 )
 
 var _ = (*genesisSpecMarshaling)(nil)
@@ -98,10 +98,10 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 	}
 
 	switch conf.(type) {
-	case *multigeth.MultiGethChainConfig:
-		dec.Config = &multigeth.MultiGethChainConfig{}
-	case *multigethv0.ChainConfig:
-		dec.Config = &multigethv0.ChainConfig{}
+	case *coregeth.CoreGethChainConfig:
+		dec.Config = &coregeth.CoreGethChainConfig{}
+	case *multigeth.ChainConfig:
+		dec.Config = &multigeth.ChainConfig{}
 	case *goethereum.ChainConfig:
 		dec.Config = &goethereum.ChainConfig{}
 	default:

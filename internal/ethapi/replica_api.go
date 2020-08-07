@@ -2,7 +2,6 @@ package ethapi
 
 import (
   "context"
-  "math/big"
   "github.com/ethereum/go-ethereum/common/hexutil"
   "github.com/ethereum/go-ethereum/rpc"
 
@@ -33,7 +32,7 @@ func (s *EtherCattleBlockChainAPI) EstimateGasList(ctx context.Context, argsList
 		if err != nil {
 			return nil, err
 		}
-		gasCap.Sub(gasCap, new(big.Int).SetUint64(uint64(gas)))
+		gasCap -= uint64(gas)
 		returnVals[idx] = gas
 	}
 	return returnVals, nil

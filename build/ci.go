@@ -96,11 +96,11 @@ var (
 			Description: "Ethereum bootnode.",
 		},
 		{
-			BinaryName: "echaindb",
+			BinaryName:  "echaindb",
 			Description: "Developer utility to inspect and manage the chain database",
 		},
 		{
-			BinaryName: "echainspec",
+			BinaryName:  "echainspec",
 			Description: "Developer utility to manage chain external chain configuration",
 		},
 		{
@@ -366,7 +366,7 @@ func doLint(cmdline []string) {
 
 // downloadLinter downloads and unpacks golangci-lint.
 func downloadLinter(cachedir string) string {
-	const version = "1.26.0"
+	const version = "1.27.0"
 
 	csdb := build.MustLoadChecksums("build/checksums.txt")
 	base := fmt.Sprintf("golangci-lint-%s-%s-%s", version, runtime.GOOS, runtime.GOARCH)
@@ -894,11 +894,12 @@ func gomobileTool(subcmd string, args ...string) *exec.Cmd {
 		"PATH=" + GOBIN + string(os.PathListSeparator) + os.Getenv("PATH"),
 	}
 	for _, e := range os.Environ() {
-		if strings.HasPrefix(e, "GOPATH=") || strings.HasPrefix(e, "PATH=") {
+		if strings.HasPrefix(e, "GOPATH=") || strings.HasPrefix(e, "PATH=") || strings.HasPrefix(e, "GOBIN=") {
 			continue
 		}
 		cmd.Env = append(cmd.Env, e)
 	}
+	cmd.Env = append(cmd.Env, "GOBIN="+GOBIN)
 	return cmd
 }
 
@@ -967,7 +968,7 @@ func doXCodeFramework(cmdline []string) {
 
 	if *local {
 		// If we're building locally, use the build folder and stop afterwards
-		bind.Dir, _ = filepath.Abs(GOBIN)
+		bind.Dir = GOBIN
 		build.MustRun(bind)
 		return
 	}
@@ -1108,6 +1109,8 @@ func doPurge(cmdline []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("Found %d blobs\n", len(blobs))
+
 	// Iterate over the blobs, collect and sort all unstable builds
 	for i := 0; i < len(blobs); i++ {
 		if !strings.Contains(blobs[i].Name, "unstable") {
@@ -1129,6 +1132,7 @@ func doPurge(cmdline []string) {
 			break
 		}
 	}
+	fmt.Printf("Deleting %d blobs\n", len(blobs))
 	// Delete all marked as such and return
 	if err := build.AzureBlobstoreDelete(auth, blobs); err != nil {
 		log.Fatal(err)

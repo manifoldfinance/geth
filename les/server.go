@@ -32,8 +32,8 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
 	"github.com/ethereum/go-ethereum/params/types/goethereum"
-	"github.com/ethereum/go-ethereum/params/types/multigeth"
 	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rpc"
 )
@@ -79,8 +79,8 @@ func NewLesServer(e *eth.Ethereum, config *eth.Config) (*LesServer, error) {
 			iConfig:          light.DefaultServerIndexerConfig,
 			chainDb:          e.ChainDb(),
 			chainReader:      e.BlockChain(),
-			chtIndexer:       light.NewChtIndexer(e.ChainDb(), nil, vars.CHTFrequency, vars.HelperTrieProcessConfirmations),
-			bloomTrieIndexer: light.NewBloomTrieIndexer(e.ChainDb(), nil, vars.BloomBitsBlocks, vars.BloomTrieFrequency),
+			chtIndexer:       light.NewChtIndexer(e.ChainDb(), nil, vars.CHTFrequency, vars.HelperTrieProcessConfirmations, true),
+			bloomTrieIndexer: light.NewBloomTrieIndexer(e.ChainDb(), nil, vars.BloomBitsBlocks, vars.BloomTrieFrequency, true),
 			closeCh:          make(chan struct{}),
 		},
 		archiveMode:  e.ArchiveMode(),
@@ -98,7 +98,7 @@ func NewLesServer(e *eth.Ethereum, config *eth.Config) (*LesServer, error) {
 	// Set up checkpoint oracle.
 	oracle := config.CheckpointOracle
 	if oracle == nil {
-		if p, ok := e.BlockChain().Config().(*multigeth.MultiGethChainConfig); ok {
+		if p, ok := e.BlockChain().Config().(*coregeth.CoreGethChainConfig); ok {
 			oracle = p.TrustedCheckpointOracle
 		} else if p, ok := e.BlockChain().Config().(*goethereum.ChainConfig); ok {
 			oracle = p.TrustedCheckpointOracle
@@ -163,7 +163,7 @@ func (s *LesServer) Protocols() []p2p.Protocol {
 			return p.Info()
 		}
 		return nil
-	})
+	}, nil)
 	// Add "les" ENR entries.
 	for i := range ps {
 		ps[i].Attributes = []enr.Entry{&lesEntry{}}
