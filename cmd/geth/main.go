@@ -507,8 +507,10 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 			log.Warn("The flag --minerthreads is deprecated and will be removed in the future, please use --miner.threads")
 		}
 
-		if err := ethereum.StartMining(threads); err != nil {
-			utils.Fatalf("Failed to start mining: %v", err)
+		if ctx.GlobalIsSet(utils.LegacyMinerThreadsFlag.Name) || ctx.GlobalBool(utils.MinerThreadsFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) {
+		  if err := ethereum.StartMining(threads); err != nil {
+		    utils.Fatalf("Failed to start mining: %v", err)
+		  }
 		}
 
 		if brokerURL := ctx.GlobalString(utils.KafkaLogBrokerFlag.Name); brokerURL != "" {
