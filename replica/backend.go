@@ -159,7 +159,6 @@ func (backend *ReplicaBackend) GetTd(ctx context.Context, blockHash common.Hash)
 }
 	// Use core.NewEVMContext and vm.NewEVM - Will need custom ChainContext implementation
 func (backend *ReplicaBackend) GetEVM(ctx context.Context, msg core.Message, state *state.StateDB, header *types.Header) (*vm.EVM, func() error, error) {
-  state.SetBalance(msg.From(), math.MaxBig256)
   vmError := func() error {
     if backend.evmSemaphore != nil {
       <-backend.evmSemaphore
