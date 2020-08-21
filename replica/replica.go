@@ -227,6 +227,10 @@ func NewReplica(db ethdb.Database, config *eth.Config, ctx *node.ServiceContext,
     return nil, err
   }
   headChan = make(chan []byte, 10)
+  if syncShutdown {
+    // Don't warm these addresses if syncShutdown is true
+    warmAddressFile = ""
+  }
   replica := &Replica{db, hc, chainConfig, bc, transactionProducer, transactionConsumer, make(chan bool), consumer.TopicName(), maxOffsetAge, maxBlockAge, headChan, nil, nil, evmConcurrency, warmAddressFile, quit, halted, enableSnapshot}
   backend := replica.GetBackend()
   if graphqlEnabled {
