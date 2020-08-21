@@ -912,6 +912,7 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, prevState *PreviousSt
 	if err != nil {
 		return result, nil, fmt.Errorf("err: %w (supplied gas %d)", err, msg.Gas())
 	}
+	prevState.header.Root = prevState.state.IntermediateRoot(b.ChainConfig().IsEIP158(prevState.header.Number))
 	return result, prevState, err
 }
 
@@ -965,6 +966,7 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 	}
 
 	result, _, err := DoCall(ctx, s.b, args, nil, blockNrOrHash, accounts, vm.Config{}, timeout, s.b.RPCGasCap())
+
 	if err != nil {
 		return nil, err
 	}
@@ -975,7 +977,24 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 	return result.Return(), result.Err
 }
 
-func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *PreviousState, blockNrOrHash rpc.BlockNumberOrHash, gasCap uint64) (hexutil.Uint64, *PreviousState, error) {
+type estimateGasError struct {
+	error  string // Concrete error type if it's failed to estimate gas usage
+	vmerr  error  // Additional field, it's non-nil if the given transaction is invalid
+	revert string // Additional field, it's non-empty if the transaction is reverted and reason is provided
+}
+
+func (e estimateGasError) Error() string {
+	errMsg := e.error
+	if e.vmerr != nil {
+		errMsg += fmt.Sprintf(" (%v)", e.vmerr)
+	}
+	if e.revert != "" {
+		errMsg += fmt.Sprintf(" (%s)", e.revert)
+	}
+	return errMsg
+}
+
+func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *PreviousState, blockNrOrHash rpc.BlockNumberOrHash, gasCap uint64, approx bool) (hexutil.Uint64, *PreviousState, error) {
 	// Binary search the gas requirement, as it may be higher than the amount used
 	var (
 		lo        uint64 = vars.TxGas - 1
@@ -1065,7 +1084,9 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 		} else {
 			hi = mid
 		}
+		if approx && (hi - lo) < (hi / 100) { break }
 	}
+	log.Info("Gas estimation complete", "hi", hi, "lo", lo, "mid", (hi + lo) / 2)
 	// Reject the transaction as invalid if it still fails at the highest allowance
 	if hi == cap {
 		failed, result, err := executable(hi)
@@ -1090,7 +1111,7 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 // given transaction against the current pending block.
 func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (hexutil.Uint64, error) {
 	blockNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-	gas, _, err := DoEstimateGas(ctx, s.b, args, nil, blockNrOrHash, s.b.RPCGasCap())
+	gas, _, err := DoEstimateGas(ctx, s.b, args, nil, blockNrOrHash, s.b.RPCGasCap(), false)
 	return gas, err
 }
 
@@ -1562,7 +1583,7 @@ func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
 			Data:     input,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, _, err := DoEstimateGas(ctx, b, callArgs, nil, pendingBlockNr, b.RPCGasCap())
+		estimated, _, err := DoEstimateGas(ctx, b, callArgs, nil, pendingBlockNr, b.RPCGasCap(), false)
 		if err != nil {
 			return err
 		}
