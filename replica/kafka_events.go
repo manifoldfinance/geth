@@ -3,6 +3,7 @@ package replica
 import (
   "github.com/Shopify/sarama"
   "fmt"
+  "compress/zlib"
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/core"
   "github.com/ethereum/go-ethereum/core/rawdb"
@@ -15,16 +16,80 @@ import (
   // "encoding/hex"
 )
 
+type MsgType byte
+
 const (
-  BlockMsg = byte(0)
-  LogMsg = byte(1)
-  EmitMsg = byte(2)
+  BlockMsg MsgType = iota
+  ReceiptMsg
+  LogMsg
 )
 
+func compress(data []byte) []byte {
+  if len(data) == 0 { return data }
+  var b bytes.Buffer
+  w := zlib.NewWriter(&b)
+  w.Write(data)
+  w.Close()
+  return b.Bytes()
+}
+
+func decompress(data []byte) ([]byte, error) {
+  if len(data) == 0 { return data, nil }
+  r, err := zlib.NewReader(bytes.NewBuffer(data))
+  if err != nil { return []byte{}, err }
+  return ioutil.ReadAll(r)
+}
+
+type receiptMeta struct {
+  contractAddress common.Address
+  cumulativeGasUsed uint64
+  gasUsed uint64
+  status uint64
+  logCount uint64
+  logsBloom types.Bloom
+}
+
+type rlpReceiptMeta struct {
+  ContractAddress common.Address
+  CumulativeGasUsed uint64
+  GasUsed uint64
+  Status uint64
+  LogCount uint64
+  LogsBloom []byte
+}
+
+func (r *receiptMeta) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, rlpReceiptMeta{
+    ContractAddress: r.contractAddress,
+    CumulativeGasUsed: r.cumulativeGasUsed,
+    GasUsed: r.gasUsed,
+    Status: r.status,
+    LogCount: r.logCount,
+    LogsBloom: compress(r.logsBloom.Bytes()),
+  })
+}
+
+func (r *receiptMeta) DecodeRLP(s *rlp.Stream) error {
+  var dec rlpReceiptMeta
+	err := s.Decode(&dec)
+	if err == nil {
+		r.contractAddress, r.cumulativeGasUsed, r.gasUsed, r.status, r.logCount = dec.ContractAddress, dec.CumulativeGasUseddec.GasUsed, dec.Status, dec.LogCount
+    r.logsBloom, err = decompress(dec.LogsBloom)
+	}
+	return err
+}
+
+type ChainEvent struct {
+  Block *types.Block
+  receiptMeta map[common.Hash]*receiptMeta
+  logs map[common.Hash][]*types.Log
+}
+
 type chainEventProvider interface {
-  GetChainEvent(common.Hash, uint64) (core.ChainEvent, error)
+  GetChainEvent(common.Hash, uint64) (*ChainEvent, error)
   GetBlock(common.Hash) (*types.Block, error)
   GetHeadBlockHash() (common.Hash)
+  GetFullChainEvent(ce core.ChainEvent) (*ChainEvent, error)
 }
 
 type dbChainEventProvider struct {
@@ -41,21 +106,210 @@ func (cep *dbChainEventProvider) GetBlock(h common.Hash) (*types.Block, error) {
   if block == nil { return nil, fmt.Errorf("Error retrieving block %#x", h)}
   return block, nil
 }
-func (cep *dbChainEventProvider) GetChainEvent(h common.Hash, n uint64) (core.ChainEvent, error) {
+func (cep *dbChainEventProvider) GetChainEvent(h common.Hash, n uint64) (*ChainEvent, error) {
   block := rawdb.ReadBlock(cep.db, h, n)
-  if block == nil { return core.ChainEvent{}, fmt.Errorf("Block %#x missing from database", h)}
+  if block == nil { return nil, fmt.Errorf("Block %#x missing from database", h)}
   genesisHash := rawdb.ReadCanonicalHash(cep.db, 0)
   chainConfig := rawdb.ReadChainConfig(cep.db, genesisHash)
   receipts := rawdb.ReadReceipts(cep.db, h, n, chainConfig)
-  logs := []*types.Log{}
+  logs := make(map[common.Hash][]*types.Log)
+  receiptMeta := make(map[common.Hash][]*receiptMeta)
   if receipts != nil {
     // Receipts will be nil if the list is empty, so this is not an error condition
     for _, receipt := range receipts {
-      logs = append(logs, receipt.Logs...)
+      logs[receipt.Hash] = receipt.Logs
+      receiptMeta[receipt.Hash] = &receiptMeta{
+        ContractAddress: receipt.ContractAddress,
+        CumulativeGasUsed: receipt.CumulativeGasUsed,
+        GasUsed: receipt.GasUsed,
+        Status: receipt.Status,
+        LogsBloom: receipt.Bloom,
+        LogCount: len(receipt.Logs),
+      }
     }
   }
-  return core.ChainEvent{Block: block, Hash: block.Hash(), Logs: logs}, nil
+  return &ChainEvent{Block: block, receiptMeta: receiptMeta, logs: logs}, nil
 }
+
+func (cep *dbChainEventProvider) GetFullChainEvent(ce core.ChainEvent) (*ChainEvent, error) {
+  genesisHash := rawdb.ReadCanonicalHash(cep.db, 0)
+  chainConfig := rawdb.ReadChainConfig(cep.db, genesisHash)
+  receipts := rawdb.ReadReceipts(cep.db, ce.Block.Hash(), ce.Block.NumberU64(), chainConfig)
+  logs := make(map[common.Hash][]*types.Log)
+  receiptMeta := make(map[common.Hash][]*receiptMeta)
+  if receipts != nil {
+    for _, receipt := range receipts {
+      logs[receipt.Hash] = receipt.Logs
+      receiptMeta[receipt.Hash] = &receiptMeta{
+        ContractAddress: receipt.ContractAddress,
+        CumulativeGasUsed: receipt.CumulativeGasUsed,
+        GasUsed: receipt.GasUsed,
+        Status: receipt.Status,
+        LogsBloom: receipt.Bloom,
+        LogCount: len(receipt.Logs),
+      }
+    }
+  }
+  return &ChainEvent{Block: ce.Block, receiptMeta: receiptMeta, logs: logs}, nil
+}
+
+func (chainEvent *ChainEvent) getMessages(cep chainEventProvider) ([][]byte, error) {
+  blockBytes, err := rlp.EncodeToBytes(chainEvent.Block)
+  if err != nil { return nil, err }
+  result := [][]byte{append([]byte{BlockMsg}, blockBytes...)}
+  for i, transaction := range chainEvent.Block.Transactions() {
+    result = append(result, append(append(append([]byte{ReceiptMsg}, chainEvent.Block.Hash().Bytes()...), transaction.Hash().Bytes()...), rlp.EncodeToBytes(chainEvent.receiptMeta[transaction.Hash()])...))
+    for _, logRecord := range chainEvent.Logs[transaction.Hash()] {
+      logBytes, err := rlp.EncodeToBytes(rlpLog{logRecord, logRecord.BlockNumber, logRecord.TxHash, logRecord.TxIndex, logRecord.BlockHash, logRecord.Index})
+      if err != nil { return result, err }
+      result = append(result, append([]byte{LogMsg}, logBytes...))
+    }
+  }
+  return result, nil
+}
+
+type chainEventTracker struct {
+  chainEvents map[common.Hash]*ChainEvent
+  receiptCounter map[common.Hash]int
+  logCounter map[common.Hash]int
+  earlyReceipts map[common.Hash]map[common.Hash]*receiptMeta
+  earlyLogs map[common.Hash]map[common.Hash]map[uint]*types.Log
+  finished map[common.Hash]bool
+  oldFinished map[common.Hash]bool
+  finishedLimit int
+  lastEmittedBlock common.Hash
+  pendingEmits map[common.Hash]common.Hash
+  feed event.Feed
+}
+
+func (cet.chainEventTracker) HandleMessage(data []byte) error {
+  var blockhash common.Hash
+  switch data[0] {
+  case BlockMsg:
+    block := &types.Block{}
+    if err := rlp.DecodeBytes(data[1:], block); err != nil {
+      return fmt.Errorf("Error decoding block")
+    }
+    blockhash := block.Hash()
+    if _, ok := cet.chainEvents[blockhash]; ok { return nil } // We've already seen this block. Ignore
+    cet.chainEvents[blockhash] = &ChainEvent{
+      Block: block,
+      receiptMeta: make(map[common.Hash]receiptMeta),
+      logs: make(map[common.Hash][]*types.Log),
+      receiptCounter: len(block.Transactions()),
+    }
+    if earlyReceipts, ok := cet.earlyReceipts[blockhash]; ok {
+      for txhash, rmeta := range earlyReceipts {
+        cet.HandleReceipt(block.Hash(), txhash, rmeta)
+      }
+      delete(cet.earlyReceipts, blockhash)
+    }
+  case ReceiptMsg:
+    blockhash = common.BytesToHash(data[1:33])
+    txhash := common.BytesToHash(data[33:65])
+    rmeta := &receiptMeta{}
+    if err := rlp.DecodeBytes(data[65:], rmeta); err != nil {
+      return fmt.Errorf("Error decoding receipt: %v", err.Error())
+    }
+    if _, ok := cet.chainEvents[blockhash]; !ok {
+      if _, ok := cet.earlyReceipts[blockhash]; !ok {
+        cet.earlyReceipts[blockhash] = make(map[common.Hash]*receiptMeta)
+      }
+      cet.earlyReceipts[blockhash][txhash] = rmeta
+      return nil
+    }
+    cet.HandleReceipt(blockhash, txhash, rmeta)
+  case LogMsg:
+    logRlp := &rlpLog{}
+    if err := rlp.DecodeBytes(data[1:], logRlp); err != nil {
+      return fmt.Errorf("Error decoding log: %v", err.Error())
+    }
+    logRecord := logRlp.Log
+    logRecord.BlockNumber = logRlp.BlockNumber
+    logRecord.TxHash = logRlp.TxHash
+    logRecord.TxIndex = logRlp.TxIndex
+    logRecord.BlockHash = logRlp.BlockHash
+    logRecord.Index = logRlp.Index
+    blockhash = logRlp.BlockHash
+    txhash := logRlp.TxHash
+    if _, ok := cet.chainEvents[blockhash]; !ok {
+      cet.HandleEarlyLog(blockhash, txhash, logRecord)
+      return nil // Log is early, nothing else to do
+    }
+    if _, ok := cet.chainEvents[blockhash].receiptMeta[txhash]; !ok {
+      cet.HandleEarlyLog(blockhash, txhash, logRecord)
+      return nil // Log is early, nothing else to do
+    }
+    if cet.chainEvents[blockhash].logs[txhash][log.TransactionIndex] != nil {
+      return nil // Log is already present, nothing else to do
+    }
+    cet.chainEvents[blockhash].logs[txhash][log.TransactionIndex] = logRecord
+    cet.logCounter[blockhash]--
+  }
+  if cet.logCounter[blockhash] == 0 && cet.receiptCounter[blockhash] == 0 {
+    // Last message of block. Emit the chain event on appropriate feeds.
+    ce := cet.chainEvents[blockhash]
+    if ce.Block.Hash() == cet.lastEmittedBlock {
+      return nil
+    }
+    if ce.Block.ParentHash() == cet.lastEmittedBlock || consumer.lastEmittedBlock == (common.Hash{}) {
+      cet.Emit([]*ChainEvent{ce}, []*ChainEvent{})
+    } else {
+      lastce := cet.chainEvents[cet.lastEmittedBlock]
+      if ce.Block.TotalDifficulty().Cmp(lastce.Block.TotalDifficulty()) <= 0 {
+        // Don't emit reorgs until there's a block with a higher difficulty
+        return nil
+      }
+    }
+    //   revertBlocks, newBlocks, err := findCommonAncestor(event, lastEmittedEvent, []map[common.Hash]*core.ChainEvent{consumer.currentMap, consumer.oldMap})
+    //   if err != nil {
+    //     log.Error("Error finding common ancestor", "newBlock", event.Hash, "oldBlock", consumer.lastEmittedBlock, "error", err)
+    //     return err
+    //   }
+    //   if len(newBlocks) > 0 {
+    //     // If we have only revert blocks, this is just an out-of-order
+    //     // block, and should be ignored.
+    //     consumer.Emit(newBlocks, revertBlocks)
+    //   }
+    //   if len(consumer.currentMap) > consumer.recoverySize {
+    //     consumer.oldMap = consumer.currentMap
+    //     consumer.currentMap = make(map[common.Hash]*core.ChainEvent)
+    //     consumer.currentMap[consumer.lastEmittedBlock] = consumer.oldMap[consumer.lastEmittedBlock]
+    //   }
+    // }
+  }
+}
+
+func (cet.chainEventTracker) HandleEarlyLog(blockhash, txhash common.Hash, logRecord *types.Log) {
+  if _, ok := cet.earlyLogs[blockhash]; !ok {
+    cet.earlyLogs[blockhash] = make(map[common.Hash][]*types.Log)
+  }
+  if _, ok := cet.earlyLogs[blockhash][txhash]; !ok {
+    cet.earlyLogs[blockhash][txhash] = make(map[uint]*types.Log)
+  }
+  cet.earlyLogs[blockhash][txhash][logRecord.TransactionIndex] = logRecord
+}
+
+func (cet.chainEventTracker) HandleReceipt(blockhash, txhash common.Hash, rmeta *receiptMeta) {
+  if _, ok := cet.chainEvents[blockhash].receiptMeta[txhash]; ok { return } // We already have this receipt
+  cet.chainEvents[blockhash].receiptMeta[txhash] = rmeta
+  cet.chainEvents[blockhash].logs[txhash] = make([]*types.Log, rmeta.logCount)
+  cet.logCounter[blockhash] += rmeta.logCount
+  if earlyLogs, ok := cet.earlyLogs[blockhash]; ok {
+    if logs, ok := earlyLogs[txhash]; ok {
+      for _, log := range logs {
+        cet.chainEvents[blockhash].logs[txhash][log.TransactionIndex] = log
+        cet.logCounter[blockhash]--
+      }
+    }
+    delete(earlyLogs, txhash)
+    if len(earlyLogs) == 0 {
+      delete(cet.earlyLogs, blockhash) // This was the last receipt with early logs, so clean up
+    }
+  }
+  cet.receiptCounter[blockhash]--
+}
+
 
 
 type KafkaEventProducer struct {
