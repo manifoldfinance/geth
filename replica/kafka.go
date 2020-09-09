@@ -58,7 +58,7 @@ func NewKafkaTransactionProducerFromURLs(brokerURL, topic string) (TransactionPr
   configEntries := make(map[string]*string)
   configEntries["retention.ms"] = strPtr("3600000")
   brokers, config := cdc.ParseKafkaURL(brokerURL)
-  if err := cdc.CreateTopicIfDoesNotExist(brokerURL, topic, 6, configEntries); err != nil {
+  if err := cdc.CreateTopicIfDoesNotExist(brokerURL, topic, 0, configEntries); err != nil {
     return nil, err
   }
   config.Producer.Return.Successes=true
@@ -119,7 +119,7 @@ func NewKafkaTransactionConsumerFromURLs(brokerURL, topic string) (TransactionCo
   configEntries := make(map[string]*string)
   configEntries["retention.ms"] = strPtr("3600000")
   brokers, config := cdc.ParseKafkaURL(brokerURL)
-  if err := cdc.CreateTopicIfDoesNotExist(brokerURL, topic, 6, configEntries); err != nil {
+  if err := cdc.CreateTopicIfDoesNotExist(brokerURL, topic, 0, configEntries); err != nil {
     return nil, err
   }
   client, err := sarama.NewClient(brokers, config)
