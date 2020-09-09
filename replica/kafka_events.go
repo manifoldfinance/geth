@@ -51,7 +51,7 @@ type receiptMeta struct {
   cumulativeGasUsed uint64
   gasUsed uint64
   status uint64
-  logCount int
+  logCount uint
   logsBloom types.Bloom
 }
 
@@ -60,7 +60,7 @@ type rlpReceiptMeta struct {
   CumulativeGasUsed uint64
   GasUsed uint64
   Status uint64
-  LogCount int
+  LogCount uint
   LogsBloom []byte
 }
 
@@ -147,7 +147,7 @@ func (cep *dbChainEventProvider) GetFullChainEvent(ce core.ChainEvent) (*ChainEv
         gasUsed: receipt.GasUsed,
         status: receipt.Status,
         logsBloom: receipt.Bloom,
-        logCount: len(receipt.Logs),
+        logCount: uint(len(receipt.Logs)),
       }
     }
   }
@@ -159,11 +159,11 @@ type chainEventMessage struct {
   value []byte
 }
 
-func (chainEvent *ChainEvent) getMessages(cep chainEventProvider) ([]chainEventMessage, error) {
+func (chainEvent *ChainEvent) getMessages() ([]chainEventMessage) {
   blockBytes, err := rlp.EncodeToBytes(chainEvent.Block)
-  if err != nil { return nil, err }
+  if err != nil { panic(err.Error()) }
   tdBytes, err := rlp.EncodeToBytes(chainEvent.Td)
-  if err != nil { return nil, err }
+  if err != nil { panic(err.Error()) }
   result := []chainEventMessage{
     chainEventMessage{
       key: append([]byte{byte(BlockMsg)}, chainEvent.Block.Hash().Bytes()...),
@@ -177,7 +177,7 @@ func (chainEvent *ChainEvent) getMessages(cep chainEventProvider) ([]chainEventM
   receiptKeyPrefix := append([]byte{byte(ReceiptMsg)}, chainEvent.Block.Hash().Bytes()...)
   for _, transaction := range chainEvent.Block.Transactions() {
     rmetabytes, err := rlp.EncodeToBytes(chainEvent.ReceiptMeta[transaction.Hash()])
-    if err != nil { return nil, err }
+    if err != nil { panic(err.Error()) }
     txkey := append(receiptKeyPrefix, transaction.Hash().Bytes()...)
     result = append(result, chainEventMessage{
       key: txkey,
@@ -185,17 +185,17 @@ func (chainEvent *ChainEvent) getMessages(cep chainEventProvider) ([]chainEventM
     })
     logKeyPrefix := append([]byte{byte(LogMsg)}, chainEvent.Block.Hash().Bytes()...)
     for _, logRecord := range chainEvent.Logs[transaction.Hash()] {
-      logNumberRlp, err := rlp.EncodeToBytes(logRecord.Index)
-      if err != nil { return nil, err }
+      logNumberRlp, err := rlp.EncodeToBytes(big.NewInt(int64(logRecord.Index)))
+      if err != nil { panic(err.Error()) }
       logBytes, err := rlp.EncodeToBytes(rlpLog{logRecord, logRecord.BlockNumber, logRecord.TxHash, logRecord.TxIndex})
-      if err != nil { return result, err }
+      if err != nil { panic(err.Error()) }
       result = append(result, chainEventMessage{
         key: append(logKeyPrefix, logNumberRlp...),
         value: logBytes,
       })
     }
   }
-  return result, nil
+  return result
 }
 
 type chainEventTracker struct {
@@ -273,7 +273,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
   case LogMsg:
     logRlp := &rlpLog{}
     blockhash = common.BytesToHash(key[1:33])
-    var logIndex uint
+    var logIndex big.Int
     err := rlp.DecodeBytes(key[33:], &logIndex)
     if err != nil { return nil, fmt.Errorf("Error decoding log key: %v", err.Error())}
     if err := rlp.DecodeBytes(value, logRlp); err != nil {
@@ -284,7 +284,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     logRecord.TxHash = logRlp.TxHash
     logRecord.TxIndex = logRlp.TxIndex
     logRecord.BlockHash = blockhash
-    logRecord.Index = logIndex
+    logRecord.Index = uint(logIndex.Int64())
     txhash := logRlp.TxHash
     if _, ok := cet.chainEvents[blockhash]; !ok {
       cet.HandleEarlyLog(blockhash, txhash, logRecord)
@@ -300,13 +300,13 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     cet.chainEvents[blockhash].Logs[txhash][logRecord.TxIndex] = logRecord
     cet.logCounter[blockhash]--
   }
-  if cet.logCounter[blockhash] == 0 && cet.receiptCounter[blockhash] == 0 && !(cet.finished[blockhash] || cet.oldFinished[blockhash]) {
+  if !(cet.finished[blockhash] || cet.oldFinished[blockhash]) && cet.logCounter[blockhash] == 0 && cet.receiptCounter[blockhash] == 0 {
     // Last message of block. Emit the chain event on appropriate feeds.
     ce := cet.chainEvents[blockhash]
-    if ce.Block.Hash() == cet.lastEmittedBlock {
+    if ce == nil || ce.Block.Hash() == cet.lastEmittedBlock {
       return nil, nil
     }
-    if ce.Td != nil {
+    if ce.Td == nil {
       // If Td is not set yet, we need to wait for it.
       return nil, nil
     }
@@ -329,6 +329,8 @@ func (cet *chainEventTracker) HandleReadyCE(blockhash common.Hash) (*ChainEvents
   if ce.Td.Cmp(lastce.Td) <= 0 {
     // Don't emit reorgs until there's a block with a higher difficulty
     cet.finished[blockhash] = true
+    delete(cet.logCounter, blockhash)
+    delete(cet.receiptCounter, blockhash)
     if child, ok := cet.pendingEmits[blockhash]; ok {
       // This block's child is already pending, process it instead
       return cet.HandleReadyCE(child)
@@ -360,6 +362,8 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
   if len(new) > 0 {
     cet.lastEmittedBlock = new[len(new) - 1].Block.Hash()
     cet.finished[cet.lastEmittedBlock] = true
+    delete(cet.logCounter, cet.lastEmittedBlock)
+    delete(cet.receiptCounter, cet.lastEmittedBlock)
   }
   for hash, ok := cet.pendingEmits[cet.lastEmittedBlock]; ok; hash, ok = cet.pendingEmits[cet.lastEmittedBlock] {
     new = append(new, cet.chainEvents[hash])
@@ -422,7 +426,7 @@ func (cet *chainEventTracker) HandleReceipt(blockhash, txhash common.Hash, rmeta
   if _, ok := cet.chainEvents[blockhash].ReceiptMeta[txhash]; ok { return } // We already have this receipt
   cet.chainEvents[blockhash].ReceiptMeta[txhash] = rmeta
   cet.chainEvents[blockhash].Logs[txhash] = make([]*types.Log, rmeta.logCount)
-  cet.logCounter[blockhash] += rmeta.logCount
+  cet.logCounter[blockhash] += int(rmeta.logCount)
   if earlyLogs, ok := cet.earlyLogs[blockhash]; ok {
     if logs, ok := earlyLogs[txhash]; ok {
       for _, log := range logs {
@@ -460,8 +464,7 @@ type rlpLog struct {
 func (producer *KafkaEventProducer) Emit(chainEvent core.ChainEvent) error {
   ce, err := producer.cep.GetFullChainEvent(chainEvent)
   if err != nil { return err }
-  events, err := ce.getMessages(producer.cep)
-  if err != nil { return err }
+  events := ce.getMessages()
   inflight := 0
   for _, msg := range events {
     // Send events to Kafka or get errors from previous sends
