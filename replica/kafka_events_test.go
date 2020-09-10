@@ -46,7 +46,7 @@ func (cep *mockChainEventProvider) GetChainEvent(h common.Hash, n uint64) (core.
 func (cep *mockChainEventProvider) GetHeadBlockHash() common.Hash {
   var highest *ChainEvent
   for _, v := range cep.kv {
-    if highest.Block.Hash() == (common.Hash{}) || v.Block.NumberU64() > highest.Block.NumberU64() {
+    if highest == nil || highest.Block.Hash() == (common.Hash{}) || v.Block.NumberU64() > highest.Block.NumberU64() {
       highest = v
     }
   }
@@ -59,8 +59,11 @@ func (cep *mockChainEventProvider) GetFullChainEvent(ce core.ChainEvent) (*Chain
 }
 
 
-func getTestProducer(kv map[common.Hash]*ChainEvent) *KafkaEventProducer {
-  if kv == nil { kv = make(map[common.Hash]*ChainEvent) }
+func getTestProducer(ces []*ChainEvent) *KafkaEventProducer {
+  kv := make(map[common.Hash]*ChainEvent)
+  for _, ce := range ces {
+    kv[ce.Block.Hash()] = ce
+  }
   return &KafkaEventProducer{
     nil,
     "",
@@ -200,6 +203,7 @@ func expectToConsume(name string, ch interface{}, count int, t *testing.T) {
   chanval := reflect.ValueOf(ch)
 
   for i := 0; i < count; i++ {
+    runtime.Gosched() // Let other goroutines populate the channel between selects
     chosen, _, _ := reflect.Select([]reflect.SelectCase{
       reflect.SelectCase{Dir: reflect.SelectRecv, Chan: chanval},
       reflect.SelectCase{Dir: reflect.SelectDefault},
@@ -375,46 +379,15 @@ func TestReorg(t *testing.T) {
       },
     )
   })
+  t.Run("Test replay", func(t *testing.T) {
+    producer := getTestProducer([]*ChainEvent{a, b, c, d})
+    events := make(chan core.ChainEvent)
+    go producer.ReprocessEvents(events, 3)
+    runtime.Gosched()
+    expectToConsume("replay events", events, 3, t)
+  })
 }
 
-// type eventSubscriber struct {
-//   feed event.Feed
-// }
-//
-// func (es *eventSubscriber) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
-//   return es.feed.Subscribe(ch)
-// }
-//
-// func TestReorgNotEmittedMessages(t *testing.T) {
-//   kv := make(map[common.Hash]core.ChainEvent)
-//   producer := getTestProducer(kv)
-//   es := &eventSubscriber{}
-//   mockProducer := mocks.NewSyncProducer(t, nil)
-//   producer.producer = mockProducer
-//   for i := 0; i < 12; i ++ {
-//     mockProducer.ExpectSendMessageAndSucceed()
-//   }
-//   producer.RelayEvents(es)
-//   runtime.Gosched() // Make sure subscriptions get set up before we start sending
-//   root := getTestHeader(0, 0, nil)
-//   rootCe := getChainEvent(root)
-//   base := getTestHeader(1, 1, root)
-//   uncle := getChainEvent(getTestHeader(1, 2, root))
-//   baseCe := getChainEvent(base)
-//   finalCe := getChainEvent(getTestHeader(2, 3, base))
-//   kv[baseCe.Hash] = baseCe
-//   kv[uncle.Hash] = uncle
-//   kv[rootCe.Hash] = rootCe
-//   es.feed.Send(rootCe)
-//   es.feed.Send(uncle)
-//   // Note that we never send base, but still expect it to get emitted because
-//   // it's finalCe's parent and available in the ChainEventProvider
-//   es.feed.Send(finalCe)
-//   runtime.Gosched()
-//   time.Sleep(200 * time.Millisecond)
-//   producer.Close()
-// }
-//
 //
 // func TestReprocessEvents(t *testing.T) {
 //   kv := make(map[common.Hash]core.ChainEvent)
