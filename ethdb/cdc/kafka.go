@@ -142,11 +142,14 @@ func CreateTopicIfDoesNotExist(brokerAddr, topic string, numPartitions int32, co
     topicDetails := make(map[string]*sarama.TopicDetail)
 
     maxBytes := "5000012"
-    configEntries["message.max.bytes"] = &maxBytes
+    configEntries["max.message.bytes"] = &maxBytes
     replicationFactor := int16(len(client.Brokers()))
     if replicationFactor > 3 {
       // If we have more than 3 brokers, only replicate to 3
       replicationFactor = 3
+    }
+    if numPartitions <= 0 {
+      numPartitions = int32(len(client.Brokers()))
     }
     topicDetails[topic] = &sarama.TopicDetail{
       ConfigEntries: configEntries,
