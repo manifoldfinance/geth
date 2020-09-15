@@ -227,6 +227,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     if sentHash := common.BytesToHash(key[1:]); blockhash != sentHash {
       log.Warn("blockhash != senthash", "calculated", blockhash, "sent", sentHash)
     }
+    cet.finished[block.Hash()] = false // Explicitly setting to false ensures it will be garbage collected if we never see the whole block
     if _, ok := cet.chainEvents[blockhash]; ok { return nil, nil } // We've already seen this block. Ignore
     cet.chainEvents[blockhash] = &ChainEvent{
       Block: block,
@@ -322,6 +323,10 @@ func (cet *chainEventTracker) HandleReadyCE(blockhash common.Hash) (*ChainEvents
   }
   if bh := ce.Block.ParentHash(); !(cet.finished[bh] || cet.oldFinished[bh]) {
     // The parent has not been emitted, save for later.
+
+    // NOTE: There is a possibility that we're overwriting another child here.
+    // That child will still exist in cet.chainEvents, so it can be handled as
+    // a reorg if a higher block on that chain eventually comes along.
     cet.pendingEmits[ce.Block.ParentHash()] = blockhash
     return nil, nil
   }

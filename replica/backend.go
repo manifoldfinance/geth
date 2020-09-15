@@ -54,7 +54,7 @@ type ReplicaBackend struct {
   chainSideFeed event.Feed
   evmSemaphore chan struct{}
   txPool *core.TxPool
-  snaps *snapshot.Tree
+  snaps snapshot.SnapshotTree
 }
 
 	// General Ethereum API

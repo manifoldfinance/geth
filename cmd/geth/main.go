@@ -246,7 +246,6 @@ func init() {
 		setHeadCommand,
 		verifyStateTrieCommand,
 		compactCommand,
-		kafkaEventsCommand,
 		stateMigrateCommand,
 		repairMigrationCommand,
 		repairFreezerIndexCommand,
