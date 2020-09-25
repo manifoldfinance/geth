@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/console/prompt"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -484,7 +485,7 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 	}
 
 	// Start auxiliary services if enabled
-	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name) != "" || ctx.GlobalString(utils.KafkaEventTopicFlag.Name) != "" {
+	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name) != "" || ctx.GlobalString(utils.KafkaEventTopicFlag.Name) != "" || ctx.GlobalString(utils.KafkaStateDeltaTopicFlag.Name) != "" {
 		// Mining only makes sense if a full Ethereum node is running
 		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
@@ -530,6 +531,11 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 				}
 				log.Info("Starting Kafka event producer relay", "broker", brokerURL, "topic", eventTopic)
 				producer.RelayEvents(ethereum.BlockChain())
+			}
+			if deltaTopic := ctx.GlobalString(utils.KafkaStateDeltaTopicFlag.Name); deltaTopic != "" {
+				if err := core.TapSnaps(ethereum.BlockChain(), brokerURL, deltaTopic); err != nil {
+					utils.Fatalf("Failed to tap blockchain for state delta topics", "err", err)
+				}
 			}
 		} else {
 			log.Info("Broker url missing")

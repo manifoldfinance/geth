@@ -70,7 +70,7 @@ type SnapshotTree interface {
   Cap(common.Hash, int) error
 }
 
-  type CDCTree struct {
+type CDCTree struct {
   tree SnapshotTree
   emitter stateDeltaEmitter
 }
