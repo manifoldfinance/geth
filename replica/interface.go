@@ -16,6 +16,7 @@ type EventConsumer interface {
   SubscribeChainEvents(ch chan<- ChainEvents) event.Subscription
   Start()
   Ready() chan struct{}
+  Close()
 }
 
 type TransactionProducer interface {
