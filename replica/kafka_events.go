@@ -295,10 +295,10 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
       cet.HandleEarlyLog(blockhash, txhash, logRecord)
       return nil, nil // Log is early, nothing else to do
     }
-    if cet.chainEvents[blockhash].Logs[txhash][logRecord.TxIndex] != nil {
+    if cet.chainEvents[blockhash].Logs[txhash][logRecord.Index] != nil {
       return nil, nil // Log is already present, nothing else to do
     }
-    cet.chainEvents[blockhash].Logs[txhash][logRecord.TxIndex] = logRecord
+    cet.chainEvents[blockhash].Logs[txhash][logRecord.Index] = logRecord
     cet.logCounter[blockhash]--
   }
   if !(cet.finished[blockhash] || cet.oldFinished[blockhash]) && cet.logCounter[blockhash] == 0 && cet.receiptCounter[blockhash] == 0 {
@@ -424,7 +424,7 @@ func (cet *chainEventTracker) HandleEarlyLog(blockhash, txhash common.Hash, logR
   if _, ok := cet.earlyLogs[blockhash][txhash]; !ok {
     cet.earlyLogs[blockhash][txhash] = make(map[uint]*types.Log)
   }
-  cet.earlyLogs[blockhash][txhash][logRecord.TxIndex] = logRecord
+  cet.earlyLogs[blockhash][txhash][logRecord.Index] = logRecord
 }
 
 func (cet *chainEventTracker) HandleReceipt(blockhash, txhash common.Hash, rmeta *ReceiptMeta) {
@@ -435,7 +435,7 @@ func (cet *chainEventTracker) HandleReceipt(blockhash, txhash common.Hash, rmeta
   if earlyLogs, ok := cet.earlyLogs[blockhash]; ok {
     if logs, ok := earlyLogs[txhash]; ok {
       for _, log := range logs {
-        cet.chainEvents[blockhash].Logs[txhash][log.TxIndex] = log
+        cet.chainEvents[blockhash].Logs[txhash][log.Index] = log
         cet.logCounter[blockhash]--
       }
     }
@@ -623,7 +623,7 @@ type KafkaEventConsumer struct {
   feed event.Feed
 }
 
-func (consumer *KafkaEventConsumer) SubscribeChainEvents(ch chan<- ChainEvents) event.Subscription {
+func (consumer *KafkaEventConsumer) SubscribeChainEvents(ch chan<- *ChainEvents) event.Subscription {
   return consumer.feed.Subscribe(ch)
 }
 
@@ -650,12 +650,14 @@ func (consumer *KafkaEventConsumer) Start() {
     readyWg.Add(1)
     warmupWg.Add(1)
     go func(readyWg, warmupWg *sync.WaitGroup) {
+      warm := false
       for input := range partitionConsumer.Messages() {
-        if input.Offset >= consumer.startingOffsets[input.Partition] {
+        if !warm && input.Offset >= consumer.startingOffsets[input.Partition] {
           // Once we're caught up with the startup offsets, wait until the
           // other partition consumers are too before continuing.
           warmupWg.Done()
           warmupWg.Wait()
+          warm = true
         }
         if consumer.ready != nil {
           if partitionConsumer.HighWaterMarkOffset() - input.Offset <= 1 {

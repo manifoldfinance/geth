@@ -72,7 +72,7 @@ func getTestProducer(ces []*ChainEvent) *KafkaEventProducer {
   }
 }
 
-func getTestConsumer() (*KafkaEventConsumer, chan ChainEvents, func()) {
+func getTestConsumer() (*KafkaEventConsumer, chan *ChainEvents, func()) {
   consumer := &KafkaEventConsumer{
     cet: &chainEventTracker {
       topic: "test",
@@ -95,7 +95,7 @@ func getTestConsumer() (*KafkaEventConsumer, chan ChainEvents, func()) {
     topic: "test",
     ready: make(chan struct{}),
   }
-  chainEventsCh := make(chan ChainEvents, 100)
+  chainEventsCh := make(chan *ChainEvents, 100)
   chainEventsSub := consumer.SubscribeChainEvents(chainEventsCh)
   close := func() {
     chainEventsSub.Unsubscribe()

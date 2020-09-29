@@ -13,7 +13,7 @@ type EventProducer interface {
 }
 
 type EventConsumer interface {
-  SubscribeChainEvents(ch chan<- ChainEvents) event.Subscription
+  SubscribeChainEvents(ch chan<- *ChainEvents) event.Subscription
   Start()
   Ready() chan struct{}
   Close()
