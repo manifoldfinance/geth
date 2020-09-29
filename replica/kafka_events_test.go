@@ -79,7 +79,7 @@ func getTestConsumer() (*KafkaEventConsumer, chan ChainEvents, func()) {
       chainEvents: make(map[common.Hash]*ChainEvent),
       receiptCounter: make(map[common.Hash]int),
       logCounter: make(map[common.Hash]int),
-      earlyReceipts: make(map[common.Hash]map[common.Hash]*receiptMeta),
+      earlyReceipts: make(map[common.Hash]map[common.Hash]*ReceiptMeta),
       earlyLogs: make(map[common.Hash]map[common.Hash]map[uint]*types.Log),
       earlyTd: make(map[common.Hash]*big.Int),
       finished: make(map[common.Hash]bool),
@@ -172,13 +172,13 @@ func getTestChainEvent(blockNo int64, nonce uint64, h *types.Header) *ChainEvent
 
 
   block := types.NewBlock(header, []*types.Transaction{tx}, []*types.Header{}, []*types.Receipt{&receipt})
-  rmetas := make(map[common.Hash]*receiptMeta)
-  rmetas[tx.Hash()] = &receiptMeta{
-    contractAddress: receipt.ContractAddress,
-    cumulativeGasUsed: receipt.CumulativeGasUsed,
-    gasUsed: receipt.GasUsed,
-    status: receipt.Status,
-    logsBloom: receipt.Bloom,
+  rmetas := make(map[common.Hash]*ReceiptMeta)
+  rmetas[tx.Hash()] = &ReceiptMeta{
+    ContractAddress: receipt.ContractAddress,
+    CumulativeGasUsed: receipt.CumulativeGasUsed,
+    GasUsed: receipt.GasUsed,
+    Status: receipt.Status,
+    LogsBloom: receipt.Bloom,
     logCount: uint(len(receipt.Logs)),
   }
   logs[tx.Hash()][0].BlockHash = block.Hash()

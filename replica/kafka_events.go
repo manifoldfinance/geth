@@ -52,7 +52,7 @@ type ReceiptMeta struct {
   GasUsed uint64
   LogsBloom types.Bloom
   Status uint64
-  LogCount uint
+  logCount uint
 }
 
 type rlpReceiptMeta struct {
@@ -64,32 +64,32 @@ type rlpReceiptMeta struct {
   LogCount uint
 }
 
-func (r *receiptMeta) EncodeRLP(w io.Writer) error {
+func (r *ReceiptMeta) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, rlpReceiptMeta{
-    ContractAddress: r.contractAddress,
-    CumulativeGasUsed: r.cumulativeGasUsed,
-    GasUsed: r.gasUsed,
-    Status: r.status,
+    ContractAddress: r.ContractAddress,
+    CumulativeGasUsed: r.CumulativeGasUsed,
+    GasUsed: r.GasUsed,
+    Status: r.Status,
     LogCount: r.logCount,
-    LogsBloom: compress(r.logsBloom.Bytes()),
+    LogsBloom: compress(r.LogsBloom.Bytes()),
   })
 }
 
-func (r *receiptMeta) DecodeRLP(s *rlp.Stream) error {
+func (r *ReceiptMeta) DecodeRLP(s *rlp.Stream) error {
   var dec rlpReceiptMeta
 	err := s.Decode(&dec)
 	if err == nil {
-		r.contractAddress, r.cumulativeGasUsed, r.gasUsed, r.status, r.logCount = dec.ContractAddress, dec.CumulativeGasUsed, dec.GasUsed, dec.Status, dec.LogCount
+		r.ContractAddress, r.CumulativeGasUsed, r.GasUsed, r.Status, r.logCount = dec.ContractAddress, dec.CumulativeGasUsed, dec.GasUsed, dec.Status, dec.LogCount
     var bloomBytes []byte
     bloomBytes, err = decompress(dec.LogsBloom)
-    r.logsBloom = types.BytesToBloom(bloomBytes)
+    r.LogsBloom = types.BytesToBloom(bloomBytes)
 	}
 	return err
 }
 
 type ChainEvent struct {
   Block *types.Block
-  ReceiptMeta map[common.Hash]*receiptMeta
+  ReceiptMeta map[common.Hash]*ReceiptMeta
   Logs map[common.Hash][]*types.Log
   Td *big.Int
 }
@@ -137,16 +137,16 @@ func (cep *dbChainEventProvider) GetFullChainEvent(ce core.ChainEvent) (*ChainEv
   receipts := rawdb.ReadReceipts(cep.db, ce.Block.Hash(), ce.Block.NumberU64(), chainConfig)
   td := rawdb.ReadTd(cep.db, ce.Block.Hash(), ce.Block.NumberU64())
   logs := make(map[common.Hash][]*types.Log)
-  rmeta := make(map[common.Hash]*receiptMeta)
+  rmeta := make(map[common.Hash]*ReceiptMeta)
   if receipts != nil {
     for _, receipt := range receipts {
       logs[receipt.TxHash] = receipt.Logs
-      rmeta[receipt.TxHash] = &receiptMeta{
-        contractAddress: receipt.ContractAddress,
-        cumulativeGasUsed: receipt.CumulativeGasUsed,
-        gasUsed: receipt.GasUsed,
-        status: receipt.Status,
-        logsBloom: receipt.Bloom,
+      rmeta[receipt.TxHash] = &ReceiptMeta{
+        ContractAddress: receipt.ContractAddress,
+        CumulativeGasUsed: receipt.CumulativeGasUsed,
+        GasUsed: receipt.GasUsed,
+        Status: receipt.Status,
+        LogsBloom: receipt.Bloom,
         logCount: uint(len(receipt.Logs)),
       }
     }
@@ -203,7 +203,7 @@ type chainEventTracker struct {
   chainEvents map[common.Hash]*ChainEvent
   receiptCounter map[common.Hash]int
   logCounter map[common.Hash]int
-  earlyReceipts map[common.Hash]map[common.Hash]*receiptMeta
+  earlyReceipts map[common.Hash]map[common.Hash]*ReceiptMeta
   earlyLogs map[common.Hash]map[common.Hash]map[uint]*types.Log
   earlyTd map[common.Hash]*big.Int
   finished map[common.Hash]bool
@@ -231,7 +231,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     if _, ok := cet.chainEvents[blockhash]; ok { return nil, nil } // We've already seen this block. Ignore
     cet.chainEvents[blockhash] = &ChainEvent{
       Block: block,
-      ReceiptMeta: make(map[common.Hash]*receiptMeta),
+      ReceiptMeta: make(map[common.Hash]*ReceiptMeta),
       Logs: make(map[common.Hash][]*types.Log),
     }
     cet.receiptCounter[blockhash] = len(block.Transactions())
@@ -259,13 +259,13 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
   case ReceiptMsg:
     blockhash = common.BytesToHash(key[1:33])
     txhash := common.BytesToHash(key[33:65])
-    rmeta := &receiptMeta{}
+    rmeta := &ReceiptMeta{}
     if err := rlp.DecodeBytes(value, rmeta); err != nil {
       return nil, fmt.Errorf("Error decoding receipt: %v", err.Error())
     }
     if _, ok := cet.chainEvents[blockhash]; !ok {
       if _, ok := cet.earlyReceipts[blockhash]; !ok {
-        cet.earlyReceipts[blockhash] = make(map[common.Hash]*receiptMeta)
+        cet.earlyReceipts[blockhash] = make(map[common.Hash]*ReceiptMeta)
       }
       cet.earlyReceipts[blockhash][txhash] = rmeta
       return nil, nil
@@ -427,7 +427,7 @@ func (cet *chainEventTracker) HandleEarlyLog(blockhash, txhash common.Hash, logR
   cet.earlyLogs[blockhash][txhash][logRecord.TxIndex] = logRecord
 }
 
-func (cet *chainEventTracker) HandleReceipt(blockhash, txhash common.Hash, rmeta *receiptMeta) {
+func (cet *chainEventTracker) HandleReceipt(blockhash, txhash common.Hash, rmeta *ReceiptMeta) {
   if _, ok := cet.chainEvents[blockhash].ReceiptMeta[txhash]; ok { return } // We already have this receipt
   cet.chainEvents[blockhash].ReceiptMeta[txhash] = rmeta
   cet.chainEvents[blockhash].Logs[txhash] = make([]*types.Log, rmeta.logCount)
@@ -735,7 +735,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
       chainEvents: make(map[common.Hash]*ChainEvent),
       receiptCounter: make(map[common.Hash]int),
       logCounter: make(map[common.Hash]int),
-      earlyReceipts: make(map[common.Hash]map[common.Hash]*receiptMeta),
+      earlyReceipts: make(map[common.Hash]map[common.Hash]*ReceiptMeta),
       earlyLogs: make(map[common.Hash]map[common.Hash]map[uint]*types.Log),
       earlyTd: make(map[common.Hash]*big.Int),
       finished: make(map[common.Hash]bool),
