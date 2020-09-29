@@ -53,6 +53,7 @@ type ReceiptMeta struct {
   LogsBloom types.Bloom
   Status uint64
   logCount uint
+  logOffset uint
 }
 
 type rlpReceiptMeta struct {
@@ -62,6 +63,7 @@ type rlpReceiptMeta struct {
   LogsBloom []byte
   Status uint64
   LogCount uint
+  LogOffset uint
 }
 
 func (r *ReceiptMeta) EncodeRLP(w io.Writer) error {
@@ -71,6 +73,7 @@ func (r *ReceiptMeta) EncodeRLP(w io.Writer) error {
     GasUsed: r.GasUsed,
     Status: r.Status,
     LogCount: r.logCount,
+    LogOffset: r.logOffset,
     LogsBloom: compress(r.LogsBloom.Bytes()),
   })
 }
@@ -148,6 +151,9 @@ func (cep *dbChainEventProvider) GetFullChainEvent(ce core.ChainEvent) (*ChainEv
         Status: receipt.Status,
         LogsBloom: receipt.Bloom,
         logCount: uint(len(receipt.Logs)),
+      }
+      if len(receipt.Logs) > 0 {
+        rmeta[receipt.TxHash].logOffset = receipt.Logs[0].Index
       }
     }
   }
@@ -295,10 +301,11 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
       cet.HandleEarlyLog(blockhash, txhash, logRecord)
       return nil, nil // Log is early, nothing else to do
     }
-    if cet.chainEvents[blockhash].Logs[txhash][logRecord.Index] != nil {
+    rmeta := cet.chainEvents[blockhash].ReceiptMeta[txhash]
+    if logRecord := cet.chainEvents[blockhash].Logs[txhash][logRecord.Index - rmeta.logOffset]; logRecord != nil {
       return nil, nil // Log is already present, nothing else to do
     }
-    cet.chainEvents[blockhash].Logs[txhash][logRecord.Index] = logRecord
+    cet.chainEvents[blockhash].Logs[txhash][logRecord.Index - rmeta.logOffset] = logRecord
     cet.logCounter[blockhash]--
   }
   if !(cet.finished[blockhash] || cet.oldFinished[blockhash]) && cet.logCounter[blockhash] == 0 && cet.receiptCounter[blockhash] == 0 {
@@ -435,7 +442,7 @@ func (cet *chainEventTracker) HandleReceipt(blockhash, txhash common.Hash, rmeta
   if earlyLogs, ok := cet.earlyLogs[blockhash]; ok {
     if logs, ok := earlyLogs[txhash]; ok {
       for _, log := range logs {
-        cet.chainEvents[blockhash].Logs[txhash][log.Index] = log
+        cet.chainEvents[blockhash].Logs[txhash][log.Index - rmeta.logOffset] = log
         cet.logCounter[blockhash]--
       }
     }
