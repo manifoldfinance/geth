@@ -217,6 +217,10 @@ func (d *delta) ready() bool {
   return d.pendingDestructs == 0 && d.pendingAccounts == 0 && d.pendingStorage == 0
 }
 
+// TODO: We need a way to catch up with Kafka to fill in any out-of-order
+// events that were pending when we shutdown. eg. Start from earlier kafka
+// offsets without emitting completed events or erroring when parents hadn't
+// been processed.
 type deltaTracker struct {
   tree SnapshotTree
   deltas map[common.Hash]*delta

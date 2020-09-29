@@ -46,22 +46,22 @@ func decompress(data []byte) ([]byte, error) {
   return ioutil.ReadAll(r)
 }
 
-type receiptMeta struct {
-  contractAddress common.Address
-  cumulativeGasUsed uint64
-  gasUsed uint64
-  status uint64
-  logCount uint
-  logsBloom types.Bloom
+type ReceiptMeta struct {
+  ContractAddress common.Address
+  CumulativeGasUsed uint64
+  GasUsed uint64
+  LogsBloom types.Bloom
+  Status uint64
+  LogCount uint
 }
 
 type rlpReceiptMeta struct {
   ContractAddress common.Address
   CumulativeGasUsed uint64
   GasUsed uint64
+  LogsBloom []byte
   Status uint64
   LogCount uint
-  LogsBloom []byte
 }
 
 func (r *receiptMeta) EncodeRLP(w io.Writer) error {
@@ -629,6 +629,12 @@ func (consumer *KafkaEventConsumer) SubscribeChainEvents(ch chan<- ChainEvents) 
 
 func (consumer *KafkaEventConsumer) Ready() chan struct{} {
   return consumer.ready
+}
+
+func (consumer *KafkaEventConsumer) Close() {
+  for _, c := range consumer.consumers {
+    c.Close()
+  }
 }
 
 type OffsetHash struct {
