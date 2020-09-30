@@ -695,6 +695,7 @@ func (consumer *KafkaEventConsumer) Start() {
         // log.Info("Offset < starting offset", "offset", input.Offset, "starting", consumer.startingOffsets[input.Partition])
         // If input.Offset < partition.StartingOffset, we're just populating
         // the CET, so we don't need to emit this or worry about errors
+        consumer.cet.lastEmittedBlock = common.Hash{} // Set lastEmittedBlock back so it won't get hung up if it doesn't have the whole next block
         continue
       }
       if err != nil {
