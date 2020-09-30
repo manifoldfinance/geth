@@ -72,6 +72,15 @@ func ParseKafkaURL(brokerURL string) ([]string, *sarama.Config) {
     config.Net.SASL.User = parsedURL.User.Username()
     config.Net.SASL.Password, _ = parsedURL.User.Password()
   }
+  switch parsedURL.Query().Get("sasl.mechanism") {
+  case "SCRAM-SHA-256":
+    config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
+  case "SCRAM-SHA-512":
+    config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
+  case "GSSAPI":
+    config.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
+  default:
+  }
   return strings.Split(parsedURL.Host, ","), config
 }
 
