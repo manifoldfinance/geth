@@ -331,9 +331,13 @@ func TestReorg(t *testing.T) {
   b := getTestChainEvent(1, 0, a.Block.Header())
   c := getTestChainEvent(1, 1, a.Block.Header())
   d := getTestChainEvent(2, 1, c.Block.Header())
+  e := getTestChainEvent(2, 0, b.Block.Header())
+  f := getTestChainEvent(3, 0, e.Block.Header())
   if b.Block.ParentHash() != a.Block.Hash() { t.Fatalf("b should be child of a") }
   if c.Block.ParentHash() != a.Block.Hash() { t.Fatalf("c should be child of a") }
   if d.Block.ParentHash() != c.Block.Hash() { t.Fatalf("d should be child of c") }
+  if e.Block.ParentHash() != b.Block.Hash() { t.Fatalf("e should be child of b") }
+  if f.Block.ParentHash() != e.Block.Hash() { t.Fatalf("f should be child of e") }
 
   // TODO: Try more out-of-order messages (instead of whole out-of-order blocks)
   t.Run("Reorg ABCD", func(t *testing.T) {
@@ -365,7 +369,30 @@ func TestReorg(t *testing.T) {
       []*ChainEvents{
         &ChainEvents{New: []*ChainEvent{a}},
         &ChainEvents{New: []*ChainEvent{c}},
-        &ChainEvents{New: []*ChainEvent{d},},
+        &ChainEvents{New: []*ChainEvent{d}},
+      },
+    )
+  })
+  t.Run("Reorg ACDB", func(t *testing.T) {
+    reorgTester(
+      t,
+      append(append(append(a.getMessages(), c.getMessages()...), d.getMessages()...), b.getMessages()...),
+      []*ChainEvents{
+        &ChainEvents{New: []*ChainEvent{a}},
+        &ChainEvents{New: []*ChainEvent{c}},
+        &ChainEvents{New: []*ChainEvent{d}},
+      },
+    )
+  })
+  t.Run("Reorg ABCDEF", func(t *testing.T) {
+    reorgTester(
+      t,
+      append(append(append(append(append(a.getMessages(), b.getMessages()...), c.getMessages()...), d.getMessages()...), e.getMessages()...), f.getMessages()...),
+      []*ChainEvents{
+        &ChainEvents{New: []*ChainEvent{a}},
+        &ChainEvents{New: []*ChainEvent{b}},
+        &ChainEvents{New: []*ChainEvent{c, d}, Reverted: []*ChainEvent{b}},
+        &ChainEvents{New: []*ChainEvent{b, e, f}, Reverted: []*ChainEvent{c, d}},
       },
     )
   })

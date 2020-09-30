@@ -82,7 +82,7 @@ func (r *ReceiptMeta) DecodeRLP(s *rlp.Stream) error {
   var dec rlpReceiptMeta
 	err := s.Decode(&dec)
 	if err == nil {
-		r.ContractAddress, r.CumulativeGasUsed, r.GasUsed, r.Status, r.logCount = dec.ContractAddress, dec.CumulativeGasUsed, dec.GasUsed, dec.Status, dec.LogCount
+		r.ContractAddress, r.CumulativeGasUsed, r.GasUsed, r.Status, r.logCount, r.logOffset = dec.ContractAddress, dec.CumulativeGasUsed, dec.GasUsed, dec.Status, dec.LogCount, dec.LogOffset
     var bloomBytes []byte
     bloomBytes, err = decompress(dec.LogsBloom)
     r.LogsBloom = types.BytesToBloom(bloomBytes)
@@ -195,8 +195,11 @@ func (chainEvent *ChainEvent) getMessages() ([]chainEventMessage) {
       if err != nil { panic(err.Error()) }
       logBytes, err := rlp.EncodeToBytes(rlpLog{logRecord, logRecord.BlockNumber, logRecord.TxHash, logRecord.TxIndex})
       if err != nil { panic(err.Error()) }
+      logKey := make([]byte, len(logKeyPrefix) + len(logNumberRlp))
+      copy(logKey, append(logKeyPrefix, logNumberRlp...))
+      log.Info("Preparing log message", "log", logRecord.Index, "key", logKey)
       result = append(result, chainEventMessage{
-        key: append(logKeyPrefix, logNumberRlp...),
+        key: logKey,
         value: logBytes,
       })
     }
@@ -686,8 +689,10 @@ func (consumer *KafkaEventConsumer) Start() {
   }(&readyWg)
   go func() {
     for input := range messages {
+      // log.Info("Handling message", "offset", input.Offset, "partition", input.Partition, "starting", consumer.startingOffsets[input.Partition])
       chainEvents, err := consumer.cet.HandleMessage(input.Key, input.Value, input.Partition, input.Offset)
       if input.Offset < consumer.startingOffsets[input.Partition] {
+        // log.Info("Offset < starting offset", "offset", input.Offset, "starting", consumer.startingOffsets[input.Partition])
         // If input.Offset < partition.StartingOffset, we're just populating
         // the CET, so we don't need to emit this or worry about errors
         continue
@@ -737,6 +742,9 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
     }
     partitionConsumers[i] = pc
   }
+  log.Info("Start offsets", "offsets", offsets)
+  startingOffsets := make(map[int32]int64)
+  for k, v := range offsets { startingOffsets[k] = v }
 
   return &KafkaEventConsumer{
     cet: &chainEventTracker {
@@ -755,7 +763,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
       chainEventPartitions: offsets,
     },
 
-    startingOffsets: offsets,
+    startingOffsets: startingOffsets,
     consumers: partitionConsumers,
     topic: topic,
     ready: make(chan struct{}),
