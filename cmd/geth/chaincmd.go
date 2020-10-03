@@ -287,6 +287,16 @@ Compacts the database`,
      Description: `
 Migrates state from one leveldb to another`,
 	}
+	repairStateCommand = cli.Command{
+     Action:    utils.MigrateFlags(repairState),
+     Name:      "repairstate",
+     Usage:     "Uses the state of [src] to repair the state trie of [dst]",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Repairs one state trie with one from another database`,
+	}
 	repairMigrationCommand = cli.Command{
      Action:    utils.MigrateFlags(repairMigration),
      Name:      "repairmigration",
@@ -894,7 +904,9 @@ func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) <-c
 	errCh := make(chan error)
 	go func() {
 		count := 10000
-		sched := state.NewStateSync(root, newDb, trie.NewSyncBloom(1, newDb))
+		bloom := trie.NewSyncBloom(512, newDb)
+		defer bloom.Close()
+		sched := state.NewStateSync(root, newDb, bloom)
 		log.Info("Syncing", "root", root)
 		queue := append([]common.Hash{}, sched.Missing(count)...)
 		total := 0
@@ -990,6 +1002,30 @@ func repairFreezerIndex(ctx *cli.Context) error {
 	rawdb.WriteHeadHeaderHash(newDb, hash)
 	rawdb.WriteHeadFastBlockHash(newDb, hash)
 	return nil
+}
+
+func repairState(ctx *cli.Context) error {
+	if len(ctx.Args()) < 2 {
+    return fmt.Errorf("Usage: repairstate [oldLeveldb] [newLeveldb]")
+  }
+	oldDb, err := rawdb.NewLevelDBDatabase(ctx.Args()[0], 16, 16, "old")
+	if err != nil {
+		log.Crit("Error old opening database")
+		return err
+	}
+	newDb, err := rawdb.NewLevelDBDatabase(ctx.Args()[1], 16, 16, "new")
+	if err != nil {
+		log.Crit("Error new opening database")
+		return err
+	}
+	srcDb := state.NewDatabase(oldDb)
+	latestBlockHash := rawdb.ReadHeadBlockHash(newDb) // Find the latest blockhash migrated to the new database
+	if latestBlockHash == (common.Hash{}) {
+		return fmt.Errorf("Source block hash empty")
+	}
+	latestHeaderNumber := rawdb.ReadHeaderNumber(newDb, latestBlockHash)
+	latestBlock := rawdb.ReadBlock(newDb, latestBlockHash, *latestHeaderNumber)
+	return <-syncState(latestBlock.Root(), srcDb, newDb)
 }
 
 func migrateState(ctx *cli.Context) error {
