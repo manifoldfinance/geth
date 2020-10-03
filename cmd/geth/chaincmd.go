@@ -1020,6 +1020,9 @@ func repairState(ctx *cli.Context) error {
 	}
 	srcDb := state.NewDatabase(oldDb)
 	latestBlockHash := rawdb.ReadHeadBlockHash(newDb) // Find the latest blockhash migrated to the new database
+	if len(ctx.Args()) > 2 {
+		latestBlockHash = common.HexToHash(ctx.Args()[2])
+	}
 	if latestBlockHash == (common.Hash{}) {
 		return fmt.Errorf("Source block hash empty")
 	}
@@ -1068,6 +1071,7 @@ func migrateState(ctx *cli.Context) error {
 			defer it.Release()
 			batch := newDb.NewBatch()
 			for it.Next() {
+				if len(it.Key()) != 1 + common.HashLength { continue } // avoid writing state trie nodes
 				if err := batch.Put(it.Key(), it.Value()); err != nil {
 					ancientErrCh <- err
 					return
@@ -1087,6 +1091,7 @@ func migrateState(ctx *cli.Context) error {
 			headerIt := oldDb.NewIterator([]byte("H"), nil)
 			defer headerIt.Release()
 			for headerIt.Next() {
+				if len(headerIt.Key()) != 1 + common.HashLength { continue } // avoid writing state trie nodes
 				if err := batch.Put(headerIt.Key(), headerIt.Value()); err != nil {
 					ancientErrCh <- err
 					return
