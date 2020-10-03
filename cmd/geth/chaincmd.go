@@ -1162,6 +1162,16 @@ func migrateState(ctx *cli.Context) error {
 		log.Crit("error syncing latest")
 		return err
 	}
+	// Get the 10 blocks prior to the latest, to account for reorgs. This should
+	// go quickly, since most of the latest state will overlap with these.
+	for i := 0; i < 10; i++ {
+		latestBlock = rawdb.ReadBlock(oldDb, latestBlock.ParentHash(), latestBlock.NumberU64() - 1)
+		if err := <-syncState(latestBlock.Root(), srcDb, newDb); err != nil {
+			log.Crit("error syncing latest", "n", i)
+		}
+	}
+
+
 	rawdb.WriteHeadBlockHash(newDb, block.Hash())
 	rawdb.WriteHeadHeaderHash(newDb, block.Hash())
 	rawdb.WriteHeadFastBlockHash(newDb, block.Hash())
