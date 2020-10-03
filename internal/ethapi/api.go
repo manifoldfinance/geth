@@ -1005,6 +1005,9 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 			return 0, nil, err
 		}
 		balance := state.GetBalance(*args.From) // from can't be nil
+		if prevState != nil {
+			balance = prevState.state.GetBalance(*args.From)
+		}
 		available := new(big.Int).Set(balance)
 		if args.Value != nil {
 			if args.Value.ToInt().Cmp(available) >= 0 {
