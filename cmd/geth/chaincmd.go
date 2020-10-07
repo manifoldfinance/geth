@@ -90,6 +90,8 @@ The dumpgenesis command dumps the genesis block configuration in JSON format to 
 		ArgsUsage: "<filename> (<filename 2> ... <filename N>) ",
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
+			utils.AncientFlag,
+			utils.AncientRPCFlag,
 			utils.CacheFlag,
 			utils.SyncModeFlag,
 			utils.GCModeFlag,
@@ -169,6 +171,8 @@ The export-preimages command export hash preimages to an RLP encoded stream`,
 		ArgsUsage: "<sourceChaindataDir>",
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
+			utils.AncientFlag,
+			utils.AncientRPCFlag,
 			utils.CacheFlag,
 			utils.SyncModeFlag,
 			utils.FakePoWFlag,
@@ -177,8 +181,6 @@ The export-preimages command export hash preimages to an RLP encoded stream`,
 			utils.KottiFlag,
 			utils.SocialFlag,
 			utils.EthersocialFlag,
-			utils.LegacyTestnetFlag,
-			utils.RopstenFlag,
 			utils.RinkebyFlag,
 			utils.GoerliFlag,
 			utils.YoloV1Flag,
@@ -399,10 +401,8 @@ func initGenesis(ctx *cli.Context) error {
 	if err != nil {
 		utils.Fatalf("invalid genesis file: %v", err)
 	}
-
-	log.Info("Initialising genesis", "config", genesis.Config)
-	// Open an initialise both full and light databases
-	stack := makeFullNode(ctx)
+	// Open and initialise both full and light databases
+	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
 	for _, name := range []string{"chaindata", "lightchaindata"} {
@@ -439,7 +439,8 @@ func importChain(ctx *cli.Context) error {
 	utils.SetupMetrics(ctx)
 	// Start system runtime metrics collection
 	go metrics.CollectProcessMetrics(3 * time.Second)
-	stack := makeFullNode(ctx)
+
+	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
 	chain, db := utils.MakeChain(ctx, stack, false)
@@ -533,7 +534,8 @@ func exportChain(ctx *cli.Context) error {
 	if len(ctx.Args()) < 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
-	stack := makeFullNode(ctx)
+
+	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
 	chain, _ := utils.MakeChain(ctx, stack, true)
@@ -568,7 +570,8 @@ func importPreimages(ctx *cli.Context) error {
 	if len(ctx.Args()) < 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
-	stack := makeFullNode(ctx)
+
+	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
 	db := utils.MakeChainDatabase(ctx, stack)
@@ -586,7 +589,8 @@ func exportPreimages(ctx *cli.Context) error {
 	if len(ctx.Args()) < 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
-	stack := makeFullNode(ctx)
+
+	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
 	db := utils.MakeChainDatabase(ctx, stack)
@@ -608,7 +612,7 @@ func copyDb(ctx *cli.Context) error {
 		utils.Fatalf("Source ancient chain directory path argument missing")
 	}
 	// Initialize a new chain for the running node to sync into
-	stack := makeFullNode(ctx)
+	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
 	chain, chainDb := utils.MakeChain(ctx, stack, false)
@@ -716,7 +720,7 @@ func confirmAndRemoveDB(database string, kind string) {
 }
 
 func dump(ctx *cli.Context) error {
-	stack := makeFullNode(ctx)
+	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
 	chain, chainDb := utils.MakeChain(ctx, stack, true)
@@ -758,7 +762,7 @@ func setHead(ctx *cli.Context) error {
 	if len(ctx.Args()) < 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
-	stack := makeFullNode(ctx)
+	stack, _ := makeFullNode(ctx)
 	chain, db := utils.MakeChain(ctx, stack, false)
 	arg := ctx.Args()[0]
 	blockNumber, err := strconv.Atoi(arg)
@@ -860,7 +864,7 @@ func freezerLoad(ctx *cli.Context) error {
 }
 
 func verifyStateTrie(ctx *cli.Context) error {
-  stack := makeFullNode(ctx)
+  stack, _ := makeFullNode(ctx)
   bc, db := utils.MakeChain(ctx, stack, false)
   latestHash := rawdb.ReadHeadBlockHash(db)
   block := bc.GetBlockByHash(latestHash)
@@ -913,11 +917,11 @@ func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) <-c
 		count := 10000
 		sched := state.NewStateSync(root, newDb, trie.NewSyncBloom(1, newDb))
 		log.Info("Syncing", "root", root)
-		queue := append([]common.Hash{}, sched.Missing(count)...)
+		missingNodes, _, _ := sched.Missing(count)
+		queue := append([]common.Hash{}, missingNodes...)
 		total := 0
 		for len(queue) > 0 {
 			log.Info("Processing items", "completed", total, "known", sched.Pending())
-			results := make([]trie.SyncResult, len(queue))
 			var wg sync.WaitGroup
 			ch := make(chan trieRequest, runtime.NumCPU())
 			popCh := make(chan trieRequest, runtime.NumCPU())
@@ -950,12 +954,11 @@ func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) <-c
 					errCh <- r.err
 					return
 				}
-				results[r.i] = trie.SyncResult{Hash: r.hash, Data: r.data}
-			}
-			if _, index, err := sched.Process(results); err != nil {
-				log.Crit("trie processing error", "err", err)
-				errCh <- fmt.Errorf("failed to process result #%d: %v", index, err)
-				return
+				if err := sched.Process(trie.SyncResult{Hash: r.hash, Data: r.data}); err != nil {
+					log.Crit("trie processing error", "err", err)
+					errCh <- fmt.Errorf("failed to process result: %v", err)
+					return
+				}
 			}
 			batch := newDb.NewBatch()
 			if err := sched.Commit(batch); err != nil {
@@ -965,7 +968,8 @@ func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) <-c
 			}
 			batch.Write()
 			total += len(queue)
-			queue = append(queue[:0], sched.Missing(count)...)
+			missingNodes, _, _ := sched.Missing(count)
+			queue = append(queue[:0], missingNodes...)
 		}
 		errCh <- nil
 	}()
@@ -988,7 +992,7 @@ func repairMigration(ctx *cli.Context) error {
 	for {
 		batch := newDb.NewBatch()
 		rawdb.WriteHeaderNumber(batch, block.Hash(), block.NumberU64())
-		rawdb.WriteTxLookupEntries(batch, block)
+		rawdb.WriteTxLookupEntriesByBlock(batch, block)
 		batch.Write()
 		nextHash := rawdb.ReadCanonicalHash(newDb, block.NumberU64() + 1)
 		block = rawdb.ReadBlock(newDb, nextHash, block.NumberU64() + 1)
@@ -1135,7 +1139,7 @@ func migrateState(ctx *cli.Context) error {
 	rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
 	rawdb.WriteChainConfig(batch, block.Hash(), chainConfig)
 	rawdb.WriteHeaderNumber(batch, block.Hash(), block.NumberU64())
-	rawdb.WriteTxLookupEntries(batch, block)
+	rawdb.WriteTxLookupEntriesByBlock(batch, block)
 	batch.Write()
 
 	if err := <-ancientErrCh; err != nil { return err }
@@ -1152,7 +1156,7 @@ func migrateState(ctx *cli.Context) error {
 		rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), rawdb.ReadReceipts(oldDb, block.Hash(), block.NumberU64(), chainConfig))
 		rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
 		rawdb.WriteHeaderNumber(batch, block.Hash(), block.NumberU64())
-		rawdb.WriteTxLookupEntries(batch, block)
+		rawdb.WriteTxLookupEntriesByBlock(batch, block)
 		batch.Write()
 		nextHash := rawdb.ReadCanonicalHash(oldDb, block.NumberU64() + 1)
 		if nextHash == (common.Hash{}) {
@@ -1186,7 +1190,7 @@ func migrateState(ctx *cli.Context) error {
 }
 
 func compact(ctx *cli.Context) error {
-  stack := makeFullNode(ctx)
+  stack, _ := makeFullNode(ctx)
   _, db := utils.MakeChain(ctx, stack, false)
 	start := time.Now()
 	err := db.Compact(nil, nil)
@@ -1195,7 +1199,7 @@ func compact(ctx *cli.Context) error {
 }
 
 func diffBlocks(ctx *cli.Context) error {
-	stack := makeFullNode(ctx)
+	stack, _ := makeFullNode(ctx)
 	db := utils.MakeChainDatabase(ctx, stack)
 	sourceBlockNumber, err := strconv.Atoi(ctx.Args()[0])
 	if err != nil { return err }
@@ -1211,7 +1215,7 @@ func diffBlocks(ctx *cli.Context) error {
 }
 
 func resetToSnapshot(ctx *cli.Context) error {
-	stack := makeFullNode(ctx)
+	stack, _ := makeFullNode(ctx)
 	diskdb := utils.MakeChainDatabase(ctx, stack)
 	baseRoot := rawdb.ReadSnapshotRoot(diskdb)
 	if baseRoot == (common.Hash{}) {
@@ -1237,7 +1241,7 @@ func resetToSnapshot(ctx *cli.Context) error {
 }
 
 // func revertToSnapshot(ctx *cli.Context) error {
-//   stack := makeFullNode(ctx)
+//   stack, _ := makeFullNode(ctx)
 //   db := utils.MakeChainDatabase(ctx, stack, false)
 // 	root := rawdb.ReadSnapshotRoot(db)
 // 	statedb := state.NewDatabase(db)

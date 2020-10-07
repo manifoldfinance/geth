@@ -14,6 +14,7 @@ import (
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/common/bitutil"
   "github.com/ethereum/go-ethereum/common/math"
+  "github.com/ethereum/go-ethereum/consensus"
   "github.com/ethereum/go-ethereum/rpc"
   "github.com/ethereum/go-ethereum/core"
   "github.com/ethereum/go-ethereum/core/bloombits"
@@ -384,6 +385,14 @@ func (backend *ReplicaBackend) ChainConfig() ctypes.ChainConfigurator {
 	// CurrentBlock needs to find the latest block number / hash from the DB, then
   // look that up using GetBlock() {
 
+func (backend *ReplicaBackend) Engine() consensus.Engine {
+  return backend.bc.Engine()
+}
+
+func (backend *ReplicaBackend) CurrentHeader() *types.Header {
+  latestHash := rawdb.ReadHeadBlockHash(backend.db)
+  return backend.bc.GetHeaderByHash(latestHash)
+}
 func (backend *ReplicaBackend) CurrentBlock() *types.Block {
   latestHash := rawdb.ReadHeadBlockHash(backend.db)
   return backend.bc.GetBlockByHash(latestHash)
