@@ -5,6 +5,7 @@ import (
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/core"
   "github.com/ethereum/go-ethereum/event"
+  "github.com/ethereum/go-ethereum/trie"
   "github.com/ethereum/go-ethereum/core/types"
   "github.com/Shopify/sarama/mocks"
   "reflect"
@@ -70,7 +71,7 @@ func getTestConsumer() (*KafkaEventConsumer, chan []*types.Log, chan core.Remove
 func getTestHeader(blockNo int64, nonce uint64, h *types.Header) *types.Header {
   parentHash := common.Hash{}
   if h != nil {
-    parentHash = types.NewBlock(h, []*types.Transaction{}, []*types.Header{}, []*types.Receipt{}).Hash()
+    parentHash = types.NewBlock(h, []*types.Transaction{}, []*types.Header{}, []*types.Receipt{}, new(trie.Trie)).Hash()
   }
   return &types.Header{
   	ParentHash:  parentHash,
@@ -107,7 +108,7 @@ func getTestLog(block *types.Block) *types.Log {
 func TestGetProducerMessages(t *testing.T) {
   producer := getTestProducer(nil)
   header := getTestHeader(0, 0, nil)
-  block := types.NewBlock(header, []*types.Transaction{}, []*types.Header{}, []*types.Receipt{})
+  block := types.NewBlock(header, []*types.Transaction{}, []*types.Header{}, []*types.Receipt{}, new(trie.Trie))
   event := core.ChainEvent{Block: block, Hash: block.Hash(), Logs: []*types.Log{getTestLog(block)}}
   messages, err := producer.getMessages(event)
   if err != nil {
@@ -153,7 +154,7 @@ func getMessages(header *types.Header, producer *KafkaEventProducer, kv map[comm
 }
 
 func getChainEvent(header *types.Header) core.ChainEvent {
-  block := types.NewBlock(header, []*types.Transaction{}, []*types.Header{}, []*types.Receipt{})
+  block := types.NewBlock(header, []*types.Transaction{}, []*types.Header{}, []*types.Receipt{}, new(trie.Trie))
   return core.ChainEvent{Block: block, Hash: block.Hash(), Logs: []*types.Log{getTestLog(block)}}
 }
 

@@ -26,7 +26,7 @@ func TestDelta(t *testing.T) {
   s.SetState(common.Address{}, common.HexToHash("0x01"), common.HexToHash("0x01"))
   root, err := s.Commit(false)
   if err != nil { t.Fatalf(err.Error()) }
-  if err := statedb.TrieDB().Commit(root, false); err != nil { t.Fatalf(err.Error()) }
+  if err := statedb.TrieDB().Commit(root, false, func(common.Hash){}); err != nil { t.Fatalf(err.Error()) }
   destructs, accounts, storage, err := DiffTries(diskdb, root, emptyRoot)
   if l := len(destructs); l > 0 { t.Errorf("Expected no destructs, got %v", l) }
   if l := len(accounts); l != 1 { t.Errorf("Expected 1 account, got %v", l) }
@@ -44,7 +44,7 @@ func TestDelta(t *testing.T) {
   s.SetState(common.Address{}, common.HexToHash("0x02"), common.HexToHash("0x02"))
   root, err = s.Commit(false)
   if err != nil { t.Fatalf(err.Error()) }
-  if err := statedb.TrieDB().Commit(root, false); err != nil { t.Fatalf(err.Error()) }
+  if err := statedb.TrieDB().Commit(root, false, func(common.Hash){}); err != nil { t.Fatalf(err.Error()) }
   destructs, accounts, storage, err = DiffTries(diskdb, root, emptyRoot)
   if l := len(destructs); l > 0 { t.Errorf("Expected no destructs, got %v", l) }
   if l := len(accounts); l != 1 { t.Errorf("Expected 1 account, got %v", l) }

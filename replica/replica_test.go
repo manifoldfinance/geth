@@ -16,14 +16,15 @@ func TestReplicaConstants(t *testing.T) {
   db := rawdb.NewMemoryDatabase()
   config := eth.DefaultConfig
   config.Ethash.PowMode = ethash.ModeFake
-  replicaNode, err := NewReplica(db, &config, nil, transactionProducer, consumer, nil, false, 0, 0, 0, false, "", []string{}, []string{}, rpc.HTTPTimeouts{}, 0, "", true)
+  replicaNode, err := NewReplica(db, &config, nil, transactionProducer, consumer, nil, false, 0, 0, 0, rpc.HTTPTimeouts{}, 0, "", true)
   if err != nil {
     t.Errorf(err.Error())
   }
+  replicaNode.GetBackend()
   if length := len(replicaNode.Protocols()); length != 0 {
     t.Errorf("Expected no protocol support, got %v", length)
   }
-  if err := replicaNode.Start(nil); err != nil {
+  if err := replicaNode.Start(); err != nil {
     t.Errorf(err.Error())
   }
   if err := replicaNode.Stop(); err != nil {
@@ -37,7 +38,7 @@ func TestReplicaAPIs(t *testing.T) {
   db := rawdb.NewMemoryDatabase()
   config := eth.DefaultConfig
   config.Ethash.PowMode = ethash.ModeFake
-  replicaNode, err := NewReplica(db, &config, nil, transactionProducer, consumer, nil, false, 0, 0, 0, false, "", []string{}, []string{}, rpc.HTTPTimeouts{}, 0, "", true)
+  replicaNode, err := NewReplica(db, &config, nil, transactionProducer, consumer, nil, false, 0, 0, 0, rpc.HTTPTimeouts{}, 0, "", true)
   if err != nil {
     t.Errorf(err.Error())
   }
