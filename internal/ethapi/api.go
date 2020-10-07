@@ -911,7 +911,7 @@ func DoCall(ctx context.Context, b Backend, args CallArgs, prevState *PreviousSt
 	if err != nil {
 		return result, nil, fmt.Errorf("err: %w (supplied gas %d)", err, msg.Gas())
 	}
-	prevState.header.Root = prevState.state.IntermediateRoot(b.ChainConfig().IsEIP158(prevState.header.Number))
+	prevState.header.Root = prevState.state.IntermediateRoot(b.ChainConfig().IsEnabled(b.ChainConfig().GetEIP161dTransition, prevState.header.Number))
 	return result, prevState, err
 }
 
