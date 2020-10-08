@@ -170,15 +170,14 @@ func replica(ctx *cli.Context) error {
 	// 	log.Info("Serving", "err", http.ListenAndServe("0.0.0.0:6060", nil))
 	// }()
 	debug.Setup(ctx)
-	node, backend, err := makeReplicaNode(ctx)
+	node, _, err := makeReplicaNode(ctx)
 	if err != nil { return err }
 	defer node.Close()
 
-	startNode(ctx, node, backend)
+	utils.StartNode(node)
 	node.Wait()
 	return nil
 }
-
 
 func makeReplicaNode(ctx *cli.Context) (*node.Node, ethapi.Backend, error) {
 	// Load defaults.
