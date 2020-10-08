@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/ethereum/go-ethereum/internal/debug"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/ethdb/overlay"
@@ -60,7 +61,7 @@ var (
 The Geth replica captures a Geth node's write operations via a change-data-capture
 system and acts as an RPC node based on the replicated data.
 `,
-		Flags: []cli.Flag{
+		Flags: append(debug.Flags, []cli.Flag{
 			utils.HTTPEnabledFlag,
 			utils.HTTPListenAddrFlag,
 			utils.HTTPPortFlag,
@@ -107,7 +108,7 @@ system and acts as an RPC node based on the replicated data.
 			utils.CacheGCFlag,
 			utils.CacheDatabaseFlag,
 			utils.SnapshotFlag,
-		},
+		}...),
 	}
 	replicaTxPoolConfig = core.TxPoolConfig{
 		Journal:   "transactions.rlp",
@@ -168,6 +169,7 @@ func replica(ctx *cli.Context) error {
 	// go func() {
 	// 	log.Info("Serving", "err", http.ListenAndServe("0.0.0.0:6060", nil))
 	// }()
+	debug.Setup(ctx)
 	node, backend, err := makeReplicaNode(ctx)
 	if err != nil { return err }
 	defer node.Close()

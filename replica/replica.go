@@ -242,6 +242,7 @@ func NewReplica(db ethdb.Database, config *eth.Config, stack *node.Node, transac
       }
     }
   }()
+  replica.GetBackend()
   if ready := consumer.Ready(); ready != nil {
     <-ready
   }
