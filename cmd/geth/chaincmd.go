@@ -762,7 +762,7 @@ func setHead(ctx *cli.Context) error {
 	if len(ctx.Args()) < 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
-	stack, _ := makeFullNode(ctx)
+	stack, _ := makeConfigNode(ctx)
 	chain, db := utils.MakeChain(ctx, stack, false)
 	arg := ctx.Args()[0]
 	blockNumber, err := strconv.Atoi(arg)
@@ -864,7 +864,7 @@ func freezerLoad(ctx *cli.Context) error {
 }
 
 func verifyStateTrie(ctx *cli.Context) error {
-  stack, _ := makeFullNode(ctx)
+  stack, _ := makeConfigNode(ctx)
   bc, db := utils.MakeChain(ctx, stack, false)
   latestHash := rawdb.ReadHeadBlockHash(db)
   block := bc.GetBlockByHash(latestHash)
@@ -1190,7 +1190,7 @@ func migrateState(ctx *cli.Context) error {
 }
 
 func compact(ctx *cli.Context) error {
-  stack, _ := makeFullNode(ctx)
+  stack, _ := makeConfigNode(ctx)
   _, db := utils.MakeChain(ctx, stack, false)
 	start := time.Now()
 	err := db.Compact(nil, nil)
@@ -1199,7 +1199,7 @@ func compact(ctx *cli.Context) error {
 }
 
 func diffBlocks(ctx *cli.Context) error {
-	stack, _ := makeFullNode(ctx)
+	stack, _ := makeConfigNode(ctx)
 	db := utils.MakeChainDatabase(ctx, stack)
 	sourceBlockNumber, err := strconv.Atoi(ctx.Args()[0])
 	if err != nil { return err }
@@ -1215,7 +1215,7 @@ func diffBlocks(ctx *cli.Context) error {
 }
 
 func resetToSnapshot(ctx *cli.Context) error {
-	stack, _ := makeFullNode(ctx)
+	stack, _ := makeConfigNode(ctx)
 	diskdb := utils.MakeChainDatabase(ctx, stack)
 	baseRoot := rawdb.ReadSnapshotRoot(diskdb)
 	if baseRoot == (common.Hash{}) {
@@ -1241,7 +1241,7 @@ func resetToSnapshot(ctx *cli.Context) error {
 }
 
 // func revertToSnapshot(ctx *cli.Context) error {
-//   stack, _ := makeFullNode(ctx)
+//   stack, _ := makeConfigNode(ctx)
 //   db := utils.MakeChainDatabase(ctx, stack, false)
 // 	root := rawdb.ReadSnapshotRoot(db)
 // 	statedb := state.NewDatabase(db)
