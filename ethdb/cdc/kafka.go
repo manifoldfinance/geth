@@ -2,19 +2,22 @@ package cdc
 
 import (
   "fmt"
+  "math/rand"
   "github.com/Shopify/sarama"
   "github.com/ethereum/go-ethereum/log"
+  coreLog "log"
   "net/url"
   "strings"
   "strconv"
   "time"
+  "os"
 )
 
 
 func ParseKafkaURL(brokerURL string) ([]string, *sarama.Config) {
   parsedURL, _ := url.Parse("kafka://" + brokerURL)
   config := sarama.NewConfig()
-  config.Version = sarama.V2_1_0_0
+  config.Version = sarama.V2_5_0_0
 
   if parsedURL.Query().Get("tls") == "1" {
     config.Net.TLS.Enable = true
@@ -65,6 +68,31 @@ func ParseKafkaURL(brokerURL string) ([]string, *sarama.Config) {
   }
   if parsedURL.Query().Get("idempotent") == "1" {
     config.Producer.Idempotent = true
+  }
+  if parsedURL.Query().Get("log") == "1" {
+    sarama.Logger = coreLog.New(os.Stderr, "", coreLog.LstdFlags)
+  }
+  if parsedURL.Query().Get("avoid_leader") == "1" {
+    config.RackID = "0"
+    config.Consumer.ReplicaSelector = func(topic string, partition int32, client sarama.Client) (*sarama.Broker, error) {
+      leader, err := client.Leader(topic, partition)
+      if err != nil { return nil, err }
+      log.Info("Leader", "broker", leader.ID(), "addr", leader.Addr(), "rack", leader.Rack())
+      replicas, err := client.InSyncReplicas(topic, partition)
+      if err != nil { return nil, err }
+      nonleaders := []int32{}
+      for _, id := range replicas {
+        if id != leader.ID() { nonleaders = append(nonleaders, id) }
+      }
+      if len(nonleaders) == 0 { return leader, nil }
+      n := rand.Int31n(int32(len(nonleaders)))
+      broker, err := client.Broker(nonleaders[n])
+      if err != nil { return nil, err }
+      connected, err := broker.Connected()
+      log.Info("Selected broker", "broker", nonleaders[n], "addr", broker.Addr(), "connected", connected, "rack", broker.Rack(), "err", err)
+
+      return broker, err
+    }
   }
 
   if parsedURL.User != nil {
@@ -269,7 +297,6 @@ func NewKafkaLogConsumerFromURL(brokerURL, topic string, offset int64) (LogConsu
   if err := CreateTopicIfDoesNotExist(brokerURL, topic, 1, nil); err != nil {
     return nil, err
   }
-  config.Version = sarama.V2_1_0_0
   client, err := sarama.NewClient(brokers, config)
   if err != nil {
     return nil, err
