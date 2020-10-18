@@ -1067,11 +1067,14 @@ func migrateState(ctx *cli.Context) error {
 	ancientErrCh := make(chan error, 1)
 	if os.Getenv("SKIP_INIT_FREEZER") != "true" {
 		go func() {
+			// Copy transaction / receipt lookup index entries
 			it := oldDb.NewIterator([]byte("l"), nil)
 			defer it.Release()
 			batch := newDb.NewBatch()
+			counter := 0
 			for it.Next() {
 				if len(it.Key()) != 1 + common.HashLength { continue } // avoid writing state trie nodes
+				counter++
 				if err := batch.Put(it.Key(), it.Value()); err != nil {
 					ancientErrCh <- err
 					return
@@ -1084,14 +1087,18 @@ func migrateState(ctx *cli.Context) error {
 					batch.Reset()
 				}
 			}
+			log.Info("Copied %v tx hash indexes to new db", counter)
 			if err := it.Error(); err != nil {
 				ancientErrCh <- err
 				return
 			}
+			// Copy hash -> block number index
 			headerIt := oldDb.NewIterator([]byte("H"), nil)
 			defer headerIt.Release()
+			counter = 0
 			for headerIt.Next() {
 				if len(headerIt.Key()) != 1 + common.HashLength { continue } // avoid writing state trie nodes
+				counter++
 				if err := batch.Put(headerIt.Key(), headerIt.Value()); err != nil {
 					ancientErrCh <- err
 					return
@@ -1104,6 +1111,7 @@ func migrateState(ctx *cli.Context) error {
 					batch.Reset()
 				}
 			}
+			log.Info("Copied %v block hash indexes to new db", counter)
 			if err := batch.Write(); err != nil {
 				ancientErrCh <- err
 				return
@@ -1118,6 +1126,10 @@ func migrateState(ctx *cli.Context) error {
 				return
 			}
 			hash := rawdb.ReadCanonicalHash(newDb, blockNo)
+			if hash == (common.Hash{}) {
+				ancientErrCh <- fmt.Errorf("Error retrieving hash for block %v from newdb")
+				return
+			}
 
 			rawdb.WriteHeadHeaderHash(newDb, hash)
 			rawdb.WriteHeadFastBlockHash(newDb, hash)
