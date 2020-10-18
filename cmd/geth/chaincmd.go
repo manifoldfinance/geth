@@ -1087,7 +1087,7 @@ func migrateState(ctx *cli.Context) error {
 					batch.Reset()
 				}
 			}
-			log.Info("Copied %v tx hash indexes to new db", counter)
+			log.Info("Copied tx hash indexes to new db", "count", counter)
 			if err := it.Error(); err != nil {
 				ancientErrCh <- err
 				return
@@ -1111,7 +1111,7 @@ func migrateState(ctx *cli.Context) error {
 					batch.Reset()
 				}
 			}
-			log.Info("Copied %v block hash indexes to new db", counter)
+			log.Info("Copied block hash indexes to new db", "count", counter)
 			if err := batch.Write(); err != nil {
 				ancientErrCh <- err
 				return
@@ -1125,9 +1125,9 @@ func migrateState(ctx *cli.Context) error {
 				ancientErrCh <- err
 				return
 			}
-			hash := rawdb.ReadCanonicalHash(newDb, blockNo)
+			hash := rawdb.ReadCanonicalHash(newDb, blockNo - 1)
 			if hash == (common.Hash{}) {
-				ancientErrCh <- fmt.Errorf("Error retrieving hash for block %v from newdb")
+				ancientErrCh <- fmt.Errorf("Error retrieving hash for block %v from newdb", blockNo)
 				return
 			}
 
