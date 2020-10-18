@@ -248,6 +248,7 @@ func init() {
 		verifyStateTrieCommand,
 		compactCommand,
 		stateMigrateCommand,
+		repairStateCommand,
 		repairMigrationCommand,
 		repairFreezerIndexCommand,
 		diffBlocksCommand,
