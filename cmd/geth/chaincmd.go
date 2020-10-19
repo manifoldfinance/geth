@@ -855,8 +855,10 @@ func freezerLoad(ctx *cli.Context) error {
 func verifyStateTrie(ctx *cli.Context) error {
   stack := makeFullNode(ctx)
   bc, db := utils.MakeChain(ctx, stack, false)
+	log.Info("Chain initialized")
   latestHash := rawdb.ReadHeadBlockHash(db)
   block := bc.GetBlockByHash(latestHash)
+	log.Info("Verifying state trie for block", "hash", latestHash, "num", block.NumberU64())
 
   tr, err := trie.New(block.Root(), trie.NewDatabase(db))
   if err != nil {
@@ -869,6 +871,7 @@ func verifyStateTrie(ctx *cli.Context) error {
     nodesToCheck, err = strconv.Atoi(arg)
     if err != nil { return err }
   }
+	log.Info("Checking trie nodes", "count", nodesToCheck)
 
   iterators := []trie.NodeIterator{}
   for i := 0; i < 256; i++ {
