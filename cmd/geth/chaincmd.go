@@ -751,7 +751,7 @@ func setHead(ctx *cli.Context) error {
 	if len(ctx.Args()) < 1 {
 		utils.Fatalf("This command requires an argument.")
 	}
-	stack := makeFullNode(ctx)
+	stack, _ := makeConfigNode(ctx)
 	chain, db := utils.MakeChain(ctx, stack, false)
 	arg := ctx.Args()[0]
 	blockNumber, err := strconv.Atoi(arg)
@@ -853,47 +853,47 @@ func freezerLoad(ctx *cli.Context) error {
 }
 
 func verifyStateTrie(ctx *cli.Context) error {
-  stack := makeFullNode(ctx)
-  bc, db := utils.MakeChain(ctx, stack, false)
+	stack, _ := makeConfigNode(ctx)
+	db := utils.MakeChainDatabase(ctx, stack)
 	log.Info("Chain initialized")
-  latestHash := rawdb.ReadHeadBlockHash(db)
-  block := bc.GetBlockByHash(latestHash)
-	log.Info("Verifying state trie for block", "hash", latestHash, "num", block.NumberU64())
+	latestHash := rawdb.ReadHeadBlockHash(db)
+	blockNo := *rawdb.ReadHeaderNumber(db, latestHash)
+	block := rawdb.ReadBlock(db, latestHash, blockNo)
+	log.Info("Verifying state trie for block", "hash", latestHash, "num", blockNo)
 
-  tr, err := trie.New(block.Root(), trie.NewDatabase(db))
-  if err != nil {
-    log.Error(fmt.Sprintf("Unhandled trie error"))
-    return err
-  }
-  nodesToCheck := 1000000
-  if len(ctx.Args()) > 0 {
-    arg := ctx.Args()[0]
-    nodesToCheck, err = strconv.Atoi(arg)
-    if err != nil { return err }
-  }
+	tr, err := trie.New(block.Root(), trie.NewDatabase(db))
+	if err != nil {
+		log.Error(fmt.Sprintf("Unhandled trie error"))
+		return err
+	}
+	nodesToCheck := 1000000
+	if len(ctx.Args()) > 0 {
+		arg := ctx.Args()[0]
+		nodesToCheck, err = strconv.Atoi(arg)
+		if err != nil { return err }
+	}
 	log.Info("Checking trie nodes", "count", nodesToCheck)
 
-  iterators := []trie.NodeIterator{}
-  for i := 0; i < 256; i++ {
-    iterators = append(iterators, tr.NodeIterator([]byte{byte(i)}))
-  }
-  for i := 0; i < nodesToCheck; i += len(iterators) {
-    log.Info("Checking leaves", "checked", i, "limit", nodesToCheck)
-    for _, it := range iterators {
-      for it.Next(true) {
-        if it.Leaf() {
-          break
-        }
-      }
-      if err := it.Error(); err != nil {
-        return err
-      }
-    }
-  }
-  bc.Stop()
-  db.Close()
-  // fmt.Printf("Rolled back chain to block %v\n", blockNumber)
-  return nil
+	iterators := []trie.NodeIterator{}
+	for i := 0; i < 256; i++ {
+		iterators = append(iterators, tr.NodeIterator([]byte{byte(i)}))
+	}
+	for i := 0; i < nodesToCheck; i += len(iterators) {
+		log.Info("Checking leaves", "checked", i, "limit", nodesToCheck)
+		for _, it := range iterators {
+			for it.Next(true) {
+				if it.Leaf() {
+					break
+				}
+			}
+			if err := it.Error(); err != nil {
+				return err
+			}
+		}
+	}
+	db.Close()
+	// fmt.Printf("Rolled back chain to block %v\n", blockNumber)
+	return nil
 }
 
 type trieRequest struct {
@@ -1235,7 +1235,7 @@ func migrateState(ctx *cli.Context) error {
 }
 
 func compact(ctx *cli.Context) error {
-  stack := makeFullNode(ctx)
+  stack, _ := makeConfigNode(ctx)
   _, db := utils.MakeChain(ctx, stack, false)
 	start := time.Now()
 	err := db.Compact(nil, nil)
@@ -1244,7 +1244,7 @@ func compact(ctx *cli.Context) error {
 }
 
 func diffBlocks(ctx *cli.Context) error {
-	stack := makeFullNode(ctx)
+	stack, _ := makeConfigNode(ctx)
 	db := utils.MakeChainDatabase(ctx, stack)
 	sourceBlockNumber, err := strconv.Atoi(ctx.Args()[0])
 	if err != nil { return err }
@@ -1260,7 +1260,7 @@ func diffBlocks(ctx *cli.Context) error {
 }
 
 func resetToSnapshot(ctx *cli.Context) error {
-	stack := makeFullNode(ctx)
+	stack, _ := makeConfigNode(ctx)
 	diskdb := utils.MakeChainDatabase(ctx, stack)
 	baseRoot := rawdb.ReadSnapshotRoot(diskdb)
 	if baseRoot == (common.Hash{}) {
