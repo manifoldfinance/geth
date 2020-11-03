@@ -86,41 +86,56 @@ func New(eth Backend, config *Config, chainConfig ctypes.ChainConfigurator, mux 
 // and halt your mining operation for as long as the DOS continues.
 func (miner *Miner) update() {
 	events := miner.mux.Subscribe(downloader.StartEvent{}, downloader.DoneEvent{}, downloader.FailedEvent{})
-	defer events.Unsubscribe()
+	defer func() {
+		if !events.Closed() {
+			events.Unsubscribe()
+		}
+	}()
 
-	shouldStart := false
-	canStart := true
+	miningRequested := false
+	isDownloading := false
+	dlEventCh := events.Chan()
 	for {
 		select {
-		case ev := <-events.Chan():
+		case ev := <-dlEventCh:
 			if ev == nil {
-				return
+				// Unsubscription done, stop listening
+				dlEventCh = nil
+				continue
 			}
 			switch ev.Data.(type) {
 			case downloader.StartEvent:
 				wasMining := miner.Mining()
 				miner.worker.stop()
-				canStart = false
+				isDownloading = true
 				if wasMining {
 					// Resume mining after sync was finished
-					shouldStart = true
+					miningRequested = true
 					log.Info("Mining aborted due to sync")
 				}
-			case downloader.DoneEvent, downloader.FailedEvent:
-				canStart = true
-				if shouldStart {
+			case downloader.FailedEvent:
+				isDownloading = false
+				if miningRequested {
 					miner.SetEtherbase(miner.coinbase)
 					miner.worker.start()
 				}
+			case downloader.DoneEvent:
+				isDownloading = false
+				if miningRequested {
+					miner.SetEtherbase(miner.coinbase)
+					miner.worker.start()
+				}
+				// Stop reacting to downloader events
+				events.Unsubscribe()
 			}
 		case addr := <-miner.startCh:
-			if canStart {
-				miner.SetEtherbase(addr)
+			miner.SetEtherbase(addr)
+			if !isDownloading {
 				miner.worker.start()
 			}
-			shouldStart = true
+			miningRequested = true
 		case <-miner.stopCh:
-			shouldStart = false
+			miningRequested = false
 			miner.worker.stop()
 		case <-miner.exitCh:
 			miner.worker.close()
