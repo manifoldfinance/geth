@@ -36,7 +36,6 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/clique"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/core"
-	// "github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -817,7 +816,6 @@ type PreviousState struct {
 	state  *state.StateDB
 	header *types.Header
 }
-
 func (prevState *PreviousState) copy() *PreviousState {
 	if prevState == nil { return nil }
 	state := prevState.state
@@ -1013,6 +1011,9 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 		if err != nil {
 			return 0, nil, err
 		}
+		if block == nil {
+			return 0, nil, errors.New("block not found")
+		}
 		hi = block.GasLimit()
 	}
 	// Recap the highest gas limit with account's available balance.
@@ -1033,7 +1034,9 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 			available.Sub(available, args.Value.ToInt())
 		}
 		allowance := new(big.Int).Div(available, args.GasPrice.ToInt())
-		if hi > allowance.Uint64() {
+
+		// If the allowance is larger than maximum uint64, skip checking
+		if allowance.IsUint64() && hi > allowance.Uint64() {
 			transfer := args.Value
 			if transfer == nil {
 				transfer = new(hexutil.Big)
@@ -1107,9 +1110,12 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 
 // EstimateGas returns an estimate of the amount of gas needed to execute the
 // given transaction against the current pending block.
-func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (hexutil.Uint64, error) {
-	blockNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-	gas, _, err := DoEstimateGas(ctx, s.b, args, nil, blockNrOrHash, s.b.RPCGasCap(), false)
+func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs, blockNrOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
+	bNrOrHash := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+	if blockNrOrHash != nil {
+		bNrOrHash = *blockNrOrHash
+	}
+	gas, _, err := DoEstimateGas(ctx, s.b, args, nil, bNrOrHash, s.b.RPCGasCap(), false)
 	return gas, err
 }
 

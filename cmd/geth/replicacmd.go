@@ -30,6 +30,8 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/ethereum/go-ethereum/internal/debug"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/ethdb/overlay"
@@ -43,7 +45,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/nat"
-	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
 	"github.com/ethereum/go-ethereum/node"
 	// "github.com/ethereum/go-ethereum/rpc"
 	"gopkg.in/urfave/cli.v1"
@@ -60,7 +61,12 @@ var (
 The Geth replica captures a Geth node's write operations via a change-data-capture
 system and acts as an RPC node based on the replicated data.
 `,
-		Flags: []cli.Flag{
+		Flags: append(debug.Flags, []cli.Flag{
+			utils.HTTPEnabledFlag,
+			utils.HTTPListenAddrFlag,
+			utils.HTTPPortFlag,
+			utils.HTTPCORSDomainFlag,
+			utils.HTTPVirtualHostsFlag,
 			utils.LegacyTestnetFlag,
 			utils.RinkebyFlag,
 			utils.GoerliFlag,
@@ -78,9 +84,10 @@ system and acts as an RPC node based on the replicated data.
 			utils.WSListenAddrFlag,
 			utils.WSPortFlag,
 			utils.WSAllowedOriginsFlag,
+			utils.LegacyWSListenAddrFlag,
+			utils.LegacyWSPortFlag,
+			utils.LegacyWSAllowedOriginsFlag,
 			utils.GraphQLEnabledFlag,
-			utils.GraphQLListenAddrFlag,
-			utils.GraphQLPortFlag,
 			utils.GraphQLCORSDomainFlag,
 			utils.GraphQLVirtualHostsFlag,
 			utils.ReplicaStartupMaxAgeFlag,
@@ -95,7 +102,7 @@ system and acts as an RPC node based on the replicated data.
 			utils.CacheGCFlag,
 			utils.CacheDatabaseFlag,
 			utils.SnapshotFlag,
-		},
+		}...),
 	}
 	replicaTxPoolConfig = core.TxPoolConfig{
 		Journal:   "transactions.rlp",
@@ -156,18 +163,20 @@ func replica(ctx *cli.Context) error {
 	// go func() {
 	// 	log.Info("Serving", "err", http.ListenAndServe("0.0.0.0:6060", nil))
 	// }()
-	node, _ := makeReplicaNode(ctx)
+	debug.Setup(ctx)
+	node, _, err := makeReplicaNode(ctx)
+	if err != nil { return err }
+	defer node.Close()
+
 	utils.StartNode(node)
 	node.Wait()
 	return nil
 }
 
-
-func makeReplicaNode(ctx *cli.Context) (*node.Node, gethConfig) {
+func makeReplicaNode(ctx *cli.Context) (*node.Node, ethapi.Backend, error) {
 	// Load defaults.
 	cfg := gethConfig{
 		Eth:       ethConfig,
-		Shh:       whisper.DefaultConfig,
 		Node:      replicaNodeConfig(),
 		// Dashboard: dashboard.DefaultConfig,
 	}
@@ -190,78 +199,75 @@ func makeReplicaNode(ctx *cli.Context) (*node.Node, gethConfig) {
 		cfg.Ethstats.URL = ctx.GlobalString(utils.EthStatsURLFlag.Name)
 	}
 
-	utils.SetShhConfig(ctx, stack, &cfg.Shh)
-	// utils.SetDashboardConfig(ctx, &cfg.Dashboard)
-	stack.Register(func (sctx *node.ServiceContext) (node.Service, error) {
-		log.Info("Opening leveldb")
-		var chainKv ethdb.KeyValueStore
+	log.Info("Opening leveldb")
+	var chainKv ethdb.KeyValueStore
+	log.Info("Allocating DB", "path", stack.ResolvePath("chaindata"), "dbcache", cfg.Eth.DatabaseCache, "handles", cfg.Eth.DatabaseHandles)
+	chainKv, err = rawdb.NewLevelDBDatabase(stack.ResolvePath("chaindata"), cfg.Eth.DatabaseCache * 3 / 4, cfg.Eth.DatabaseHandles, "eth/db/chaindata")
+	// chainKv, err := stack.OpenRawDatabaseWithFreezer("chaindata", cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles, cfg.Eth.DatabaseFreezer, "eth/db/chaindata/")
+	if err != nil {
+		utils.Fatalf("Could not open database: %v", err)
+	}
+	if cfg.Eth.DatabaseOverlay != "" {
+		log.Info("Opening overlay folder", "path", cfg.Eth.DatabaseOverlay)
+		var overlayKv ethdb.KeyValueStore
 		var err error
-		log.Info("Allocating DB", "path", sctx.ResolvePath("chaindata"), "dbcache", cfg.Eth.DatabaseCache, "handles", cfg.Eth.DatabaseHandles)
-		chainKv, err = rawdb.NewLevelDBDatabase(sctx.ResolvePath("chaindata"), cfg.Eth.DatabaseCache * 3 / 4, cfg.Eth.DatabaseHandles, "eth/db/chaindata")
-		// chainKv, err := sctx.OpenRawDatabaseWithFreezer("chaindata", cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles, cfg.Eth.DatabaseFreezer, "eth/db/chaindata/")
+		if cfg.Eth.DatabaseOverlay == "null" {
+			overlayKv = devnull.New()
+		} else if cfg.Eth.DatabaseOverlay == "mem" {
+			overlayKv = memorydb.New()
+		} else {
+			log.Info("Cache size", "dbcache", cfg.Eth.DatabaseCache)
+			overlayKv, err = rawdb.NewLevelDBDatabase(cfg.Eth.DatabaseOverlay, cfg.Eth.DatabaseCache * 1 / 4, cfg.Eth.DatabaseHandles, "eth/db/chaindata/overlay/")
+		}
 		if err != nil {
-			utils.Fatalf("Could not open database: %v", err)
+			utils.Fatalf("Failed to create overlaydb", err)
 		}
-		if cfg.Eth.DatabaseOverlay != "" {
-			log.Info("Opening overlay folder", "path", cfg.Eth.DatabaseOverlay)
-			var overlayKv ethdb.KeyValueStore
-			var err error
-			if cfg.Eth.DatabaseOverlay == "null" {
-				overlayKv = devnull.New()
-			} else if cfg.Eth.DatabaseOverlay == "mem" {
-				overlayKv = memorydb.New()
-			} else {
-				log.Info("Cache size", "dbcache", cfg.Eth.DatabaseCache)
-				overlayKv, err = rawdb.NewLevelDBDatabase(cfg.Eth.DatabaseOverlay, cfg.Eth.DatabaseCache * 1 / 4, cfg.Eth.DatabaseHandles, "eth/db/chaindata/overlay/")
-			}
-			if err != nil {
-				utils.Fatalf("Failed to create overlaydb", err)
-			}
-			log.Info("Constructing Overlay")
-			chainKv = overlay.NewOverlayWrapperDB(overlayKv, chainKv)
-		}
-		root := sctx.ResolvePath("chaindata")
-		freezer := cfg.Eth.DatabaseFreezer
-		switch {
-		case freezer == "":
-			freezer = filepath.Join(root, "ancient")
-		case strings.HasPrefix(freezer, "s3://"):
-			log.Info("S3 freezer", "path", freezer)
-		case strings.HasPrefix(freezer, "s3:/"):
-			// For some reason the flags system is dropping the second slash
-			freezer = "s3://" + strings.TrimPrefix(freezer, "s3:/")
-		case !filepath.IsAbs(freezer):
-			log.Info("Non-s3 path", "path", freezer)
-			freezer = sctx.ResolvePath(freezer)
-		}
-		chainDb, err := rawdb.NewDatabaseWithFreezer(chainKv, freezer, "eth/db/chaindata")
-		if err != nil {
-			utils.Fatalf("Could not open freezer: %v", err)
-		}
-	  return replicaModule.NewKafkaReplica(
-			chainDb,
-			&cfg.Eth,
-			sctx,
-			ctx.GlobalString(utils.KafkaLogBrokerFlag.Name),
-			ctx.GlobalString(utils.KafkaLogTopicFlag.Name),
-			ctx.GlobalString(utils.KafkaTransactionTopicFlag.Name),
-			ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name),
-			ctx.GlobalBool(utils.ReplicaSyncShutdownFlag.Name),
-			ctx.GlobalInt64(utils.ReplicaStartupMaxAgeFlag.Name),
-			ctx.GlobalInt64(utils.ReplicaRuntimeMaxOffsetAgeFlag.Name),
-			ctx.GlobalInt64(utils.ReplicaRuntimeMaxBlockAgeFlag.Name),
-			ctx.GlobalBool(utils.GraphQLEnabledFlag.Name),
-			cfg.Node.GraphQLEndpoint(),
-			cfg.Node.GraphQLCors,
-			cfg.Node.GraphQLVirtualHosts,
-			cfg.Node.HTTPTimeouts,
-			int(ctx.GlobalInt64(utils.ReplicaEVMConcurrencyFlag.Name)),
-			ctx.GlobalString(utils.ReplicaWarmAddressesFlag.Name),
-			ctx.GlobalBool(utils.SnapshotFlag.Name),
-			ctx.GlobalInt64(utils.ReplicaMaxOffsetFlag.Name),
-		)
-	})
-	return stack, cfg
+		log.Info("Constructing Overlay")
+		chainKv = overlay.NewOverlayWrapperDB(overlayKv, chainKv)
+	}
+	root := stack.ResolvePath("chaindata")
+	freezer := cfg.Eth.DatabaseFreezer
+	switch {
+	case freezer == "":
+		freezer = filepath.Join(root, "ancient")
+	case strings.HasPrefix(freezer, "s3://"):
+		log.Info("S3 freezer", "path", freezer)
+	case strings.HasPrefix(freezer, "s3:/"):
+		// For some reason the flags system is dropping the second slash
+		freezer = "s3://" + strings.TrimPrefix(freezer, "s3:/")
+	case !filepath.IsAbs(freezer):
+		log.Info("Non-s3 path", "path", freezer)
+		freezer = stack.ResolvePath(freezer)
+	}
+	chainDb, err := rawdb.NewDatabaseWithFreezer(chainKv, freezer, "eth/db/chaindata")
+	if err != nil {
+		utils.Fatalf("Could not open freezer: %v", err)
+	}
+  replica, err := replicaModule.NewKafkaReplica(
+		chainDb,
+		&cfg.Eth,
+		stack,
+		ctx.GlobalString(utils.KafkaLogBrokerFlag.Name),
+		ctx.GlobalString(utils.KafkaLogTopicFlag.Name),
+		ctx.GlobalString(utils.KafkaTransactionTopicFlag.Name),
+		ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name),
+		ctx.GlobalBool(utils.ReplicaSyncShutdownFlag.Name),
+		ctx.GlobalInt64(utils.ReplicaStartupMaxAgeFlag.Name),
+		ctx.GlobalInt64(utils.ReplicaRuntimeMaxOffsetAgeFlag.Name),
+		ctx.GlobalInt64(utils.ReplicaRuntimeMaxBlockAgeFlag.Name),
+		cfg.Node.HTTPTimeouts,
+		int(ctx.GlobalInt64(utils.ReplicaEVMConcurrencyFlag.Name)),
+		ctx.GlobalString(utils.ReplicaWarmAddressesFlag.Name),
+		ctx.GlobalBool(utils.SnapshotFlag.Name),
+		ctx.GlobalInt64(utils.ReplicaMaxOffsetFlag.Name),
+	)
+	if err != nil { return stack, nil, err }
+	if ctx.GlobalBool(utils.GraphQLEnabledFlag.Name) {
+		utils.RegisterGraphQLService(stack, replica.GetBackend(), cfg.Node)
+	}
+	stack.RegisterAPIs(replica.APIs())
+	stack.RegisterLifecycle(replica)
+	return stack, replica.GetBackend(), nil
 }
 
 func replicaNodeConfig() node.Config {
