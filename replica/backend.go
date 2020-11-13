@@ -633,7 +633,7 @@ func (backend *ReplicaBackend) initSnapshot() error {
   if err != nil {
     log.Warn("Snapshot init failed", "err", err)
   }
-  backend.snaps = snapshot.New(backend.db, trie.NewDatabase(backend.db), 256, header.Root, true)
+  backend.snaps = snapshot.New(backend.db, trie.NewDatabase(backend.db), 256, header.Root, true, false)
   log.Info("Initialized snapshot", "snaps", backend.snaps)
   return err
 
