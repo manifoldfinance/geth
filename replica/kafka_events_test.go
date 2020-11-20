@@ -4,6 +4,7 @@ import (
   "math/big"
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/core"
+  "github.com/ethereum/go-ethereum/trie"
   // "github.com/ethereum/go-ethereum/event"
   "github.com/ethereum/go-ethereum/core/types"
   // "github.com/Shopify/sarama/mocks"
@@ -171,7 +172,7 @@ func getTestChainEvent(blockNo int64, nonce uint64, h *types.Header) *ChainEvent
   }
 
 
-  block := types.NewBlock(header, []*types.Transaction{tx}, []*types.Header{}, []*types.Receipt{&receipt})
+  block := types.NewBlock(header, []*types.Transaction{tx}, []*types.Header{}, []*types.Receipt{&receipt}, new(trie.Trie))
   rmetas := make(map[common.Hash]*ReceiptMeta)
   rmetas[tx.Hash()] = &ReceiptMeta{
     ContractAddress: receipt.ContractAddress,
