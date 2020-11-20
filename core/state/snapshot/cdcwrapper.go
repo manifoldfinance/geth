@@ -62,6 +62,7 @@ func KafkaCDCTree(tree SnapshotTree, producer sarama.AsyncProducer, topic string
 
 type SnapshotTree interface {
   Journal(common.Hash) (common.Hash, error)
+  LegacyJournal(common.Hash) (common.Hash, error)
   Rebuild(common.Hash)
   AccountIterator(common.Hash, common.Hash) (AccountIterator, error)
   StorageIterator(common.Hash, common.Hash, common.Hash) (StorageIterator, error)
@@ -77,6 +78,11 @@ type CDCTree struct {
 
 func (t *CDCTree) Journal(root common.Hash) (common.Hash, error) {
   if t.tree != nil { return t.tree.Journal(root) }
+  return common.Hash{}, nil
+}
+
+func (t *CDCTree) LegacyJournal(root common.Hash) (common.Hash, error) {
+  if t.tree != nil { return t.tree.LegacyJournal(root) }
   return common.Hash{}, nil
 }
 

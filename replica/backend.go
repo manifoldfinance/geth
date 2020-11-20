@@ -14,6 +14,7 @@ import (
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/common/bitutil"
   "github.com/ethereum/go-ethereum/common/math"
+  "github.com/ethereum/go-ethereum/consensus"
   "github.com/ethereum/go-ethereum/rpc"
   "github.com/ethereum/go-ethereum/core"
   "github.com/ethereum/go-ethereum/core/bloombits"
@@ -379,6 +380,16 @@ func (backend *ReplicaBackend) ChainConfig() *params.ChainConfig {
   return backend.chainConfig
 }
 
+
+func (backend *ReplicaBackend) Engine() consensus.Engine {
+  return backend.bc.Engine()
+}
+
+func (backend *ReplicaBackend) CurrentHeader() *types.Header {
+  latestHash := rawdb.ReadHeadBlockHash(backend.db)
+  return backend.bc.GetHeaderByHash(latestHash)
+}
+
 	// CurrentBlock needs to find the latest block number / hash from the DB, then
   // look that up using GetBlock() {
 
@@ -622,7 +633,7 @@ func (backend *ReplicaBackend) initSnapshot() error {
   if err != nil {
     log.Warn("Snapshot init failed", "err", err)
   }
-  backend.snaps = snapshot.New(backend.db, trie.NewDatabase(backend.db), 256, header.Root, true)
+  backend.snaps = snapshot.New(backend.db, trie.NewDatabase(backend.db), 256, header.Root, true, false)
   log.Info("Initialized snapshot", "snaps", backend.snaps)
   return err
 
