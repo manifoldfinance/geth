@@ -167,7 +167,11 @@ func (t *CDCTree) Update(blockRoot common.Hash, parentRoot common.Hash, destruct
       counter++
     }
   }
-  if err := t.emitter.Emit(messages); err != nil { panic(err) }
+  // TODO: After we collect the initial chaindata, we maybe shouldn't do this
+  // in a goroutine for integrity.
+  go func() {
+    if err := t.emitter.Emit(messages); err != nil { panic(err) }
+  }()
   if t.tree != nil { return t.tree.Update(blockRoot, parentRoot, destructs, accounts, storage) }
   return nil
 }
