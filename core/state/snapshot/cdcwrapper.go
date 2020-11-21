@@ -2,10 +2,15 @@ package snapshot
 
 import (
   "math/big"
+  "compress/gzip"
+  "encoding/base64"
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/rlp"
   "github.com/Shopify/sarama"
+  "sync"
   "fmt"
+  "io"
+  "os"
 )
 
 type MsgType byte
@@ -19,19 +24,56 @@ const (
 
 type stateDeltaEmitter interface {
   Emit([]stateDeltaMessage) error
+  Flush()
 }
+
+type compressedFileDeltaEmitter struct {
+  file io.WriteCloser
+  compressor *gzip.Writer
+  wg *sync.WaitGroup
+}
+
+func FileCDCTree(tree SnapshotTree, path string) (SnapshotTree, error, func()) {
+  fi, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660)
+  if err != nil { return nil, err, func() {} }
+  compressor := gzip.NewWriter(fi)
+  return &CDCTree{tree: tree, emitter: compressedFileDeltaEmitter{compressor: compressor, file: fi,  wg: &sync.WaitGroup{}}}, nil, func() {
+    compressor.Close()
+    fi.Close()
+  }
+}
+
+func (sde compressedFileDeltaEmitter) Flush() {
+  sde.wg.Wait()
+  sde.compressor.Flush()
+}
+
+func (sde compressedFileDeltaEmitter) Emit(messages []stateDeltaMessage) error {
+  sde.wg.Add(1)
+  defer sde.wg.Done()
+  data, err := rlp.EncodeToBytes(messages)
+  if err != nil { return err }
+  sde.compressor.Write([]byte(base64.StdEncoding.EncodeToString(data)))
+  sde.compressor.Write([]byte("\n"))
+  return nil
+}
+
+
 
 type kafkaStateDeltaEmitter struct {
   producer sarama.AsyncProducer
   topic string
+  wg *sync.WaitGroup
 }
 
 func (producer kafkaStateDeltaEmitter) Emit(messages []stateDeltaMessage) error {
+  producer.wg.Add(1)
+  defer producer.wg.Done()
   inflight := 0
   for _, msg := range messages {
     // Send messages to Kafka or get errors from previous sends
     select {
-    case producer.producer.Input() <- &sarama.ProducerMessage{Topic: producer.topic, Key: sarama.ByteEncoder(msg.key), Value: sarama.ByteEncoder(msg.value)}:
+    case producer.producer.Input() <- &sarama.ProducerMessage{Topic: producer.topic, Key: sarama.ByteEncoder(msg.Key), Value: sarama.ByteEncoder(msg.Value)}:
       inflight++
     case err := <-producer.producer.Errors():
       return err
@@ -56,8 +98,12 @@ func (producer kafkaStateDeltaEmitter) Emit(messages []stateDeltaMessage) error 
   return nil
 }
 
+func (producer kafkaStateDeltaEmitter) Flush() {
+  producer.wg.Wait()
+}
+
 func KafkaCDCTree(tree SnapshotTree, producer sarama.AsyncProducer, topic string) SnapshotTree {
-  return &CDCTree{tree: tree, emitter: kafkaStateDeltaEmitter{producer: producer, topic: topic}}
+  return &CDCTree{tree: tree, emitter: kafkaStateDeltaEmitter{producer: producer, topic: topic, wg: &sync.WaitGroup{}}}
 }
 
 type SnapshotTree interface {
@@ -77,11 +123,13 @@ type CDCTree struct {
 }
 
 func (t *CDCTree) Journal(root common.Hash) (common.Hash, error) {
+  t.emitter.Flush()
   if t.tree != nil { return t.tree.Journal(root) }
   return common.Hash{}, nil
 }
 
 func (t *CDCTree) LegacyJournal(root common.Hash) (common.Hash, error) {
+  t.emitter.Flush()
   if t.tree != nil { return t.tree.LegacyJournal(root) }
   return common.Hash{}, nil
 }
@@ -108,8 +156,8 @@ func (t *CDCTree) Snapshot(blockRoot common.Hash) Snapshot {
 }
 
 type stateDeltaMessage struct {
-  key []byte
-  value []byte
+  Key []byte
+  Value []byte
 }
 
 type cdcHeader struct {
@@ -140,38 +188,34 @@ func (t *CDCTree) Update(blockRoot common.Hash, parentRoot common.Hash, destruct
   if err != nil { panic(err.Error()) } // We shouldn't get RLP errors here
   messages := make([]stateDeltaMessage, header.size())
   messages[0] = stateDeltaMessage{
-    key: append([]byte{byte(DeltaMsg)}, blockRoot.Bytes()...),
-    value: headerRLP,
+    Key: append([]byte{byte(DeltaMsg)}, blockRoot.Bytes()...),
+    Value: headerRLP,
   }
   counter := int64(1)
   for k, _ := range destructs {
     messages[counter] = stateDeltaMessage{
-      key: append(append([]byte{byte(DestructMsg)}, blockRoot.Bytes()...), big.NewInt(counter).Bytes()...), // We don't actually care about counter, we just need to make the key unique
-      value: k.Bytes(),
+      Key: append(append([]byte{byte(DestructMsg)}, blockRoot.Bytes()...), big.NewInt(counter).Bytes()...), // We don't actually care about counter, we just need to make the key unique
+      Value: k.Bytes(),
     }
     counter++
   }
   for k, v := range accounts {
     messages[counter] = stateDeltaMessage{
-      key: append(append([]byte{byte(AccountMsg)}, blockRoot.Bytes()...), k.Bytes()...),
-      value: v,
+      Key: append(append([]byte{byte(AccountMsg)}, blockRoot.Bytes()...), k.Bytes()...),
+      Value: v,
     }
     counter++
   }
   for accountHash, accountStorage := range storage {
     for storageHash, value := range accountStorage {
       messages[counter] = stateDeltaMessage{
-        key: append(append(append([]byte{byte(StorageMsg)}, blockRoot.Bytes()...), accountHash.Bytes()...), storageHash.Bytes()...),
-        value: value,
+        Key: append(append(append([]byte{byte(StorageMsg)}, blockRoot.Bytes()...), accountHash.Bytes()...), storageHash.Bytes()...),
+        Value: value,
       }
       counter++
     }
   }
-  // TODO: After we collect the initial chaindata, we maybe shouldn't do this
-  // in a goroutine for integrity.
-  go func() {
-    if err := t.emitter.Emit(messages); err != nil { panic(err) }
-  }()
+  if err := t.emitter.Emit(messages); err != nil { panic(err) }
   if t.tree != nil { return t.tree.Update(blockRoot, parentRoot, destructs, accounts, storage) }
   return nil
 }

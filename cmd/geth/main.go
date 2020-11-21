@@ -167,6 +167,7 @@ var (
 		utils.KafkaTransactionTopicFlag,
 		utils.KafkaTransactionConsumerGroupFlag,
 		utils.KafkaStateDeltaTopicFlag,
+		utils.StateDeltaFileFlag,
 		utils.ReplicaSyncShutdownFlag,
 		utils.ReplicaStartupMaxAgeFlag,
 		utils.ReplicaRuntimeMaxOffsetAgeFlag,

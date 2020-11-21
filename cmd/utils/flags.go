@@ -689,6 +689,11 @@ var (
 		 Usage: "Kafka state delta topic name",
 		 Value: "",
 	}
+	StateDeltaFileFlag = cli.StringFlag{
+		 Name: "statedelta.file",
+		 Usage: "A file for storing compressed state deltas",
+		 Value: "",
+	}
 	KafkaTransactionConsumerGroupFlag = cli.StringFlag{
 		 Name: "kafka.tx.consumergroup",
 		 Usage: "Kafka transaction consumer group name",

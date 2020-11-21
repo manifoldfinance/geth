@@ -106,6 +106,7 @@ The dumpgenesis command dumps the genesis block configuration in JSON format to 
 			utils.TxLookupLimitFlag,
 			utils.KafkaLogBrokerFlag,
 			utils.KafkaStateDeltaTopicFlag,
+			utils.StateDeltaFileFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -450,6 +451,11 @@ func importChain(ctx *cli.Context) error {
 		} else {
 			log.Info("Kafka broker:", "broker", brokerURL, "topic", "UNSET")
 		}
+	} else if stateDeltaFile := ctx.GlobalString(utils.StateDeltaFileFlag.Name); stateDeltaFile != "" {
+		log.Info("Writing state changes to file", "path", stateDeltaFile)
+		err, closer := core.TapSnapsFile(chain, stateDeltaFile)
+		if err != nil { return err }
+		defer closer()
 	}
 
 	// Start periodically gathering memory profiles

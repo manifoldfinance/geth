@@ -20,3 +20,9 @@ func TapSnaps(bc *BlockChain, brokerURL, topic string) error {
   log.Info("Tapping snapshotter", "broker", brokerURL, "topic", topic)
   return nil
 }
+
+func TapSnapsFile(bc *BlockChain, path string) (error, func()) {
+  tree, err, closer := snapshot.FileCDCTree(bc.snaps, path)
+  if tree != nil { bc.snaps = tree }
+  return err, closer
+}
