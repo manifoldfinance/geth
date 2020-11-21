@@ -3,6 +3,7 @@ package core
 import (
   "github.com/ethereum/go-ethereum/core/state/snapshot"
   "github.com/ethereum/go-ethereum/ethdb/cdc"
+  "github.com/ethereum/go-ethereum/log"
   "github.com/Shopify/sarama"
 )
 
@@ -15,5 +16,6 @@ func TapSnaps(bc *BlockChain, brokerURL, topic string) error {
   producer, err := sarama.NewAsyncProducer(brokers, config)
   if err != nil { return err }
   bc.snaps = snapshot.KafkaCDCTree(bc.snaps, producer, topic)
+  log.Info("Tapping snapshotter", "broker", brokerURL, "topic", topic)
   return nil
 }
