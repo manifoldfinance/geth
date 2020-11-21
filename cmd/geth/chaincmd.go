@@ -442,8 +442,14 @@ func importChain(ctx *cli.Context) error {
 	defer db.Close()
 
 	if brokerURL := ctx.GlobalString(utils.KafkaLogBrokerFlag.Name); brokerURL != "" {
-		deltaTopic := ctx.GlobalString(utils.KafkaStateDeltaTopicFlag.Name)
-		core.TapSnaps(chain, brokerURL, deltaTopic)
+		if deltaTopic := ctx.GlobalString(utils.KafkaStateDeltaTopicFlag.Name); deltaTopic != "" {
+			log.Info("Kafka broker:", "broker", brokerURL, "topic", deltaTopic)
+			if err := core.TapSnaps(chain, brokerURL, deltaTopic); err != nil {
+				return err
+			}
+		} else {
+			log.Info("Kafka broker:", "broker", brokerURL, "topic", "UNSET")
+		}
 	}
 
 	// Start periodically gathering memory profiles
