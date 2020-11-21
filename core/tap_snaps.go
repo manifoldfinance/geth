@@ -13,6 +13,7 @@ func TapSnaps(bc *BlockChain, brokerURL, topic string) error {
     return err
   }
   config.Producer.MaxMessageBytes = 5000012
+  config.Producer.Return.Successes = true
   producer, err := sarama.NewAsyncProducer(brokers, config)
   if err != nil { return err }
   bc.snaps = snapshot.KafkaCDCTree(bc.snaps, producer, topic)
