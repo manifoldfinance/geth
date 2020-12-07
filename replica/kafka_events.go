@@ -725,6 +725,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
   if err != nil { return nil, err }
 
   partitionConsumers := make([]sarama.PartitionConsumer, len(partitions))
+  startingOffsets := make(map[int32]int64)
   for i, part := range partitions {
     offset, ok := offsets[part]
     var startOffset int64
@@ -734,18 +735,18 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
     } else {
       startOffset = offset - 5000
     }
+    startingOffsets[part] = startOffset
     pc, err := consumer.ConsumePartition(topic, part, startOffset)
     if err != nil {
       // We may not have been able to roll back 5000 messages, so just try with
       // the provided offset
+      startingOffsets[part] = offset
       pc, err = consumer.ConsumePartition(topic, part, offset)
       if err != nil { return nil, err }
     }
     partitionConsumers[i] = pc
   }
   log.Info("Start offsets", "offsets", offsets)
-  startingOffsets := make(map[int32]int64)
-  for k, v := range offsets { startingOffsets[k] = v }
 
   return &KafkaEventConsumer{
     cet: &chainEventTracker {
