@@ -88,6 +88,7 @@ func getTestConsumer() (*KafkaEventConsumer, chan *ChainEvents, func()) {
       finishedLimit: 128,
       lastEmittedBlock: common.Hash{},
       pendingEmits: make(map[common.Hash]common.Hash),
+      pendingHashes: make(map[common.Hash]struct{}),
       chainEventPartitions: make(map[int32]int64),
     },
 

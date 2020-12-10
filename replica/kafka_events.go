@@ -219,6 +219,7 @@ type chainEventTracker struct {
   finishedLimit int
   lastEmittedBlock common.Hash
   pendingEmits map[common.Hash]common.Hash
+  pendingHashes map[common.Hash]struct{}
   chainEventPartitions map[int32]int64
 }
 
@@ -335,6 +336,9 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
 
 func (cet *chainEventTracker) HandleReadyCE(blockhash common.Hash) (*ChainEvents, error) {
   ce := cet.chainEvents[blockhash]
+  if ce == nil {
+    panic(fmt.Sprintf("Trying to emit missing block %#x", blockhash[:]))
+  }
   if ce.Block.ParentHash() == cet.lastEmittedBlock || cet.lastEmittedBlock == (common.Hash{}) {
     log.Debug("Emitting block without reorg", "block", blockhash)
     return cet.PrepareEmit([]*ChainEvent{ce}, []*ChainEvent{})
@@ -347,6 +351,7 @@ func (cet *chainEventTracker) HandleReadyCE(blockhash common.Hash) (*ChainEvents
     // a reorg if a higher block on that chain eventually comes along.
     log.Debug("Holding until parent is emitted", "finished", cet.finished[bh], "oldFinished", cet.oldFinished[bh], "block", blockhash, "parent", bh, "lastEmitted", cet.lastEmittedBlock)
     cet.pendingEmits[ce.Block.ParentHash()] = blockhash
+    cet.pendingHashes[blockhash] = struct{}{}
     return nil, nil
   }
   lastce := cet.chainEvents[cet.lastEmittedBlock]
@@ -395,15 +400,24 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
     }
   }
   for hash, ok := cet.pendingEmits[cet.lastEmittedBlock]; ok; hash, ok = cet.pendingEmits[cet.lastEmittedBlock] {
-    new = append(new, cet.chainEvents[hash])
+    ce := cet.chainEvents[hash]
+    if ce == nil { panic(fmt.Sprintf("Could not find block for %#x", hash[:]))}
+    new = append(new, ce)
     delete(cet.pendingEmits, cet.lastEmittedBlock)
+    delete(cet.pendingHashes, hash)
     cet.lastEmittedBlock = hash
     log.Debug("Marking block as finished (pending)", "blockhash", hash)
     cet.finished[hash] = true
   }
   if len(cet.finished) >= cet.finishedLimit {
     for bh := range cet.oldFinished {
-      delete(cet.chainEvents, bh)
+      if _, ok := cet.pendingEmits[bh]; !ok {
+        if _, ok := cet.pendingHashes[bh]; !ok {
+          // Don't delete events from chainEvents if they're still referenced
+          // in pendingEmits
+          delete(cet.chainEvents, bh)
+        }
+      }
     }
     cet.oldFinished = cet.finished
     cet.finished = cet.oldFinished
@@ -775,6 +789,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
       finishedLimit: 128,
       lastEmittedBlock: lastEmittedBlock,
       pendingEmits: make(map[common.Hash]common.Hash),
+      pendingHashes: make(map[common.Hash]struct{}),
       chainEventPartitions: offsets,
     },
 
