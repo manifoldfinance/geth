@@ -759,7 +759,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
     }
     partitionConsumers[i] = pc
   }
-  log.Info("Start offsets", "offsets", offsets)
+  log.Info("Start offsets", "offsets", startingOffsets)
 
   return &KafkaEventConsumer{
     cet: &chainEventTracker {
