@@ -224,6 +224,22 @@ type chainEventTracker struct {
   chainEventPartitions map[int32]int64
 }
 
+func (cet *chainEventTracker) report() {
+  log.Debug("Chain Event Report",
+    "chainEventCount", len(cet.chainEvents),
+    "receiptCounters", len(cet.receiptCounter),
+    "logCounters", len(cet.logCounter),
+    "earlyReceiptsMaps", len(cet.earlyReceipts),
+    "earlyLogsMaps", len(cet.earlyLogs),
+    "earlyTdMaps", len(cet.earlyTd),
+    "finished", len(cet.finished),
+    "oldFinished", len(cet.oldFinished),
+    "skipped", len(cet.skipped),
+    "pendingEmits", len(cet.pendingEmits),
+    "pendingHashes", len(cet.pendingHashes),
+  )
+}
+
 func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, offset int64) (*ChainEvents, error) {
   cet.chainEventPartitions[partition] = offset
   var blockhash common.Hash
@@ -425,6 +441,7 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
     cet.finished[hash] = true
   }
   if len(cet.finished) >= cet.finishedLimit {
+    cet.report()
     for bh := range cet.oldFinished {
       if _, ok := cet.pendingEmits[bh]; !ok {
         if _, ok := cet.pendingHashes[bh]; !ok {
