@@ -7,14 +7,16 @@ import (
   "github.com/ethereum/go-ethereum/trie"
   // "github.com/ethereum/go-ethereum/event"
   "github.com/ethereum/go-ethereum/core/types"
+  gethLog "github.com/ethereum/go-ethereum/log"
   // "github.com/Shopify/sarama/mocks"
   "github.com/Shopify/sarama"
-  // "math/rand"
+  "math/rand"
   "reflect"
   "runtime"
   "testing"
-  // "time"
+  "time"
   "fmt"
+  "os"
 )
 
 // type chainEventProvider interface {
@@ -73,7 +75,7 @@ func getTestProducer(ces []*ChainEvent) *KafkaEventProducer {
   }
 }
 
-func getTestConsumer() (*KafkaEventConsumer, chan *ChainEvents, func()) {
+func getTestConsumer(lastEmittedBlock common.Hash) (*KafkaEventConsumer, chan *ChainEvents, func()) {
   consumer := &KafkaEventConsumer{
     cet: &chainEventTracker {
       topic: "test",
@@ -85,8 +87,9 @@ func getTestConsumer() (*KafkaEventConsumer, chan *ChainEvents, func()) {
       earlyTd: make(map[common.Hash]*big.Int),
       finished: make(map[common.Hash]bool),
       oldFinished: make(map[common.Hash]bool),
+      skipped: make(map[common.Hash]bool),
       finishedLimit: 128,
-      lastEmittedBlock: common.Hash{},
+      lastEmittedBlock: lastEmittedBlock,
       pendingEmits: make(map[common.Hash]common.Hash),
       pendingHashes: make(map[common.Hash]struct{}),
       chainEventPartitions: make(map[int32]int64),
@@ -243,7 +246,7 @@ func TestChainEventTracker(t *testing.T) {
   messages := event.getMessages()
   // rand.Seed(time.Now().UnixNano())
   // rand.Shuffle(len(messages), func(i, j int) { messages[i], messages[j] = messages[j], messages[i] })
-  consumer, _, close := getTestConsumer()
+  consumer, _, close := getTestConsumer(common.Hash{})
   defer close()
   var chainEvents *ChainEvents
   for i, msg := range messages {
@@ -266,7 +269,7 @@ func TestChainEventTracker(t *testing.T) {
 func handleReorderedMessages(t *testing.T, order []int) {
   event := getTestChainEvent(0, 0, nil)
   messages := event.getMessages()
-  consumer, _, close := getTestConsumer()
+  consumer, _, close := getTestConsumer(common.Hash{})
   defer close()
   var chainEvents *ChainEvents
   for j, i := range order {
@@ -306,16 +309,22 @@ func TestReorderedEventTracker(t *testing.T) {
 // ACDB: (A), (C), (D)
 // ADC: (A), (CD)
 
-func reorgTester(t *testing.T, messages []chainEventMessage, expectedEvents []*ChainEvents) {
+func reorgTester(t *testing.T, messages []chainEventMessage, expectedEvents []*ChainEvents, lastEmitted common.Hash) *KafkaEventConsumer {
   outputs := []*ChainEvents{}
-  consumer, _, close := getTestConsumer()
+  consumer, _, close := getTestConsumer(lastEmitted)
   defer close()
   for i, msg := range messages {
     chainEvents, err := consumer.cet.HandleMessage(msg.key, msg.value, 0, int64(i))
     if err != nil { t.Errorf("Error handling message: %v", err) }
     if chainEvents != nil { outputs = append(outputs, chainEvents) }
   }
-  if len(outputs) != len(expectedEvents) { t.Fatalf("Expected %v outputs, got %v", len(expectedEvents), len(outputs))}
+  if len(outputs) != len(expectedEvents) {
+    blockNums := make([]uint64, len(outputs))
+    for i, ces := range outputs {
+      blockNums[i] = ces.New[0].Block.NumberU64()
+    }
+    t.Fatalf("Expected %v outputs, got %v (%v) (skipped: %v) (finished: %v) (oldFinished: %v)", len(expectedEvents), len(outputs), blockNums, len(consumer.cet.skipped), len(consumer.cet.finished), len(consumer.cet.oldFinished))
+  }
   for i, chainEvents := range expectedEvents {
     if len(chainEvents.New) != len(outputs[i].New) { t.Fatalf("Expected events[%v]: %v New, got %v", i, len(chainEvents.New), len(outputs[i].New))}
     for j, chainEvent := range chainEvents.New {
@@ -326,6 +335,31 @@ func reorgTester(t *testing.T, messages []chainEventMessage, expectedEvents []*C
       if chainEvent.Block.Hash() != outputs[i].Reverted[j].Block.Hash() { t.Errorf("Got reverted chain events out of order o[%v][%v]", i, j) }
     }
   }
+  return consumer
+}
+func shuffledTester(t *testing.T, messages []chainEventMessage, expectedEvents []*ChainEvent, lastEmitted common.Hash) *KafkaEventConsumer {
+  outputs := []*ChainEvent{}
+  consumer, _, close := getTestConsumer(lastEmitted)
+  defer close()
+  for i, msg := range messages {
+    chainEvents, err := consumer.cet.HandleMessage(msg.key, msg.value, 0, int64(i))
+    if err != nil { t.Errorf("Error handling message: %v", err) }
+    if chainEvents != nil {
+      outputs = append(outputs, chainEvents.New...)
+      if len(chainEvents.Reverted) > 0 { t.Errorf("Got reverted blocks, expected none") }
+    }
+  }
+  if len(outputs) != len(expectedEvents) {
+    blockNums := make([]uint64, len(outputs))
+    for i, ce := range outputs {
+      blockNums[i] = ce.Block.NumberU64()
+    }
+    t.Fatalf("Expected %v outputs, got %v (%v) (skipped: %v) (finished: %v) (oldFinished: %v)", len(expectedEvents), len(outputs), blockNums, len(consumer.cet.skipped), len(consumer.cet.finished), len(consumer.cet.oldFinished))
+  }
+  for i, chainEvent := range expectedEvents {
+    if chainEvent.Block.Hash() != outputs[i].Block.Hash() { t.Errorf("Got new chain events out of order o[%v]", i) }
+  }
+  return consumer
 }
 
 func TestReorg(t *testing.T) {
@@ -351,6 +385,7 @@ func TestReorg(t *testing.T) {
         &ChainEvents{New: []*ChainEvent{b}},
         &ChainEvents{New: []*ChainEvent{c, d}, Reverted: []*ChainEvent{b}},
       },
+      common.Hash{},
     )
   })
   t.Run("Reorg ABDC", func(t *testing.T) {
@@ -362,6 +397,7 @@ func TestReorg(t *testing.T) {
         &ChainEvents{New: []*ChainEvent{b}},
         &ChainEvents{New: []*ChainEvent{c, d}, Reverted: []*ChainEvent{b}},
       },
+      common.Hash{},
     )
   })
   t.Run("Reorg ACDB", func(t *testing.T) {
@@ -373,6 +409,7 @@ func TestReorg(t *testing.T) {
         &ChainEvents{New: []*ChainEvent{c}},
         &ChainEvents{New: []*ChainEvent{d}},
       },
+      common.Hash{},
     )
   })
   t.Run("Reorg ACDB", func(t *testing.T) {
@@ -384,6 +421,7 @@ func TestReorg(t *testing.T) {
         &ChainEvents{New: []*ChainEvent{c}},
         &ChainEvents{New: []*ChainEvent{d}},
       },
+      common.Hash{},
     )
   })
   t.Run("Reorg ABCDEF", func(t *testing.T) {
@@ -396,6 +434,7 @@ func TestReorg(t *testing.T) {
         &ChainEvents{New: []*ChainEvent{c, d}, Reverted: []*ChainEvent{b}},
         &ChainEvents{New: []*ChainEvent{b, e, f}, Reverted: []*ChainEvent{c, d}},
       },
+      common.Hash{},
     )
   })
   t.Run("Reorg adc", func(t *testing.T) {
@@ -406,6 +445,7 @@ func TestReorg(t *testing.T) {
         &ChainEvents{New: []*ChainEvent{a}},
         &ChainEvents{New: []*ChainEvent{c, d}},
       },
+      common.Hash{},
     )
   })
   t.Run("Test replay", func(t *testing.T) {
@@ -415,6 +455,60 @@ func TestReorg(t *testing.T) {
     runtime.Gosched()
     expectToConsume("replay events", events, 3, t)
   })
+}
+
+func TestDelayedMessages(t *testing.T) {
+  glogger := gethLog.NewGlogHandler(gethLog.StreamHandler(os.Stderr, gethLog.TerminalFormat(false)))
+  glogger.Verbosity(gethLog.LvlDebug)
+  glogger.Vmodule("")
+  gethLog.Root().SetHandler(glogger)
+  ces := make([]*ChainEvent, 512)
+  ces[0] = getTestChainEvent(0, 0, nil)
+  for i := 1; i < cap(ces); i++ {
+    ces[i] = getTestChainEvent(int64(i), 0, ces[i-1].Block.Header())
+  }
+  messages := []chainEventMessage{}
+  for i := 0 ; i < 256; i ++ {
+    messages = append(messages, ces[i].getMessages()...)
+  }
+  for i := 0 ; i < 256; i ++ {
+    messages = append(messages, ces[i].getMessages()...)
+  }
+  for i := 256 ; i < len(ces); i ++ {
+    messages = append(messages, ces[i].getMessages()...)
+  }
+  outputs := make([]*ChainEvents, len(ces))
+  for i, ce := range ces {
+    outputs[i] = &ChainEvents{New: []*ChainEvent{ce}}
+  }
+  t.Run("Test big replay", func(t *testing.T) {
+    fmt.Printf("---------------Test big replay\n")
+    consumer := reorgTester(
+      t,
+      messages,
+      outputs,
+      common.Hash{},
+    )
+    if len(consumer.cet.skipped) != 127 {
+      t.Errorf("Expected 256 skipped items, got %v", len(consumer.cet.skipped))
+    }
+  })
+  t.Run("Test big replay scrambled", func(t *testing.T) {
+    fmt.Printf("-------------------Test big replay scrambled\n")
+    rand.Seed(time.Now().UnixNano())
+    rand.Shuffle(len(messages), func(i, j int) { messages[i], messages[j] = messages[j], messages[i] })
+    o2 := make([]*ChainEvent, len(outputs[1:]))
+    for i, ce := range outputs[1:] {
+      o2[i] = ce.New[0]
+    }
+    shuffledTester(
+      t,
+      messages,
+      o2,
+      ces[0].Block.Hash(),
+    )
+  })
+
 }
 
 //
