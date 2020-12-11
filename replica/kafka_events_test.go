@@ -459,7 +459,7 @@ func TestReorg(t *testing.T) {
 
 func TestDelayedMessages(t *testing.T) {
   glogger := gethLog.NewGlogHandler(gethLog.StreamHandler(os.Stderr, gethLog.TerminalFormat(false)))
-  glogger.Verbosity(gethLog.LvlDebug)
+  glogger.Verbosity(gethLog.LvlCrit)
   glogger.Vmodule("")
   gethLog.Root().SetHandler(glogger)
   ces := make([]*ChainEvent, 512)
@@ -482,7 +482,6 @@ func TestDelayedMessages(t *testing.T) {
     outputs[i] = &ChainEvents{New: []*ChainEvent{ce}}
   }
   t.Run("Test big replay", func(t *testing.T) {
-    fmt.Printf("---------------Test big replay\n")
     consumer := reorgTester(
       t,
       messages,
@@ -494,7 +493,6 @@ func TestDelayedMessages(t *testing.T) {
     }
   })
   t.Run("Test big replay scrambled", func(t *testing.T) {
-    fmt.Printf("-------------------Test big replay scrambled\n")
     rand.Seed(time.Now().UnixNano())
     rand.Shuffle(len(messages), func(i, j int) { messages[i], messages[j] = messages[j], messages[i] })
     o2 := make([]*ChainEvent, len(outputs[1:]))

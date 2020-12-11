@@ -216,6 +216,7 @@ type chainEventTracker struct {
   earlyTd map[common.Hash]*big.Int
   finished map[common.Hash]bool
   oldFinished map[common.Hash]bool
+  skipped map[common.Hash]bool
   finishedLimit int
   lastEmittedBlock common.Hash
   pendingEmits map[common.Hash]common.Hash
@@ -240,7 +241,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     if ce, ok := cet.chainEvents[cet.lastEmittedBlock]; ok {
       if block.NumberU64() + uint64(cet.finishedLimit) < ce.Block.NumberU64() {
         log.Warn("Old block detected. Ignoring.", "number", block.NumberU64(), "hash", block.Hash())
-        cet.finished[blockhash] = true
+        cet.skipped[blockhash] = true
         delete(cet.receiptCounter, blockhash)
         delete(cet.logCounter, blockhash)
         delete(cet.earlyReceipts, blockhash)
@@ -248,7 +249,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
         delete(cet.earlyTd, blockhash)
       }
     }
-    cet.finished[block.Hash()] = false // Explicitly setting to false ensures it will be garbage collected if we never see the whole block
+    // cet.finished[block.Hash()] = false // Explicitly setting to false ensures it will be garbage collected if we never see the whole block
     cet.chainEvents[blockhash] = &ChainEvent{
       Block: block,
       ReceiptMeta: make(map[common.Hash]*ReceiptMeta),
@@ -267,7 +268,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     }
   case TdMsg:
     blockhash = common.BytesToHash(key[1:33])
-    if cet.finished[blockhash] || cet.oldFinished[blockhash] { return nil, nil } // We're ignoring this block
+    if cet.skipped[blockhash] || cet.finished[blockhash] || cet.oldFinished[blockhash] { return nil, nil } // We're ignoring this block
     td := big.NewInt(0)
     if err := rlp.DecodeBytes(value, td); err != nil {
       return nil, fmt.Errorf("Error decoding td")
@@ -280,7 +281,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     }
   case ReceiptMsg:
     blockhash = common.BytesToHash(key[1:33])
-    if cet.finished[blockhash] || cet.oldFinished[blockhash] { return nil, nil } // We're ignoring this block
+    if cet.skipped[blockhash] || cet.finished[blockhash] || cet.oldFinished[blockhash] { return nil, nil } // We're ignoring this block
     txhash := common.BytesToHash(key[33:65])
     rmeta := &ReceiptMeta{}
     if err := rlp.DecodeBytes(value, rmeta); err != nil {
@@ -296,7 +297,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     cet.HandleReceipt(blockhash, txhash, rmeta)
   case LogMsg:
     blockhash = common.BytesToHash(key[1:33])
-    if cet.finished[blockhash] || cet.oldFinished[blockhash] { return nil, nil } // We're ignoring this block
+    if cet.skipped[blockhash] || cet.finished[blockhash] || cet.oldFinished[blockhash] { return nil, nil } // We're ignoring this block
     logRlp := &rlpLog{}
     var logIndex big.Int
     err := rlp.DecodeBytes(key[33:], &logIndex)
@@ -354,7 +355,7 @@ func (cet *chainEventTracker) HandleReadyCE(blockhash common.Hash) (*ChainEvents
     panic(fmt.Sprintf("Trying to emit missing block %#x", blockhash[:]))
   }
   if ce.Block.ParentHash() == cet.lastEmittedBlock || cet.lastEmittedBlock == (common.Hash{}) {
-    log.Debug("Emitting block without reorg", "block", blockhash)
+    log.Debug("Emitting block without reorg", "block", blockhash, "parent", cet.lastEmittedBlock)
     return cet.PrepareEmit([]*ChainEvent{ce}, []*ChainEvent{})
   }
   if bh := ce.Block.ParentHash(); !(cet.finished[bh] || cet.oldFinished[bh]) {
@@ -420,7 +421,7 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
     delete(cet.pendingEmits, cet.lastEmittedBlock)
     delete(cet.pendingHashes, hash)
     cet.lastEmittedBlock = hash
-    log.Debug("Marking block as finished (pending)", "blockhash", hash)
+    log.Debug("Marking block as finished (pending)", "blockhash", hash, "parent", ce.Block.ParentHash())
     cet.finished[hash] = true
   }
   if len(cet.finished) >= cet.finishedLimit {
@@ -800,6 +801,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
       earlyTd: make(map[common.Hash]*big.Int),
       finished: make(map[common.Hash]bool),
       oldFinished: make(map[common.Hash]bool),
+      skipped: make(map[common.Hash]bool),
       finishedLimit: 128,
       lastEmittedBlock: lastEmittedBlock,
       pendingEmits: make(map[common.Hash]common.Hash),
