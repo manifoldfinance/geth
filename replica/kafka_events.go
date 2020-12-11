@@ -236,7 +236,18 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     if sentHash := common.BytesToHash(key[1:]); blockhash != sentHash {
       log.Warn("blockhash != senthash", "calculated", blockhash, "sent", sentHash)
     }
-    if _, ok := cet.chainEvents[blockhash]; ok { return nil, nil } // We've already seen this block. Ignore
+    if _, ok := cet.chainEvents[blockhash]; ok || cet.finished[blockhash] || cet.oldFinished[blockhash]  { return nil, nil } // We've already seen this block. Ignore
+    if ce, ok := cet.chainEvents[cet.lastEmittedBlock]; ok {
+      if block.NumberU64() + uint64(cet.finishedLimit) < ce.Block.NumberU64() {
+        log.Warn("Old block detected. Ignoring.", "number", block.NumberU64(), "hash", block.Hash())
+        cet.finished[blockhash] = true
+        delete(cet.receiptCounter, blockhash)
+        delete(cet.logCounter, blockhash)
+        delete(cet.earlyReceipts, blockhash)
+        delete(cet.earlyLogs, blockhash)
+        delete(cet.earlyTd, blockhash)
+      }
+    }
     cet.finished[block.Hash()] = false // Explicitly setting to false ensures it will be garbage collected if we never see the whole block
     cet.chainEvents[blockhash] = &ChainEvent{
       Block: block,
@@ -256,6 +267,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     }
   case TdMsg:
     blockhash = common.BytesToHash(key[1:33])
+    if cet.finished[blockhash] || cet.oldFinished[blockhash] { return nil, nil } // We're ignoring this block
     td := big.NewInt(0)
     if err := rlp.DecodeBytes(value, td); err != nil {
       return nil, fmt.Errorf("Error decoding td")
@@ -268,6 +280,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     }
   case ReceiptMsg:
     blockhash = common.BytesToHash(key[1:33])
+    if cet.finished[blockhash] || cet.oldFinished[blockhash] { return nil, nil } // We're ignoring this block
     txhash := common.BytesToHash(key[33:65])
     rmeta := &ReceiptMeta{}
     if err := rlp.DecodeBytes(value, rmeta); err != nil {
@@ -282,8 +295,9 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     }
     cet.HandleReceipt(blockhash, txhash, rmeta)
   case LogMsg:
-    logRlp := &rlpLog{}
     blockhash = common.BytesToHash(key[1:33])
+    if cet.finished[blockhash] || cet.oldFinished[blockhash] { return nil, nil } // We're ignoring this block
+    logRlp := &rlpLog{}
     var logIndex big.Int
     err := rlp.DecodeBytes(key[33:], &logIndex)
     if err != nil { return nil, fmt.Errorf("Error decoding log key: %v", err.Error())}
