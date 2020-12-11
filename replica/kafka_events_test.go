@@ -491,6 +491,9 @@ func TestDelayedMessages(t *testing.T) {
     if len(consumer.cet.skipped) != 127 {
       t.Errorf("Expected 256 skipped items, got %v", len(consumer.cet.skipped))
     }
+    if len(consumer.cet.chainEvents) > consumer.cet.finishedLimit * 2{
+      t.Errorf("Expected no more than %v tracked events, got %v", consumer.cet.finishedLimit * 2, len(consumer.cet.chainEvents))
+    }
   })
   t.Run("Test big replay scrambled", func(t *testing.T) {
     rand.Seed(time.Now().UnixNano())
