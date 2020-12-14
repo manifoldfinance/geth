@@ -19,6 +19,7 @@ import (
   "github.com/ethereum/go-ethereum/ethdb"
   // "encoding/hex"
   "sync"
+  "time"
 )
 
 type MsgType byte
@@ -222,6 +223,7 @@ type chainEventTracker struct {
   pendingEmits map[common.Hash]common.Hash
   pendingHashes map[common.Hash]struct{}
   chainEventPartitions map[int32]int64
+  blockTime map[common.Hash]time.Time
 }
 
 func (cet *chainEventTracker) report() {
@@ -240,6 +242,10 @@ func (cet *chainEventTracker) report() {
   )
 }
 
+func (cet *chainEventTracker) setBlockTime(h common.Hash) {
+  if _, ok := cet.blockTime[h]; !ok { cet.blockTime[h] = time.Now() }
+}
+
 func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, offset int64) (*ChainEvents, error) {
   cet.chainEventPartitions[partition] = offset
   var blockhash common.Hash
@@ -254,6 +260,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
       log.Warn("blockhash != senthash", "calculated", blockhash, "sent", sentHash)
     }
     if _, ok := cet.chainEvents[blockhash]; ok || cet.finished[blockhash] || cet.oldFinished[blockhash]  { return nil, nil } // We've already seen this block. Ignore
+    cet.setBlockTime(blockhash)
     if ce, ok := cet.chainEvents[cet.lastEmittedBlock]; ok {
       if block.NumberU64() + uint64(cet.finishedLimit) < ce.Block.NumberU64() {
         log.Warn("Old block detected. Ignoring.", "number", block.NumberU64(), "hash", block.Hash())
@@ -289,6 +296,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     if err := rlp.DecodeBytes(value, td); err != nil {
       return nil, fmt.Errorf("Error decoding td")
     }
+    cet.setBlockTime(blockhash)
     if _, ok := cet.chainEvents[blockhash]; ok {
       cet.chainEvents[blockhash].Td = td
     } else {
@@ -305,6 +313,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     }
     if _, ok := cet.chainEvents[blockhash]; !ok {
       if _, ok := cet.earlyReceipts[blockhash]; !ok {
+        cet.setBlockTime(blockhash)
         cet.earlyReceipts[blockhash] = make(map[common.Hash]*ReceiptMeta)
       }
       cet.earlyReceipts[blockhash][txhash] = rmeta
@@ -329,6 +338,7 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     logRecord.Index = uint(logIndex.Int64())
     txhash := logRlp.TxHash
     if _, ok := cet.chainEvents[blockhash]; !ok {
+      cet.setBlockTime(blockhash)
       cet.HandleEarlyLog(blockhash, txhash, logRecord)
       return nil, nil // Log is early, nothing else to do
     }
@@ -424,7 +434,7 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
     cet.lastEmittedBlock = new[len(new) - 1].Block.Hash()
     for _, ce := range new {
       hash := ce.Block.Hash()
-      log.Debug("Marking block as finished (new)", "blockhash", hash)
+      log.Debug("Marking block as finished (new)", "blockhash", hash, "time", time.Since(cet.blockTime[hash]))
       cet.finished[hash] = true
       delete(cet.logCounter, hash)
       delete(cet.receiptCounter, hash)
@@ -437,7 +447,7 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
     delete(cet.pendingEmits, cet.lastEmittedBlock)
     delete(cet.pendingHashes, hash)
     cet.lastEmittedBlock = hash
-    log.Debug("Marking block as finished (pending)", "blockhash", hash, "parent", ce.Block.ParentHash())
+    log.Debug("Marking block as finished (pending)", "blockhash", hash, "parent", ce.Block.ParentHash(), "time", time.Since(cet.blockTime[hash]))
     cet.finished[hash] = true
   }
   if len(cet.finished) >= cet.finishedLimit {
@@ -448,6 +458,7 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
           // Don't delete events from chainEvents if they're still referenced
           // in pendingEmits
           delete(cet.chainEvents, bh)
+          delete(cet.blockTime, bh)
         }
       }
     }
@@ -615,6 +626,7 @@ func (producer *KafkaEventProducer) RelayEvents(bc ChainEventSubscriber) {
     }
     first := true
     for ce := range ceCh {
+      start := time.Now()
       if first || setTest(ce.Block.ParentHash()) {
         if err := producer.Emit(ce); err != nil {
           log.Error("Failed to produce event log: %v", err.Error())
@@ -636,6 +648,7 @@ func (producer *KafkaEventProducer) RelayEvents(bc ChainEventSubscriber) {
           }
         }
       }
+      log.Debug("Emitted chain events", "time", time.Since(start), "block", ce.Block.Hash())
     }
     log.Warn("Event emitter shutting down")
     subscription.Unsubscribe()
@@ -808,7 +821,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
   log.Info("Start offsets", "offsets", startingOffsets)
 
   return &KafkaEventConsumer{
-    cet: &chainEventTracker {
+    cet: &chainEventTracker{
       topic: topic,
       chainEvents: make(map[common.Hash]*ChainEvent),
       receiptCounter: make(map[common.Hash]int),
@@ -824,6 +837,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
       pendingEmits: make(map[common.Hash]common.Hash),
       pendingHashes: make(map[common.Hash]struct{}),
       chainEventPartitions: offsets,
+      blockTime: make(map[common.Hash]time.Time),
     },
 
     startingOffsets: startingOffsets,

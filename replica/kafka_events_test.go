@@ -93,6 +93,7 @@ func getTestConsumer(lastEmittedBlock common.Hash) (*KafkaEventConsumer, chan *C
       pendingEmits: make(map[common.Hash]common.Hash),
       pendingHashes: make(map[common.Hash]struct{}),
       chainEventPartitions: make(map[int32]int64),
+      blockTime: make(map[common.Hash]time.Time),
     },
 
     startingOffsets: make(map[int32]int64),
