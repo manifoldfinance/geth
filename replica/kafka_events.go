@@ -681,7 +681,7 @@ func (producer *KafkaEventProducer) getNewBlockAncestors(ce core.ChainEvent, h c
 func NewKafkaEventProducerFromURLs(brokerURL, topic string, db ethdb.Database) (EventProducer, error) {
   configEntries := make(map[string]*string)
   brokers, config := cdc.ParseKafkaURL(brokerURL)
-  if err := cdc.CreateTopicIfDoesNotExist(brokerURL, topic, 1, configEntries); err != nil {
+  if err := cdc.CreateTopicIfDoesNotExist(brokerURL, topic, -1, configEntries); err != nil {
     return nil, err
   }
   config.Producer.Return.Successes=true
@@ -784,7 +784,7 @@ func (consumer *KafkaEventConsumer) Start() {
 
 func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock common.Hash, offsets map[int32]int64) (EventConsumer, error) {
   brokers, config := cdc.ParseKafkaURL(brokerURL)
-  if err := cdc.CreateTopicIfDoesNotExist(brokerURL, topic, 1, nil); err != nil {
+  if err := cdc.CreateTopicIfDoesNotExist(brokerURL, topic, -1, nil); err != nil {
     return nil, err
   }
   config.Version = sarama.V2_1_0_0

@@ -193,7 +193,7 @@ func CreateTopicIfDoesNotExist(brokerAddr, topic string, numPartitions int32, co
       replicationFactor = 3
     }
     if numPartitions <= 0 {
-      numPartitions = int32(len(client.Brokers()))
+      numPartitions = int32(len(client.Brokers())) * 2
     }
     topicDetails[topic] = &sarama.TopicDetail{
       ConfigEntries: configEntries,
