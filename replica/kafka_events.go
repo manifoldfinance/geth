@@ -731,7 +731,7 @@ func (consumer *KafkaEventConsumer) Start() {
   for _, partitionConsumer := range consumer.consumers {
     readyWg.Add(1)
     warmupWg.Add(1)
-    go func(readyWg, warmupWg *sync.WaitGroup) {
+    go func(readyWg, warmupWg *sync.WaitGroup, partitionConsumer sarama.PartitionConsumer) {
       warm := false
       for input := range partitionConsumer.Messages() {
         if !warm && input.Offset >= consumer.startingOffsets[input.Partition] {
@@ -751,7 +751,7 @@ func (consumer *KafkaEventConsumer) Start() {
         // Aggregate all of the messages onto a single channel
         messages <- input
       }
-    }(&readyWg, &warmupWg)
+    }(&readyWg, &warmupWg, partitionConsumer)
   }
   go func(wg *sync.WaitGroup) {
     // Wait until all partition consumers are up to the high water mark and alert the ready channel
