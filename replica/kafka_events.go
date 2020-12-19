@@ -760,6 +760,7 @@ func (consumer *KafkaEventConsumer) Start() {
     consumer.ready = nil
   }(&readyWg)
   go func() {
+    initialLEB := consumer.cet.lastEmittedBlock
     for input := range messages {
       // log.Debug("Handling message", "offset", input.Offset, "partition", input.Partition, "starting", consumer.startingOffsets[input.Partition])
       chainEvents, err := consumer.cet.HandleMessage(input.Key, input.Value, input.Partition, input.Offset)
@@ -767,7 +768,7 @@ func (consumer *KafkaEventConsumer) Start() {
         log.Debug("Offset < starting offset", "offset", input.Offset, "starting", consumer.startingOffsets[input.Partition])
         // If input.Offset < partition.StartingOffset, we're just populating
         // the CET, so we don't need to emit this or worry about errors
-        consumer.cet.lastEmittedBlock = common.Hash{} // Set lastEmittedBlock back so it won't get hung up if it doesn't have the whole next block
+        consumer.cet.lastEmittedBlock = initialLEB // Set lastEmittedBlock back so it won't get hung up if it doesn't have the whole next block
         continue
       }
       if err != nil {
