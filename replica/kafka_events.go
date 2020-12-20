@@ -220,8 +220,13 @@ type chainEventTracker struct {
   skipped map[common.Hash]bool
   finishedLimit int
   lastEmittedBlock common.Hash
-  pendingEmits map[common.Hash]common.Hash
+  pendingEmits map[common.Hash]map[common.Hash]struct{}
   pendingHashes map[common.Hash]struct{}
+  // IF needed, break this out by block, tracking the smallest and largest
+  // offset for each block. That way on resumption, we can resume from the
+  // smallest offset from the last emitted block, and start emitting once we
+  // reach the largest offset of the last emitted block. This may not be needed
+  // if the most recent changes pan out.
   chainEventPartitions map[int32]int64
   blockTime map[common.Hash]time.Time
 }
@@ -387,11 +392,12 @@ func (cet *chainEventTracker) HandleReadyCE(blockhash common.Hash) (*ChainEvents
   if bh := ce.Block.ParentHash(); !(cet.finished[bh] || cet.oldFinished[bh]) {
     // The parent has not been emitted, save for later.
 
-    // NOTE: There is a possibility that we're overwriting another child here.
-    // That child will still exist in cet.chainEvents, so it can be handled as
-    // a reorg if a higher block on that chain eventually comes along.
     log.Debug("Holding until parent is emitted", "finished", cet.finished[bh], "oldFinished", cet.oldFinished[bh], "block", blockhash, "parent", bh, "lastEmitted", cet.lastEmittedBlock)
-    cet.pendingEmits[ce.Block.ParentHash()] = blockhash
+    ph := ce.Block.ParentHash()
+    if _, ok := cet.pendingEmits[ph]; !ok {
+      cet.pendingEmits[ph] = make(map[common.Hash]struct{})
+    }
+    cet.pendingEmits[ph][blockhash] = struct{}{}
     cet.pendingHashes[blockhash] = struct{}{}
     return nil, nil
   }
@@ -402,7 +408,7 @@ func (cet *chainEventTracker) HandleReadyCE(blockhash common.Hash) (*ChainEvents
     cet.finished[blockhash] = true
     delete(cet.logCounter, blockhash)
     delete(cet.receiptCounter, blockhash)
-    if child, ok := cet.pendingEmits[blockhash]; ok {
+    if child, ok := cet.getPendingChild(blockhash); ok {
       // This block's child is already pending, process it instead
       return cet.HandleReadyCE(child)
     }
@@ -425,6 +431,37 @@ type ChainEvents struct {
   Partitions map[int32]int64
 }
 
+func (cet *chainEventTracker) getPendingChild(hash common.Hash) (common.Hash, bool) {
+  log.Debug("Getting best child", "block", hash)
+  children, ok := cet.pendingEmits[hash]
+  if !ok { return common.Hash{}, ok }
+  max := new(big.Int)
+  var maxChild common.Hash
+  for child := range children {
+    td := cet.getPendingChainDifficulty(child)
+    if max.Cmp(td) < 0 {
+      max = td
+      maxChild = child
+    }
+  }
+  log.Debug("Getting best child", "block", hash, "child", maxChild)
+  return maxChild, true
+}
+
+func (cet *chainEventTracker) getPendingChainDifficulty(hash common.Hash) (*big.Int) {
+  log.Debug("Getting pending chain difficulty", "block", hash, "pending", cet.pendingEmits[hash])
+  children, ok := cet.pendingEmits[hash]
+  if !ok { return cet.chainEvents[hash].Td }
+  max := new(big.Int)
+  for child := range children {
+    td := cet.getPendingChainDifficulty(child)
+    if max.Cmp(td) < 0 {
+      max = td
+    }
+  }
+  return max
+}
+
 func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEvents, error) {
   partitions := make(map[int32]int64)
   for k, v := range cet.chainEventPartitions {
@@ -440,7 +477,7 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
       delete(cet.receiptCounter, hash)
     }
   }
-  for hash, ok := cet.pendingEmits[cet.lastEmittedBlock]; ok; hash, ok = cet.pendingEmits[cet.lastEmittedBlock] {
+  for hash, ok := cet.getPendingChild(cet.lastEmittedBlock); ok; hash, ok = cet.getPendingChild(cet.lastEmittedBlock) {
     ce := cet.chainEvents[hash]
     if ce == nil { panic(fmt.Sprintf("Could not find block for %#x", hash[:]))}
     new = append(new, ce)
@@ -835,7 +872,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
       skipped: make(map[common.Hash]bool),
       finishedLimit: 128,
       lastEmittedBlock: lastEmittedBlock,
-      pendingEmits: make(map[common.Hash]common.Hash),
+      pendingEmits: make(map[common.Hash]map[common.Hash]struct{}),
       pendingHashes: make(map[common.Hash]struct{}),
       chainEventPartitions: offsets,
       blockTime: make(map[common.Hash]time.Time),

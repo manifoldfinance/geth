@@ -90,7 +90,7 @@ func getTestConsumer(lastEmittedBlock common.Hash) (*KafkaEventConsumer, chan *C
       skipped: make(map[common.Hash]bool),
       finishedLimit: 128,
       lastEmittedBlock: lastEmittedBlock,
-      pendingEmits: make(map[common.Hash]common.Hash),
+      pendingEmits: make(map[common.Hash]map[common.Hash]struct{}),
       pendingHashes: make(map[common.Hash]struct{}),
       chainEventPartitions: make(map[int32]int64),
       blockTime: make(map[common.Hash]time.Time),
@@ -463,6 +463,8 @@ func TestDelayedMessages(t *testing.T) {
   glogger.Verbosity(gethLog.LvlCrit)
   glogger.Vmodule("")
   gethLog.Root().SetHandler(glogger)
+
+
   ces := make([]*ChainEvent, 512)
   ces[0] = getTestChainEvent(0, 0, nil)
   for i := 1; i < cap(ces); i++ {
@@ -508,6 +510,24 @@ func TestDelayedMessages(t *testing.T) {
       messages,
       o2,
       ces[0].Block.Hash(),
+    )
+  })
+  t.Run("Test delayed Reorg BCDEFA", func(t *testing.T) {
+    gethLog.Debug("---- Reorg BCDEFA ----")
+    x := getTestChainEvent(0, 0, nil)
+    a := getTestChainEvent(1, 0, x.Block.Header())
+    b := getTestChainEvent(2, 0, a.Block.Header())
+    c := getTestChainEvent(2, 1, a.Block.Header())
+    d := getTestChainEvent(3, 1, c.Block.Header())
+    e := getTestChainEvent(3, 0, b.Block.Header())
+    f := getTestChainEvent(4, 0, e.Block.Header())
+    reorgTester(
+      t,
+      append(append(append(append(append(b.getMessages(), c.getMessages()...), d.getMessages()...), e.getMessages()...), f.getMessages()...), a.getMessages()...),
+      []*ChainEvents{
+        &ChainEvents{New: []*ChainEvent{a, b, e, f}},
+      },
+      a.Block.ParentHash(),
     )
   })
 
