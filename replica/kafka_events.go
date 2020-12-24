@@ -5,6 +5,7 @@ import (
   "io"
   "io/ioutil"
   "github.com/Shopify/sarama"
+  "github.com/openrelayxyz/drumline"
   "math/big"
   "fmt"
   "compress/zlib"
@@ -761,44 +762,14 @@ type OffsetHash struct {
   Hash common.Hash
 }
 
-// progressLimiter ensures that one process can't get too far beyond another
-type progressLimiter struct {
-  channels map[int]chan struct{}
-  buffer int
-  started bool
-}
-
-func newProgressLimiter(buffer int) *progressLimiter {
-  return &progressLimiter{
-    channels: make(map[int]chan struct{}),
-    buffer: buffer,
-  }
-}
-
-func (pl *progressLimiter) add(i int) {
-  pl.channels[i] = make(chan struct{}, pl.buffer)
-  if !pl.started {
-    pl.started = true
-    // Iterate over the channels, pulling one item off of each channel. If
-    // one channel's buffer fills up while we're hung on a different channel,
-    // it will wait until the other channel handle messages before proceeding.
-    go func() { for { for _, ch := range pl.channels { <-ch } } }()
-  }
-}
-
-func (pl *progressLimiter) inc(i int) {
-  pl.channels[i] <- struct{}{}
-}
-
-
 func (consumer *KafkaEventConsumer) Start() {
   messages := make(chan *sarama.ConsumerMessage, 512) // 512 is totally arbitrary. Tune this?
-  pl := newProgressLimiter(4000)
+  dl := drumline.NewDrumline(4000)
   var readyWg, warmupWg sync.WaitGroup
   for i, partitionConsumer := range consumer.consumers {
     readyWg.Add(1)
     warmupWg.Add(1)
-    pl.add(i)
+    dl.Add(i)
     go func(readyWg, warmupWg *sync.WaitGroup, partitionConsumer sarama.PartitionConsumer, i int) {
       warm := false
       for input := range partitionConsumer.Messages() {
@@ -815,10 +786,10 @@ func (consumer *KafkaEventConsumer) Start() {
             // channel know
             readyWg.Done()
           }
+          dl.Step(i)
         }
         // Aggregate all of the messages onto a single channel
         messages <- input
-        pl.inc(i)
       }
     }(&readyWg, &warmupWg, partitionConsumer, i)
   }
@@ -827,6 +798,7 @@ func (consumer *KafkaEventConsumer) Start() {
     wg.Wait()
     consumer.ready <- struct{}{}
     consumer.ready = nil
+    dl.Close()
   }(&readyWg)
   go func() {
     initialLEB := consumer.cet.lastEmittedBlock

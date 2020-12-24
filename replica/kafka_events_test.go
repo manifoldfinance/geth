@@ -532,30 +532,6 @@ func TestDelayedMessages(t *testing.T) {
   })
 }
 
-func TestProgresLimiter(t *testing.T) {
-  pl := newProgressLimiter(5)
-  pl.add(0)
-  pl.add(1)
-  pl.add(2)
-  x := false
-  y := false
-  go func() {
-    for i := 0; i < 7; i++ { pl.inc(0) }
-    x = true
-  }()
-  go func() {
-    for i := 0; i < 7; i++ { pl.inc(1) }
-    y = true
-  }()
-  time.Sleep(100 * time.Millisecond)
-  if x { t.Errorf("Progress should have been limited (x)") }
-  if y { t.Errorf("Progress should have been limited (y)") }
-  pl.inc(2)
-  pl.inc(2)
-  time.Sleep(100 * time.Millisecond)
-  if !x { t.Errorf("Progress should have been able to proceed (x)") }
-  if !y { t.Errorf("Progress should have been able to proceed (y)") }
-}
 
 //
 // func TestReprocessEvents(t *testing.T) {
