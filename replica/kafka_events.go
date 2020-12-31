@@ -381,13 +381,37 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
   return nil, nil
 }
 
+func (cet *chainEventTracker) finishSiblings(ce *ChainEvent) {
+  pendingSiblings, ok := cet.pendingEmits[ce.Block.ParentHash()]
+  if !ok { return } // Wasn't pending a parent
+  for hash := range pendingSiblings {
+    if hash == ce.Block.Hash() { continue }
+    cet.finishPendingChildren(hash)
+  }
+}
+
+func (cet *chainEventTracker) finishPendingChildren(hash common.Hash) {
+  pendingChildren, ok := cet.pendingEmits[hash]
+  cet.finished[hash] = true
+  delete(cet.pendingHashes, hash)
+  delete(cet.pendingEmits, hash)
+  delete(cet.logCounter, hash)
+  delete(cet.receiptCounter, hash)
+  if !ok { return } // No children
+  for child := range pendingChildren {
+    log.Debug("Marking block as finished (uncled)")
+    cet.finished[child] = true
+    cet.finishPendingChildren(child)
+  }
+}
+
 func (cet *chainEventTracker) HandleReadyCE(blockhash common.Hash) (*ChainEvents, error) {
   ce := cet.chainEvents[blockhash]
   if ce == nil {
     panic(fmt.Sprintf("Trying to emit missing block %#x", blockhash[:]))
   }
   if ce.Block.ParentHash() == cet.lastEmittedBlock || cet.lastEmittedBlock == (common.Hash{}) {
-    log.Debug("Emitting block without reorg", "block", blockhash, "parent", cet.lastEmittedBlock)
+    log.Debug("Emitting block without reorg", "block", blockhash, "parent", cet.lastEmittedBlock, "number", ce.Block.NumberU64())
     return cet.PrepareEmit([]*ChainEvent{ce}, []*ChainEvent{})
   }
   if bh := ce.Block.ParentHash(); !(cet.finished[bh] || cet.oldFinished[bh]) {
@@ -473,6 +497,7 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
     for _, ce := range new {
       hash := ce.Block.Hash()
       log.Debug("Marking block as finished (new)", "blockhash", hash, "time", time.Since(cet.blockTime[hash]))
+      cet.finishSiblings(ce)
       cet.finished[hash] = true
       delete(cet.logCounter, hash)
       delete(cet.receiptCounter, hash)
@@ -482,6 +507,7 @@ func (cet *chainEventTracker) PrepareEmit(new, revert []*ChainEvent) (*ChainEven
     ce := cet.chainEvents[hash]
     if ce == nil { panic(fmt.Sprintf("Could not find block for %#x", hash[:]))}
     new = append(new, ce)
+    cet.finishSiblings(ce)
     delete(cet.pendingEmits, cet.lastEmittedBlock)
     delete(cet.pendingHashes, hash)
     cet.lastEmittedBlock = hash

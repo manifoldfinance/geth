@@ -320,11 +320,19 @@ func reorgTester(t *testing.T, messages []chainEventMessage, expectedEvents []*C
     if chainEvents != nil { outputs = append(outputs, chainEvents) }
   }
   if len(outputs) != len(expectedEvents) {
-    blockNums := make([]uint64, len(outputs))
+    newBlockNums := make([][]uint64, len(outputs))
+    revertedBlockNums := make([][]uint64, len(outputs))
     for i, ces := range outputs {
-      blockNums[i] = ces.New[0].Block.NumberU64()
+      newBlockNums[i] = make([]uint64, len(ces.New))
+      revertedBlockNums[i] = make([]uint64, len(ces.Reverted))
+      for j, ce := range ces.New {
+        newBlockNums[i][j] = ce.Block.NumberU64()
+      }
+      for j, ce := range ces.Reverted {
+        revertedBlockNums[i][j] = ce.Block.NumberU64()
+      }
     }
-    t.Fatalf("Expected %v outputs, got %v (%v) (skipped: %v) (finished: %v) (oldFinished: %v)", len(expectedEvents), len(outputs), blockNums, len(consumer.cet.skipped), len(consumer.cet.finished), len(consumer.cet.oldFinished))
+    t.Fatalf("Expected %v outputs, got %v (%v / %v) (skipped: %v) (finished: %v) (oldFinished: %v)", len(expectedEvents), len(outputs), newBlockNums, revertedBlockNums, len(consumer.cet.skipped), len(consumer.cet.finished), len(consumer.cet.oldFinished))
   }
   for i, chainEvents := range expectedEvents {
     if len(chainEvents.New) != len(outputs[i].New) { t.Fatalf("Expected events[%v]: %v New, got %v", i, len(chainEvents.New), len(outputs[i].New))}
@@ -370,11 +378,20 @@ func TestReorg(t *testing.T) {
   d := getTestChainEvent(2, 1, c.Block.Header())
   e := getTestChainEvent(2, 0, b.Block.Header())
   f := getTestChainEvent(3, 0, e.Block.Header())
+  g := getTestChainEvent(2, 2, b.Block.Header())
+  h := getTestChainEvent(3, 1, g.Block.Header())
+  i := getTestChainEvent(4, 0, h.Block.Header())
+
+  // g := getTestChainEvent(4, 0, f.Block.Header())
   if b.Block.ParentHash() != a.Block.Hash() { t.Fatalf("b should be child of a") }
   if c.Block.ParentHash() != a.Block.Hash() { t.Fatalf("c should be child of a") }
   if d.Block.ParentHash() != c.Block.Hash() { t.Fatalf("d should be child of c") }
   if e.Block.ParentHash() != b.Block.Hash() { t.Fatalf("e should be child of b") }
   if f.Block.ParentHash() != e.Block.Hash() { t.Fatalf("f should be child of e") }
+  if g.Block.ParentHash() != b.Block.Hash() { t.Fatalf("g should be child of b") }
+  if h.Block.ParentHash() != g.Block.Hash() { t.Fatalf("h should be child of g") }
+  if i.Block.ParentHash() != h.Block.Hash() { t.Fatalf("i should be child of h") }
+  // if g.Block.ParentHash() != f.Block.Hash() { t.Fatalf("g should be child of e") }
 
   // TODO: Try more out-of-order messages (instead of whole out-of-order blocks)
   t.Run("Reorg ABCD", func(t *testing.T) {
@@ -434,6 +451,22 @@ func TestReorg(t *testing.T) {
         &ChainEvents{New: []*ChainEvent{b}},
         &ChainEvents{New: []*ChainEvent{c, d}, Reverted: []*ChainEvent{b}},
         &ChainEvents{New: []*ChainEvent{b, e, f}, Reverted: []*ChainEvent{c, d}},
+      },
+      common.Hash{},
+    )
+  })
+  t.Run("Reorg AEGFBHI", func(t *testing.T) {
+    glogger := gethLog.NewGlogHandler(gethLog.StreamHandler(os.Stderr, gethLog.TerminalFormat(false)))
+    glogger.Verbosity(gethLog.LvlCrit)
+    glogger.Vmodule("")
+    gethLog.Root().SetHandler(glogger)
+    reorgTester(
+      t,
+      append(append(append(append(append(append(a.getMessages(), e.getMessages()...), g.getMessages()...), f.getMessages()...), b.getMessages()...), h.getMessages()...), i.getMessages()...),
+      []*ChainEvents{
+        &ChainEvents{New: []*ChainEvent{a}},
+        &ChainEvents{New: []*ChainEvent{b, e, f}},
+        &ChainEvents{New: []*ChainEvent{g, h, i}, Reverted:[]*ChainEvent{e, f}},
       },
       common.Hash{},
     )
