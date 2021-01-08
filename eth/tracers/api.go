@@ -329,12 +329,25 @@ func (api *API) traceChain(ctx context.Context, start, end *types.Block, config 
 				failed = err
 				break
 			}
-			// Send the block over to the concurrent tracers (if not in the fast-forward phase)
-			txs := block.Transactions()
-			select {
-			case tasks <- &blockTraceTask{statedb: states[int(number-start.NumberU64()-1)], block: block, results: make([]*txTraceResult, len(txs))}:
-			case <-notifier.Closed():
-				return
+			// Finalize the state so any modifications are written to the trie
+			root, err := statedb.Commit(api.eth.blockchain.Config().IsEIP158(block.Number()))
+			if err != nil {
+				failed = err
+				break
+			}
+			statedb, err = state.New(root, database, nil)
+			if err != nil {
+				failed = err
+				break
+			}
+			// Reference the trie twice, once for us, once for the tracer
+			database.TrieDB().Reference(root, common.Hash{})
+			if number >= origin {
+				database.TrieDB().Reference(root, common.Hash{})
+			}
+			// Dereference all past tries we ourselves are done working with
+			if proot != (common.Hash{}) {
+				database.TrieDB().Dereference(proot)
 			}
 			traced += uint64(len(txs))
 		}
@@ -651,6 +664,76 @@ func containsTx(block *types.Block, hash common.Hash) bool {
 		}
 	}
 	return false
+}
+
+// computeStateDB retrieves the state database associated with a certain block.
+// If no state is locally available for the given block, a number of blocks are
+// attempted to be reexecuted to generate the desired state.
+func (api *PrivateDebugAPI) computeStateDB(block *types.Block, reexec uint64) (*state.StateDB, error) {
+	// If we have the state fully available, use that
+	statedb, err := api.eth.blockchain.StateAt(block.Root())
+	if err == nil {
+		return statedb, nil
+	}
+	// Otherwise try to reexec blocks until we find a state or reach our limit
+	origin := block.NumberU64()
+	database := state.NewDatabaseWithConfig(api.eth.ChainDb(), &trie.Config{Cache: 16, Preimages: true})
+
+	for i := uint64(0); i < reexec; i++ {
+		block = api.eth.blockchain.GetBlock(block.ParentHash(), block.NumberU64()-1)
+		if block == nil {
+			break
+		}
+		if statedb, err = state.New(block.Root(), database, nil); err == nil {
+			break
+		}
+	}
+	if err != nil {
+		switch err.(type) {
+		case *trie.MissingNodeError:
+			return nil, fmt.Errorf("required historical state unavailable (reexec=%d)", reexec)
+		default:
+			return nil, err
+		}
+	}
+	// State was available at historical point, regenerate
+	var (
+		start  = time.Now()
+		logged time.Time
+		proot  common.Hash
+	)
+	for block.NumberU64() < origin {
+		// Print progress logs if long enough time elapsed
+		if time.Since(logged) > 8*time.Second {
+			log.Info("Regenerating historical state", "block", block.NumberU64()+1, "target", origin, "remaining", origin-block.NumberU64()-1, "elapsed", time.Since(start))
+			logged = time.Now()
+		}
+		// Retrieve the next block to regenerate and process it
+		if block = api.eth.blockchain.GetBlockByNumber(block.NumberU64() + 1); block == nil {
+			return nil, fmt.Errorf("block #%d not found", block.NumberU64()+1)
+		}
+		_, _, _, err := api.eth.blockchain.Processor().Process(block, statedb, vm.Config{})
+		if err != nil {
+			return nil, fmt.Errorf("processing block %d failed: %v", block.NumberU64(), err)
+		}
+		// Finalize the state so any modifications are written to the trie
+		root, err := statedb.Commit(api.eth.blockchain.Config().IsEIP158(block.Number()))
+		if err != nil {
+			return nil, err
+		}
+		statedb, err = state.New(root, database, nil)
+		if err != nil {
+			return nil, fmt.Errorf("state reset after block %d failed: %v", block.NumberU64(), err)
+		}
+		database.TrieDB().Reference(root, common.Hash{})
+		if proot != (common.Hash{}) {
+			database.TrieDB().Dereference(proot)
+		}
+		proot = root
+	}
+	nodes, imgs := database.TrieDB().Size()
+	log.Info("Historical state regenerated", "block", block.NumberU64(), "elapsed", time.Since(start), "nodes", nodes, "preimages", imgs)
+	return statedb, nil
 }
 
 // TraceTransaction returns the structured logs created during the execution of EVM

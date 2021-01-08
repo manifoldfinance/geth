@@ -657,7 +657,10 @@ func (w *worker) resultLoop() {
 	}
 }
 
-func (w *worker) generateEnv(parent *types.Block, header *types.Header) (*environment, error) {
+// makeCurrent creates a new environment for the current cycle.
+func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
+	// Retrieve the parent state to execute on top and start a prefetcher for
+	// the miner to speed block sealing up a bit
 	state, err := w.chain.StateAt(parent.Root())
 	if err != nil {
 		return nil, err
@@ -683,15 +686,11 @@ func (w *worker) generateEnv(parent *types.Block, header *types.Header) (*enviro
 	}
 	// Keep track of transactions which return errors so they can be removed
 	env.tcount = 0
-	env.gasPool = new(core.GasPool).AddGas(header.GasLimit)
-	return env, nil
-}
 
-// makeCurrent creates a new environment for the current cycle.
-func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
-	env, err := w.generateEnv(parent, header)
-	if err != nil {
-		return err
+	// Swap out the old work with the new one, terminating any leftover prefetcher
+	// processes in the mean time and starting a new one.
+	if w.current != nil && w.current.state != nil {
+		w.current.state.StopPrefetcher()
 	}
 	w.current = env
 	return nil
