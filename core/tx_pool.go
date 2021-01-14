@@ -376,9 +376,10 @@ func (pool *TxPool) loop() {
 						pool.removeTx(tx.Hash(), true)
 					}
 					pool.dropTxFeed.Send(DropTxsEvent{
-						Txs: txs,
+						Txs: list,
 						Reason: dropOld,
 					})
+					queuedEvictionMeter.Mark(int64(len(list)))
 				}
 			}
 			pool.mu.Unlock()
@@ -1321,6 +1322,7 @@ func (pool *TxPool) promoteExecutables(accounts []common.Address) []*types.Trans
 			hash := tx.Hash()
 			pool.all.Remove(hash)
 		}
+		log.Trace("Removed old queued transactions", "count", len(forwards))
 		pool.dropTxFeed.Send(DropTxsEvent{
 			Txs: forwards,
 			Reason: dropLowNonce,
