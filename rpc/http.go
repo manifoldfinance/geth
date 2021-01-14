@@ -70,6 +70,10 @@ func (hc *httpConn) closed() <-chan interface{} {
 	return hc.closeCh
 }
 
+func (hc *httpConn) context() context.Context {
+	return context.Background() // ?
+}
+
 // HTTPTimeouts represents the configuration params for the HTTP RPC server.
 type HTTPTimeouts struct {
 	// ReadTimeout is the maximum duration for reading the entire
@@ -209,7 +213,7 @@ type httpServerConn struct {
 func newHTTPServerConn(r *http.Request, w http.ResponseWriter) ServerCodec {
 	body := io.LimitReader(r.Body, maxRequestContentLength)
 	conn := &httpServerConn{Reader: body, Writer: w, r: r}
-	return NewCodec(conn)
+	return NewCodec(conn, r.Context())
 }
 
 // Close does nothing and always returns nil.

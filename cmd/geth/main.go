@@ -41,6 +41,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/node"
+	replicaModule "github.com/ethereum/go-ethereum/replica"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	cli "gopkg.in/urfave/cli.v1"
 )
@@ -64,6 +65,7 @@ var (
 		utils.LegacyBootnodesV4Flag,
 		utils.LegacyBootnodesV5Flag,
 		utils.DataDirFlag,
+		utils.OverlayFlag,
 		utils.AncientFlag,
 		utils.KeyStoreDirFlag,
 		utils.ExternalSignerFlag,
@@ -158,6 +160,20 @@ var (
 		utils.EWASMInterpreterFlag,
 		utils.EVMInterpreterFlag,
 		configFileFlag,
+		utils.KafkaLogBrokerFlag,
+		utils.KafkaLogTopicFlag,
+		utils.KafkaEventTopicFlag,
+		utils.KafkaTransactionPoolTopicFlag,
+		utils.KafkaTransactionTopicFlag,
+		utils.KafkaTransactionConsumerGroupFlag,
+		utils.KafkaStateDeltaTopicFlag,
+		utils.StateDeltaFileFlag,
+		utils.ReplicaSyncShutdownFlag,
+		utils.ReplicaStartupMaxAgeFlag,
+		utils.ReplicaRuntimeMaxOffsetAgeFlag,
+		utils.ReplicaRuntimeMaxBlockAgeFlag,
+		utils.ReplicaEVMConcurrencyFlag,
+		utils.ReplicaWarmAddressesFlag,
 	}
 
 	rpcFlags = []cli.Flag{
@@ -230,6 +246,15 @@ func init() {
 		dumpCommand,
 		dumpGenesisCommand,
 		inspectCommand,
+		setHeadCommand,
+		verifyStateTrieCommand,
+		compactCommand,
+		stateMigrateCommand,
+		// repairStateCommand,
+		repairMigrationCommand,
+		repairFreezerIndexCommand,
+		diffBlocksCommand,
+		resetToSnapshotCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,
@@ -248,6 +273,12 @@ func init() {
 		retestethCommand,
 		// See cmd/utils/flags_legacy.go
 		utils.ShowDeprecated,
+		// See replica.go
+		replicaCommand,
+		// See txrelay.go
+		txrelayCommand,
+		freezerDumpCommand,
+		freezerLoadCommand,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 
@@ -440,7 +471,7 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend) {
 	}
 
 	// Start auxiliary services if enabled
-	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) {
+	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name) != "" || ctx.GlobalString(utils.KafkaEventTopicFlag.Name) != "" || ctx.GlobalString(utils.KafkaStateDeltaTopicFlag.Name) != "" {
 		// Mining only makes sense if a full Ethereum node is running
 		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
@@ -462,8 +493,38 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend) {
 			threads = ctx.GlobalInt(utils.LegacyMinerThreadsFlag.Name)
 			log.Warn("The flag --minerthreads is deprecated and will be removed in the future, please use --miner.threads")
 		}
-		if err := ethBackend.StartMining(threads); err != nil {
-			utils.Fatalf("Failed to start mining: %v", err)
+		if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) {
+			if err := ethBackend.StartMining(threads); err != nil {
+				utils.Fatalf("Failed to start mining: %v", err)
+			}
+		}
+
+		if brokerURL := ctx.GlobalString(utils.KafkaLogBrokerFlag.Name); brokerURL != "" {
+			if poolTopic := ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name); poolTopic != "" {
+				producer, err := replicaModule.NewKafkaTransactionProducerFromURLs(brokerURL, poolTopic)
+				if err != nil {
+					utils.Fatalf("Failed to create transaction producer for %v - %v", brokerURL, poolTopic)
+				}
+				log.Info("Starting Kafka Transaction Relay", "broker", brokerURL, "topic", poolTopic)
+				producer.RelayTransactions(ethBackend.TxPool())
+			} else {
+				log.Info("Pool topic missing")
+			}
+			if eventTopic := ctx.GlobalString(utils.KafkaEventTopicFlag.Name); eventTopic != "" {
+				producer, err := replicaModule.NewKafkaEventProducerFromURLs(brokerURL, eventTopic, ethBackend.ChainDb())
+				if err != nil {
+					utils.Fatalf("Failed to create event producer for %v - %v", brokerURL, eventTopic)
+				}
+				log.Info("Starting Kafka event producer relay", "broker", brokerURL, "topic", eventTopic)
+				producer.RelayEvents(ethBackend)
+			}
+			if deltaTopic := ctx.GlobalString(utils.KafkaStateDeltaTopicFlag.Name); deltaTopic != "" {
+				if err := eth.TapSnaps(ethBackend, brokerURL, deltaTopic); err != nil {
+					utils.Fatalf("Failed to tap blockchain for state delta topics", "err", err)
+				}
+			}
+		} else {
+			log.Info("Broker url missing")
 		}
 	}
 }

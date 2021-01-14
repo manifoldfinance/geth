@@ -17,12 +17,17 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -32,8 +37,10 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/state/snapshot"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
@@ -49,6 +56,9 @@ var (
 		ArgsUsage: "<genesisPath>",
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
+			utils.KafkaLogTopicFlag,
+			utils.KafkaLogBrokerFlag,
+			utils.KafkaTransactionTopicFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -94,6 +104,9 @@ The dumpgenesis command dumps the genesis block configuration in JSON format to 
 			utils.MetricsInfluxDBPasswordFlag,
 			utils.MetricsInfluxDBTagsFlag,
 			utils.TxLookupLimitFlag,
+			utils.KafkaLogBrokerFlag,
+			utils.KafkaStateDeltaTopicFlag,
+			utils.StateDeltaFileFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -219,6 +232,151 @@ Use "ethereum dump 0" to dump the genesis block.`,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 	}
+	setHeadCommand = cli.Command{
+		Action:    utils.MigrateFlags(setHead),
+		Name:      "sethead",
+		Usage:     "Sets the head block to a specific block",
+		ArgsUsage: "[<blockHash> | <blockNum> | <-blockCount>]...",
+		Flags: []cli.Flag{
+			utils.DataDirFlag,
+			utils.OverlayFlag,
+			utils.AncientFlag,
+			utils.CacheFlag,
+			utils.SyncModeFlag,
+			utils.KafkaLogBrokerFlag,
+			utils.KafkaLogTopicFlag,
+		},
+		Category: "BLOCKCHAIN COMMANDS",
+		Description: `
+The arguments are interpreted as block numbers, hashes, or a number of blocks to be rolled back.
+Use "ethereum sethead -2" to drop the two most recent blocks`,
+	}
+	verifyStateTrieCommand = cli.Command{
+     Action:    utils.MigrateFlags(verifyStateTrie),
+     Name:      "verifystatetrie",
+     Usage:     "Verfies the state trie",
+     Flags: []cli.Flag{
+       utils.DataDirFlag,
+			 utils.AncientFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+			 utils.OverlayFlag,
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Verify proofs of the latest block state trie. Exit 0 if correct, else exit 1`,
+	}
+	compactCommand = cli.Command{
+     Action:    utils.MigrateFlags(compact),
+     Name:      "compactdb",
+     Usage:     "Compacts the database",
+     Flags: []cli.Flag{
+       utils.DataDirFlag,
+			 utils.AncientFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Compacts the database`,
+	}
+	stateMigrateCommand = cli.Command{
+     Action:    utils.MigrateFlags(migrateState),
+     Name:      "migratestate",
+     Usage:     "Migrates the latest state from a DB+Ancient to a new  DB+Ancient",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Migrates state from one leveldb to another`,
+	}
+// 	repairStateCommand = cli.Command{
+//      Action:    utils.MigrateFlags(repairState),
+//      Name:      "repairstate",
+//      Usage:     "Uses the state of [src] to repair the state trie of [dst]",
+//      Flags: []cli.Flag{
+//      },
+//      Category: "BLOCKCHAIN COMMANDS",
+//      Description: `
+// Repairs one state trie with one from another database`,
+// 	}
+	repairMigrationCommand = cli.Command{
+     Action:    utils.MigrateFlags(repairMigration),
+     Name:      "repairmigration",
+     Usage:     "Repairs earlier migrations",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Repairs earlier migrations`,
+	}
+	repairFreezerIndexCommand = cli.Command{
+     Action:    utils.MigrateFlags(repairFreezerIndex),
+     Name:      "repairfreezerindex",
+     Usage:     "Reindexes the freezer",
+     Flags: []cli.Flag{
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Repairs a broken freezer index`,
+	}
+	freezerDumpCommand = cli.Command{
+     Action:    utils.MigrateFlags(freezerDump),
+     Name:      "freezerdump",
+     Usage:     "Dump the freezer as jsonl",
+     Flags: []cli.Flag{
+       utils.DataDirFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+			 utils.AncientFlag,
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Dump the freezer as jsonl`,
+	}
+	freezerLoadCommand = cli.Command{
+     Action:    utils.MigrateFlags(freezerLoad),
+     Name:      "freezerload",
+     Usage:     "Load jsonl from stdin to an ancients store",
+     Flags: []cli.Flag{
+       utils.DataDirFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+			 utils.AncientFlag,
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Load jsonl from stdin to ancients`,
+	}
+	diffBlocksCommand = cli.Command{
+     Action:    utils.MigrateFlags(diffBlocks),
+     Name:      "diffblocks",
+     Usage:     "Compare two blocks by number, reporting the number of state changes between blocks",
+     Flags: []cli.Flag{
+       utils.DataDirFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+			 utils.AncientFlag,
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Compare blocks`,
+	}
+	resetToSnapshotCommand = cli.Command{
+     Action:    utils.MigrateFlags(resetToSnapshot),
+     Name:      "resettosnapshot",
+     Usage:     "Reset leveldb to match the disk layer snapshot",
+     Flags: []cli.Flag{
+       utils.DataDirFlag,
+       utils.CacheFlag,
+       utils.SyncModeFlag,
+			 utils.AncientFlag,
+			 utils.OverlayFlag,
+     },
+     Category: "BLOCKCHAIN COMMANDS",
+     Description: `
+Reset leveldb to match the disk layer snapshot`,
+	}
 )
 
 // initGenesis will initialise the given JSON format genesis file and writes it as
@@ -283,6 +441,22 @@ func importChain(ctx *cli.Context) error {
 
 	chain, db := utils.MakeChain(ctx, stack, false)
 	defer db.Close()
+
+	if brokerURL := ctx.GlobalString(utils.KafkaLogBrokerFlag.Name); brokerURL != "" {
+		if deltaTopic := ctx.GlobalString(utils.KafkaStateDeltaTopicFlag.Name); deltaTopic != "" {
+			log.Info("Kafka broker:", "broker", brokerURL, "topic", deltaTopic)
+			if err := core.TapSnaps(chain, brokerURL, deltaTopic); err != nil {
+				return err
+			}
+		} else {
+			log.Info("Kafka broker:", "broker", brokerURL, "topic", "UNSET")
+		}
+	} else if stateDeltaFile := ctx.GlobalString(utils.StateDeltaFileFlag.Name); stateDeltaFile != "" {
+		log.Info("Writing state changes to file", "path", stateDeltaFile)
+		err, closer := core.TapSnapsFile(chain, stateDeltaFile)
+		if err != nil { return err }
+		defer closer()
+	}
 
 	// Start periodically gathering memory profiles
 	var peakMemAlloc, peakMemSys uint64
@@ -595,6 +769,562 @@ func dump(ctx *cli.Context) error {
 	}
 	return nil
 }
+
+func setHead(ctx *cli.Context) error {
+	if len(ctx.Args()) < 1 {
+		utils.Fatalf("This command requires an argument.")
+	}
+	stack, _ := makeConfigNode(ctx)
+	chain, db := utils.MakeChain(ctx, stack, false)
+	arg := ctx.Args()[0]
+	blockNumber, err := strconv.Atoi(arg)
+	if err != nil {
+		block := chain.GetBlockByHash(common.HexToHash(arg))
+		blockNumber = int(block.Number().Int64())
+	} else if blockNumber < 0 {
+		latestHash := rawdb.ReadHeadBlockHash(db)
+		block := chain.GetBlockByHash(latestHash)
+		blockNumber = int(block.Number().Int64()) + blockNumber
+	}
+	if err := chain.SetHead(uint64(blockNumber)); err != nil {
+		fmt.Printf("Failed to set head to %v", blockNumber)
+		return err
+	}
+	chain.Stop()
+	db.Close()
+	fmt.Printf("Rolled back chain to block %v\n", blockNumber)
+	return nil
+}
+
+func freezerDump(ctx *cli.Context) error {
+	if len(ctx.Args()) < 2 {
+		return fmt.Errorf("Usage: freezerDump [ancients] [leveldb] [?offset]")
+	}
+	startIndex := 0
+	if len(ctx.Args()) == 3 {
+		startIndex, _ = strconv.Atoi(ctx.Args()[2])
+	}
+	db, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	if err != nil { return err }
+	count, err := db.Ancients()
+	if err != nil { return err }
+	log.Info("Loading ancients", "count", count)
+	for i := uint64(startIndex); i < count; i++ {
+		data := make(map[string]string)
+		data["index"] = fmt.Sprintf("%v", i)
+		for _, table := range []string{"headers","hashes","bodies","receipts","diffs"} {
+			raw, err := db.Ancient(table, i)
+			if err != nil { return fmt.Errorf("Error retrieving %v # %v: %v", table, i, err.Error()) }
+			data[table] = hex.EncodeToString(raw)
+		}
+		jsonData, err := json.Marshal(data)
+		if err != nil { return fmt.Errorf("Error marshalling %v: %v", i, err.Error()) }
+		os.Stdout.Write(jsonData)
+		os.Stdout.Write([]byte("\n"))
+	}
+	return nil
+}
+
+func freezerLoad(ctx *cli.Context) error {
+	if len(ctx.Args()) != 2 {
+		return fmt.Errorf("Usage: freezerDump [ancients] [leveldb]")
+	}
+	var db ethdb.AncientStore
+	var err error
+	if strings.HasPrefix(ctx.Args()[0], "s3://") {
+		db, err = rawdb.NewS3Freezer(ctx.Args()[0], 128)
+	} else {
+		db, err = rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	}
+	// db, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	if err != nil { return err }
+	count, err := db.Ancients()
+	if err != nil { return err }
+	log.Info("Starting load", "freezer size", count)
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadBytes('\n')
+	for err == nil {
+		if len(line) == 0 {
+			line, err = reader.ReadBytes('\n')
+			continue
+		}
+		data := make(map[string]string)
+		if err := json.Unmarshal(line, &data); err != nil { return err }
+		blockNumber, err := strconv.Atoi(data["index"])
+		if err != nil { return err }
+		if uint64(blockNumber) != count { return fmt.Errorf("Unexpected block: %d != %d", blockNumber, count) }
+		hash, err := hex.DecodeString(data["hashes"])
+		if err != nil { return err }
+		header, err := hex.DecodeString(data["headers"])
+		if err != nil { return err }
+		body, err := hex.DecodeString(data["bodies"])
+		if err != nil { return err }
+		receipts, err := hex.DecodeString(data["receipts"])
+		if err != nil { return err }
+		td, err := hex.DecodeString(data["diffs"])
+		if err != nil { return err }
+		err = db.AppendAncient(uint64(blockNumber), hash, header, body, receipts, td)
+		if err != nil { return err }
+		count++
+		line, err = reader.ReadBytes('\n')
+	}
+	db.Sync()
+	if err != io.EOF { return err }
+	log.Info("Ancient sync done. Indexing freezer")
+	// return rawdb.InitDatabaseFromFreezer(db)
+	return nil
+}
+
+func verifyStateTrie(ctx *cli.Context) error {
+  stack, _ := makeConfigNode(ctx)
+  bc, db := utils.MakeChain(ctx, stack, false)
+  latestHash := rawdb.ReadHeadBlockHash(db)
+  block := bc.GetBlockByHash(latestHash)
+
+  tr, err := trie.New(block.Root(), trie.NewDatabase(db))
+  if err != nil {
+    log.Error(fmt.Sprintf("Unhandled trie error"))
+    return err
+  }
+  nodesToCheck := 1000000
+  if len(ctx.Args()) > 0 {
+    arg := ctx.Args()[0]
+    nodesToCheck, err = strconv.Atoi(arg)
+    if err != nil { return err }
+  }
+
+  iterators := []trie.NodeIterator{}
+  for i := 0; i < 256; i++ {
+    iterators = append(iterators, tr.NodeIterator([]byte{byte(i)}))
+  }
+  for i := 0; i < nodesToCheck; i += len(iterators) {
+    log.Info("Checking leaves", "checked", i, "limit", nodesToCheck)
+    for _, it := range iterators {
+      for it.Next(true) {
+        if it.Leaf() {
+          break
+        }
+      }
+      if err := it.Error(); err != nil {
+        return err
+      }
+    }
+  }
+  bc.Stop()
+  db.Close()
+  // fmt.Printf("Rolled back chain to block %v\n", blockNumber)
+  return nil
+}
+
+type trieRequest struct {
+	hash common.Hash
+	i int
+	data []byte
+	err error
+}
+
+func syncState(root common.Hash, srcDb state.Database, newDb ethdb.Database) <-chan error {
+	errCh := make(chan error)
+	go func() {
+		count := 10000
+		sched := state.NewStateSync(root, newDb, trie.NewSyncBloom(1, newDb))
+		log.Info("Syncing", "root", root)
+		missingNodes, _, _ := sched.Missing(count)
+		queue := append([]common.Hash{}, missingNodes...)
+		total := 0
+		for len(queue) > 0 {
+			log.Info("Processing items", "completed", total, "known", sched.Pending())
+			var wg sync.WaitGroup
+			ch := make(chan trieRequest, runtime.NumCPU())
+			popCh := make(chan trieRequest, runtime.NumCPU())
+			for i := 0; i < runtime.NumCPU(); i++ {
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					defer wg.Done()
+					for r := range ch {
+						r.data, r.err = srcDb.TrieDB().Node(r.hash)
+						if r.err != nil {
+							log.Warn("Error processing hash", "hash", r.hash, "err", r.err)
+						}
+						popCh <- r
+					}
+				}(&wg)
+			}
+			go func(wg *sync.WaitGroup) {
+				wg.Wait()
+				close(popCh)
+			}(&wg)
+			go func() {
+				for i, hash := range queue {
+					ch <- trieRequest{hash: hash, i: i}
+				}
+				close(ch)
+			}()
+			for r := range popCh {
+				if r.err != nil {
+					log.Crit("trie node error", "err", r.err)
+					errCh <- r.err
+					return
+				}
+				if err := sched.Process(trie.SyncResult{Hash: r.hash, Data: r.data}); err != nil {
+					log.Crit("trie processing error", "err", err)
+					errCh <- fmt.Errorf("failed to process result: %v", err)
+					return
+				}
+			}
+			batch := newDb.NewBatch()
+			if err := sched.Commit(batch); err != nil {
+				log.Crit("commit error", "err", err)
+				errCh <- fmt.Errorf("failed to commit data: %v", err)
+				return
+			}
+			batch.Write()
+			total += len(queue)
+			missingNodes, _, _ := sched.Missing(count)
+			queue = append(queue[:0], missingNodes...)
+		}
+		errCh <- nil
+	}()
+
+	return errCh
+}
+
+// repairMigration adds in Hash -> Number mappings and TxLookupEntries, which
+// were inadvertently omitted from an earlier iteration of the state migration
+// tool.
+func repairMigration(ctx *cli.Context) error {
+	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	frozen, err := newDb.Ancients()
+	if err != nil { return err }
+	if frozen == 0 {
+		return fmt.Errorf("Freezer is empty")
+	}
+	hash := rawdb.ReadCanonicalHash(newDb, frozen)
+	block := rawdb.ReadBlock(newDb, hash, frozen)
+	for {
+		batch := newDb.NewBatch()
+		rawdb.WriteHeaderNumber(batch, block.Hash(), block.NumberU64())
+		rawdb.WriteTxLookupEntriesByBlock(batch, block)
+		batch.Write()
+		nextHash := rawdb.ReadCanonicalHash(newDb, block.NumberU64() + 1)
+		block = rawdb.ReadBlock(newDb, nextHash, block.NumberU64() + 1)
+		if block == nil { return nil }
+		if block.NumberU64() % 1000 == 0 {
+			log.Info("Repairing block", "number", block.NumberU64(), "hash", block.Hash())
+		}
+	}
+}
+
+func repairFreezerIndex(ctx *cli.Context) error {
+	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[1], 16, 16, ctx.Args()[0], "new")
+	if err != nil { return err }
+	hash := rawdb.ReadHeadFastBlockHash(newDb)
+	rawdb.InitDatabaseFromFreezer(newDb)
+	rawdb.WriteHeadHeaderHash(newDb, hash)
+	rawdb.WriteHeadFastBlockHash(newDb, hash)
+	return nil
+}
+
+func migrateState(ctx *cli.Context) error {
+	if len(ctx.Args()) < 3 {
+    return fmt.Errorf("Usage: migrateState [ancients] [oldLeveldb] [newLeveldb] [?kafkaTopic]")
+  }
+	newDb, err := rawdb.NewLevelDBDatabaseWithFreezer(ctx.Args()[2], 16, 16, ctx.Args()[0], "new")
+	if err != nil {
+		log.Crit("Error new opening database")
+		return err
+	}
+	frozen, err := newDb.Ancients()
+	if err != nil {
+		log.Crit("Error getting ancients")
+		return err
+	}
+	if frozen == 0 {
+		return fmt.Errorf("Freezer is empty")
+	}
+	oldDb, err := rawdb.NewLevelDBDatabase(ctx.Args()[1], 16, 16, "old")
+	if err != nil {
+		log.Crit("Error old opening database")
+		return err
+	}
+	if len(ctx.Args()) == 4 {
+		key := fmt.Sprintf("cdc-log-%v-offset", ctx.Args()[3])
+		offset, err := oldDb.Get([]byte(key))
+		if err != nil {
+			log.Crit("Error getting offset from database")
+			return err
+		}
+		if err := newDb.Put([]byte(key), offset); err != nil { return err }
+		log.Info("Copied offset", "key", key)
+	}
+	start := time.Now()
+	ancientErrCh := make(chan error, 1)
+	if os.Getenv("SKIP_INIT_FREEZER") != "true" {
+		go func() {
+			// Copy transaction / receipt lookup index entries
+			it := oldDb.NewIterator([]byte("l"), nil)
+			defer it.Release()
+			batch := newDb.NewBatch()
+			counter := 0
+			for it.Next() {
+				if len(it.Key()) != 1 + common.HashLength { continue } // avoid writing state trie nodes
+				counter++
+				if err := batch.Put(it.Key(), it.Value()); err != nil {
+					ancientErrCh <- err
+					return
+				}
+				if batch.ValueSize() > ethdb.IdealBatchSize {
+					if err := batch.Write(); err != nil {
+						ancientErrCh <- err
+						return
+					}
+					batch.Reset()
+				}
+			}
+			log.Info("Copied tx hash indexes to new db", "count", counter)
+			if err := it.Error(); err != nil {
+				ancientErrCh <- err
+				return
+			}
+			// Copy hash -> block number index
+			headerIt := oldDb.NewIterator([]byte("H"), nil)
+			defer headerIt.Release()
+			counter = 0
+			for headerIt.Next() {
+				if len(headerIt.Key()) != 1 + common.HashLength { continue } // avoid writing state trie nodes
+				counter++
+				if err := batch.Put(headerIt.Key(), headerIt.Value()); err != nil {
+					ancientErrCh <- err
+					return
+				}
+				if batch.ValueSize() > ethdb.IdealBatchSize {
+					if err := batch.Write(); err != nil {
+						ancientErrCh <- err
+						return
+					}
+					batch.Reset()
+				}
+			}
+			log.Info("Copied block hash indexes to new db", "count", counter)
+			if err := batch.Write(); err != nil {
+				ancientErrCh <- err
+				return
+			}
+			if err := headerIt.Error(); err != nil {
+				ancientErrCh <- err
+				return
+			}
+			cliqueIt := oldDb.NewIterator([]byte("clique-"), nil)
+			defer cliqueIt.Release()
+			counter = 0
+			for cliqueIt.Next() {
+				if len(cliqueIt.Key()) != 7 + common.HashLength { continue } // avoid writing state trie nodes
+				counter++
+				if err := batch.Put(cliqueIt.Key(), cliqueIt.Value()); err != nil {
+					ancientErrCh <- err
+					return
+				}
+				if batch.ValueSize() > ethdb.IdealBatchSize {
+					if err := batch.Write(); err != nil {
+						ancientErrCh <- err
+						return
+					}
+					batch.Reset()
+				}
+			}
+			log.Info("Copied clique records to new db", "count", counter)
+			if err := batch.Write(); err != nil {
+				ancientErrCh <- err
+				return
+			}
+			if err := cliqueIt.Error(); err != nil {
+				ancientErrCh <- err
+				return
+			}
+			blockNo, err := newDb.Ancients()
+			if err != nil {
+				ancientErrCh <- err
+				return
+			}
+			hash := rawdb.ReadCanonicalHash(newDb, blockNo - 1)
+			if hash == (common.Hash{}) {
+				ancientErrCh <- fmt.Errorf("Error retrieving hash for block %v from newdb", blockNo)
+				return
+			}
+
+			rawdb.WriteHeadHeaderHash(newDb, hash)
+			rawdb.WriteHeadFastBlockHash(newDb, hash)
+
+
+			// rawdb.InitDatabaseFromFreezer(newDb)
+			ancientErrCh <- nil
+			log.Info("Initialized from freezer", "elapsed", time.Since(start))
+		}()
+	} else {
+		ancientErrCh <- nil
+	}
+	srcDb := state.NewDatabase(oldDb)
+
+	genesisHash := rawdb.ReadCanonicalHash(oldDb, 0)
+	block := rawdb.ReadBlock(oldDb, genesisHash, 0)
+
+	latestBlockHash := rawdb.ReadHeadBlockHash(oldDb) // Find the latest blockhash migrated to the new database
+	if latestBlockHash == (common.Hash{}) {
+		return fmt.Errorf("Source block hash empty")
+	}
+	latestHeaderNumber := rawdb.ReadHeaderNumber(oldDb, latestBlockHash)
+	latestBlock := rawdb.ReadBlock(oldDb, latestBlockHash, *latestHeaderNumber)
+	for _, err := srcDb.TrieDB().Node(latestBlock.Root()); err != nil ; {
+		latestBlock = rawdb.ReadBlock(oldDb, latestBlock.ParentHash(), latestBlock.NumberU64() - 1)
+	}
+
+
+	log.Info("Syncing genesis block state", "hash", block.Hash(), "root", block.Root())
+	genesisErrCh := syncState(block.Root(), srcDb, newDb)
+	log.Info("Syncing latest block state", "hash", latestBlock.Hash(), "root", latestBlock.Root())
+	latestErrCh := syncState(latestBlock.Root(), srcDb, newDb)
+
+	chainConfig := rawdb.ReadChainConfig(oldDb, block.Hash())
+	batch := newDb.NewBatch()
+	rawdb.WriteTd(batch, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
+	rawdb.WriteBlock(batch, block)
+	rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), nil)
+	rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
+	rawdb.WriteChainConfig(batch, block.Hash(), chainConfig)
+	rawdb.WriteHeaderNumber(batch, block.Hash(), block.NumberU64())
+	rawdb.WriteTxLookupEntriesByBlock(batch, block)
+	batch.Write()
+
+	if err := <-ancientErrCh; err != nil { return err }
+	srcBlockHash := rawdb.ReadHeadFastBlockHash(newDb) // Find the latest blockhash migrated to the new database
+	if srcBlockHash == (common.Hash{}) {
+		return fmt.Errorf("Source block hash empty")
+	}
+	srcHeaderNumber := rawdb.ReadHeaderNumber(newDb, srcBlockHash)
+	block = rawdb.ReadBlock(newDb, srcBlockHash, *srcHeaderNumber)
+	for {
+		batch := newDb.NewBatch()
+		rawdb.WriteTd(batch, block.Hash(), block.NumberU64(), rawdb.ReadTd(oldDb, block.Hash(), block.NumberU64()))
+		rawdb.WriteBlock(batch, block)
+		rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), rawdb.ReadReceipts(oldDb, block.Hash(), block.NumberU64(), chainConfig))
+		rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
+		rawdb.WriteHeaderNumber(batch, block.Hash(), block.NumberU64())
+		rawdb.WriteTxLookupEntriesByBlock(batch, block)
+		batch.Write()
+		nextHash := rawdb.ReadCanonicalHash(oldDb, block.NumberU64() + 1)
+		if nextHash == (common.Hash{}) {
+			// There's an edge case where early blocks may still be in the freezer
+			// even though they didn't get migrated, and thus the olddb won't have the
+			// canonical hash but the newdb will
+			nextHash = rawdb.ReadCanonicalHash(newDb, block.NumberU64() + 1)
+			if nextHash == (common.Hash{}) {
+				log.Info("Migrated up to block", "number", block.NumberU64(), "hash", block.Hash(), "time", block.Time())
+				break
+			}
+		}
+		block = rawdb.ReadBlock(oldDb, nextHash, block.NumberU64() + 1)
+		if block.NumberU64() % 1000 == 0 {
+			log.Info("Migrating block", "number", block.NumberU64(), "hash", block.Hash())
+		}
+	}
+
+	if err := <-genesisErrCh; err != nil {
+		log.Crit("error syncing genesis")
+		return err
+	}
+	if err := <-latestErrCh; err != nil {
+		log.Crit("error syncing latest")
+		return err
+	}
+	// Get the 10 blocks prior to the latest, to account for reorgs. This should
+	// go quickly, since most of the latest state will overlap with these.
+	for i := 0; i < 10; i++ {
+		latestBlock = rawdb.ReadBlock(oldDb, latestBlock.ParentHash(), latestBlock.NumberU64() - 1)
+		if err := <-syncState(latestBlock.Root(), srcDb, newDb); err != nil {
+			log.Crit("error syncing latest", "n", i)
+		}
+	}
+
+
+	rawdb.WriteHeadBlockHash(newDb, block.Hash())
+	rawdb.WriteHeadHeaderHash(newDb, block.Hash())
+	rawdb.WriteHeadFastBlockHash(newDb, block.Hash())
+	return nil
+}
+
+func compact(ctx *cli.Context) error {
+  stack, _ := makeConfigNode(ctx)
+  _, db := utils.MakeChain(ctx, stack, false)
+	start := time.Now()
+	err := db.Compact(nil, nil)
+	log.Info("Done", "time", time.Since(start))
+	return err
+}
+
+func diffBlocks(ctx *cli.Context) error {
+	stack, _ := makeConfigNode(ctx)
+	db := utils.MakeChainDatabase(ctx, stack)
+	sourceBlockNumber, err := strconv.Atoi(ctx.Args()[0])
+	if err != nil { return err }
+	dstBlockNumber, err := strconv.Atoi(ctx.Args()[1])
+	if err != nil { return err }
+	sourceHash := rawdb.ReadCanonicalHash(db, uint64(sourceBlockNumber))
+	dstHash := rawdb.ReadCanonicalHash(db, uint64(dstBlockNumber))
+  sourceBlock := rawdb.ReadHeader(db, sourceHash, uint64(sourceBlockNumber))
+  dstBlock := rawdb.ReadHeader(db, dstHash, uint64(dstBlockNumber))
+	destructs, accounts, _, err := snapshot.DiffTries(db, sourceBlock.Root, dstBlock.Root)
+	log.Info("Diff", "destructs", len(destructs), "accounts", len(accounts))
+	return err
+}
+
+func resetToSnapshot(ctx *cli.Context) error {
+	stack, _ := makeConfigNode(ctx)
+	diskdb := utils.MakeChainDatabase(ctx, stack)
+	baseRoot := rawdb.ReadSnapshotRoot(diskdb)
+	if baseRoot == (common.Hash{}) {
+		return fmt.Errorf("missing or corrupted snapshot")
+	}
+	headHash := rawdb.ReadHeadHeaderHash(diskdb)
+	headNumber := *(rawdb.ReadHeaderNumber(diskdb, headHash))
+	header := rawdb.ReadHeader(diskdb, headHash, headNumber)
+	limit := 256
+	counter := 0
+	for header.Root != baseRoot {
+		header = rawdb.ReadHeader(diskdb, header.ParentHash, header.Number.Uint64() - 1)
+		counter++
+		if counter > limit { return fmt.Errorf("No header matching root %#x within limit", baseRoot)}
+	}
+	snaps, err := snapshot.LoadDiskLayerSnapshot(diskdb, trie.NewDatabase(diskdb), 256)
+	if err != nil { return err }
+	snaps.Journal(baseRoot)
+	rawdb.WriteHeadBlockHash(diskdb, header.Hash())
+	rawdb.WriteHeadHeaderHash(diskdb, header.Hash())
+	rawdb.WriteHeadFastBlockHash(diskdb, header.Hash())
+	return nil
+}
+
+// func revertToSnapshot(ctx *cli.Context) error {
+//   stack, _ := makeConfigNode(ctx)
+//   db := utils.MakeChainDatabase(ctx, stack, false)
+// 	root := rawdb.ReadSnapshotRoot(db)
+// 	statedb := state.NewDatabase(db)
+// 	_, err := statedb.OpenTrie(root)
+// 	if err != nil { return err }
+// 	log.Info("Root exists in database", "root", root)
+// 	headHash := rawdb.ReadHeadHeaderHash(db)
+// 	headNumber := *(rawdb.ReadHeaderNumber(db, headHash))
+// 	header := rawdb.ReadHeader(db, headHash, headNumber)
+// 	headers := []types.Header{header}
+// 	limit := 256
+// 	for header.Root != root {
+// 		header = rawdb.ReadHeader(db, header.ParentHash, header.Number.Uint64() - 1)
+// 		headers = append(headers, header)
+// 		if len(headers) > limit { return fmt.Errorf("No header matching root %#x within limit", root)}
+// 	}
+// 	log.Info("Found matching block", "hash", header.Hash())
+// 	return nil
+// }
+
 
 func inspect(ctx *cli.Context) error {
 	node, _ := makeConfigNode(ctx)

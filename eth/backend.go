@@ -114,7 +114,7 @@ func New(stack *node.Node, config *Config) (*Ethereum, error) {
 	log.Info("Allocated trie memory caches", "clean", common.StorageSize(config.TrieCleanCache)*1024*1024, "dirty", common.StorageSize(config.TrieDirtyCache)*1024*1024)
 
 	// Assemble the Ethereum object
-	chainDb, err := stack.OpenDatabaseWithFreezer("chaindata", config.DatabaseCache, config.DatabaseHandles, config.DatabaseFreezer, "eth/db/chaindata/")
+	chainDb, err := stack.OpenDatabaseWithOverlayAndFreezer("chaindata", config.DatabaseCache * 3/4, config.DatabaseCache/4, config.DatabaseHandles, config.DatabaseFreezer, config.DatabaseOverlay, "eth/db/chaindata/")
 	if err != nil {
 		return nil, err
 	}
