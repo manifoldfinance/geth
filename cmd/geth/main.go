@@ -42,6 +42,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/node"
+	replicaModule "github.com/ethereum/go-ethereum/replica"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -64,15 +65,14 @@ var (
 		utils.BootnodesV4Flag,
 		utils.BootnodesV5Flag,
 		utils.DataDirFlag,
+		utils.OverlayFlag,
 		utils.AncientFlag,
 		utils.KeyStoreDirFlag,
 		utils.ExternalSignerFlag,
 		utils.NoUSBFlag,
 		utils.SmartCardDaemonPathFlag,
-		utils.DashboardEnabledFlag,
-		utils.DashboardAddrFlag,
-		utils.DashboardPortFlag,
-		utils.DashboardRefreshFlag,
+		utils.OverrideIstanbulFlag,
+		utils.OverrideMuirGlacierFlag,
 		utils.EthashCacheDirFlag,
 		utils.EthashCachesInMemoryFlag,
 		utils.EthashCachesOnDiskFlag,
@@ -133,6 +133,7 @@ var (
 		utils.NetrestrictFlag,
 		utils.NodeKeyFileFlag,
 		utils.NodeKeyHexFlag,
+		utils.DNSDiscoveryFlag,
 		utils.DeveloperFlag,
 		utils.DeveloperPeriodFlag,
 		utils.TestnetFlag,
@@ -148,6 +149,18 @@ var (
 		utils.EWASMInterpreterFlag,
 		utils.EVMInterpreterFlag,
 		configFileFlag,
+		utils.KafkaLogBrokerFlag,
+		utils.KafkaLogTopicFlag,
+		utils.KafkaEventTopicFlag,
+		utils.KafkaTransactionPoolTopicFlag,
+		utils.KafkaTransactionTopicFlag,
+		utils.KafkaTransactionConsumerGroupFlag,
+		utils.ReplicaSyncShutdownFlag,
+		utils.ReplicaStartupMaxAgeFlag,
+		utils.ReplicaRuntimeMaxOffsetAgeFlag,
+		utils.ReplicaRuntimeMaxBlockAgeFlag,
+		utils.ReplicaEVMConcurrencyFlag,
+		utils.ReplicaWarmAddressesFlag,
 	}
 
 	rpcFlags = []cli.Flag{
@@ -196,7 +209,7 @@ func init() {
 	// Initialize the CLI app and start Geth
 	app.Action = geth
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2013-2019 The go-ethereum Authors"
+	app.Copyright = "Copyright 2013-2020 The go-ethereum Authors"
 	app.Commands = []cli.Command{
 		// See chaincmd.go:
 		initCommand,
@@ -207,7 +220,12 @@ func init() {
 		copydbCommand,
 		removedbCommand,
 		dumpCommand,
+		dumpGenesisCommand,
 		inspectCommand,
+		setHeadCommand,
+		verifyStateTrieCommand,
+		compactCommand,
+		kafkaEventsCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,
@@ -224,6 +242,10 @@ func init() {
 		dumpConfigCommand,
 		// See retesteth.go
 		retestethCommand,
+		// See replica.go
+		replicaCommand,
+		// See txrelay.go
+		txrelayCommand,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 
@@ -235,56 +257,8 @@ func init() {
 	app.Flags = append(app.Flags, metricsFlags...)
 
 	app.Before = func(ctx *cli.Context) error {
-		logdir := ""
-		if ctx.GlobalBool(utils.DashboardEnabledFlag.Name) {
-			logdir = (&node.Config{DataDir: utils.MakeDataDir(ctx)}).ResolvePath("logs")
-		}
-		if err := debug.Setup(ctx, logdir); err != nil {
-			return err
-		}
-		// If we're a full node on mainnet without --cache specified, bump default cache allowance
-		if ctx.GlobalString(utils.SyncModeFlag.Name) != "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) && !ctx.GlobalIsSet(utils.NetworkIdFlag.Name) {
-			// Make sure we're not on any supported preconfigured testnet either
-			if !ctx.GlobalIsSet(utils.TestnetFlag.Name) && !ctx.GlobalIsSet(utils.RinkebyFlag.Name) && !ctx.GlobalIsSet(utils.GoerliFlag.Name) {
-				// Nope, we're really on mainnet. Bump that cache up!
-				log.Info("Bumping default cache on mainnet", "provided", ctx.GlobalInt(utils.CacheFlag.Name), "updated", 4096)
-				ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(4096))
-			}
-		}
-		// If we're running a light client on any network, drop the cache to some meaningfully low amount
-		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) {
-			log.Info("Dropping default light client cache", "provided", ctx.GlobalInt(utils.CacheFlag.Name), "updated", 128)
-			ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(128))
-		}
-		// Cap the cache allowance and tune the garbage collector
-		var mem gosigar.Mem
-		// Workaround until OpenBSD support lands into gosigar
-		// Check https://github.com/elastic/gosigar#supported-platforms
-		if runtime.GOOS != "openbsd" {
-			if err := mem.Get(); err == nil {
-				allowance := int(mem.Total / 1024 / 1024 / 3)
-				if cache := ctx.GlobalInt(utils.CacheFlag.Name); cache > allowance {
-					log.Warn("Sanitizing cache to Go's GC limits", "provided", cache, "updated", allowance)
-					ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(allowance))
-				}
-			}
-		}
-		// Ensure Go's GC ignores the database cache for trigger percentage
-		cache := ctx.GlobalInt(utils.CacheFlag.Name)
-		gogc := math.Max(20, math.Min(100, 100/(float64(cache)/1024)))
-
-		log.Debug("Sanitizing Go's GC trigger", "percent", int(gogc))
-		godebug.SetGCPercent(int(gogc))
-
-		// Start metrics export if enabled
-		utils.SetupMetrics(ctx)
-
-		// Start system runtime metrics collection
-		go metrics.CollectProcessMetrics(3 * time.Second)
-
-		return nil
+		return debug.Setup(ctx)
 	}
-
 	app.After = func(ctx *cli.Context) error {
 		debug.Exit()
 		console.Stdin.Close() // Resets terminal mode.
@@ -299,6 +273,50 @@ func main() {
 	}
 }
 
+// prepare manipulates memory cache allowance and setups metric system.
+// This function should be called before launching devp2p stack.
+func prepare(ctx *cli.Context) {
+	// If we're a full node on mainnet without --cache specified, bump default cache allowance
+	if ctx.GlobalString(utils.SyncModeFlag.Name) != "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) && !ctx.GlobalIsSet(utils.NetworkIdFlag.Name) {
+		// Make sure we're not on any supported preconfigured testnet either
+		if !ctx.GlobalIsSet(utils.TestnetFlag.Name) && !ctx.GlobalIsSet(utils.RinkebyFlag.Name) && !ctx.GlobalIsSet(utils.GoerliFlag.Name) && !ctx.GlobalIsSet(utils.DeveloperFlag.Name) {
+			// Nope, we're really on mainnet. Bump that cache up!
+			log.Info("Bumping default cache on mainnet", "provided", ctx.GlobalInt(utils.CacheFlag.Name), "updated", 4096)
+			ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(4096))
+		}
+	}
+	// If we're running a light client on any network, drop the cache to some meaningfully low amount
+	if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) {
+		log.Info("Dropping default light client cache", "provided", ctx.GlobalInt(utils.CacheFlag.Name), "updated", 128)
+		ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(128))
+	}
+	// Cap the cache allowance and tune the garbage collector
+	var mem gosigar.Mem
+	// Workaround until OpenBSD support lands into gosigar
+	// Check https://github.com/elastic/gosigar#supported-platforms
+	if runtime.GOOS != "openbsd" {
+		if err := mem.Get(); err == nil {
+			allowance := int(mem.Total / 1024 / 1024 / 3)
+			if cache := ctx.GlobalInt(utils.CacheFlag.Name); cache > allowance {
+				log.Warn("Sanitizing cache to Go's GC limits", "provided", cache, "updated", allowance)
+				ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(allowance))
+			}
+		}
+	}
+	// Ensure Go's GC ignores the database cache for trigger percentage
+	cache := ctx.GlobalInt(utils.CacheFlag.Name)
+	gogc := math.Max(20, math.Min(100, 100/(float64(cache)/1024)))
+
+	log.Debug("Sanitizing Go's GC trigger", "percent", int(gogc))
+	godebug.SetGCPercent(int(gogc))
+
+	// Start metrics export if enabled
+	utils.SetupMetrics(ctx)
+
+	// Start system runtime metrics collection
+	go metrics.CollectProcessMetrics(3 * time.Second)
+}
+
 // geth is the main entry point into the system if no special subcommand is ran.
 // It creates a default node based on the command line arguments and runs it in
 // blocking mode, waiting for it to be shut down.
@@ -306,6 +324,7 @@ func geth(ctx *cli.Context) error {
 	if args := ctx.Args(); len(args) > 0 {
 		return fmt.Errorf("invalid command: %q", args[0])
 	}
+	prepare(ctx)
 	node := makeFullNode(ctx)
 	defer node.Close()
 	startNode(ctx, node)
@@ -413,7 +432,7 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 	}
 
 	// Start auxiliary services if enabled
-	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) {
+	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name) != "" || ctx.GlobalString(utils.KafkaEventTopicFlag.Name) != "" {
 		// Mining only makes sense if a full Ethereum node is running
 		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
@@ -429,12 +448,37 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 		}
 		ethereum.TxPool().SetGasPrice(gasprice)
 
+		if brokerURL := ctx.GlobalString(utils.KafkaLogBrokerFlag.Name); brokerURL != "" {
+			if poolTopic := ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name); poolTopic != "" {
+				producer, err := replicaModule.NewKafkaTransactionProducerFromURLs(brokerURL, poolTopic)
+				if err != nil {
+					utils.Fatalf("Failed to create transaction producer for %v - %v", brokerURL, poolTopic)
+				}
+				log.Info("Starting Kafka Transaction Relay", "broker", brokerURL, "topic", poolTopic)
+				producer.RelayTransactions(ethereum.TxPool())
+			} else {
+				log.Info("Pool topic missing")
+			}
+			if eventTopic := ctx.GlobalString(utils.KafkaEventTopicFlag.Name); eventTopic != "" {
+				producer, err := replicaModule.NewKafkaEventProducerFromURLs(brokerURL, eventTopic, ethereum.ChainDb())
+				if err != nil {
+					utils.Fatalf("Failed to create event producer for %v - %v", brokerURL, eventTopic)
+				}
+				log.Info("Starting Kafka event producer relay", "broker", brokerURL, "topic", eventTopic)
+				producer.RelayEvents(ethereum.BlockChain())
+			}
+		} else {
+			log.Info("Broker url missing")
+		}
+
 		threads := ctx.GlobalInt(utils.MinerLegacyThreadsFlag.Name)
 		if ctx.GlobalIsSet(utils.MinerThreadsFlag.Name) {
 			threads = ctx.GlobalInt(utils.MinerThreadsFlag.Name)
 		}
-		if err := ethereum.StartMining(threads); err != nil {
-			utils.Fatalf("Failed to start mining: %v", err)
+		if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) {
+			if err := ethereum.StartMining(threads); err != nil {
+				utils.Fatalf("Failed to start mining: %v", err)
+			}
 		}
 	}
 }
