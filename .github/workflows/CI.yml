@@ -1,12 +1,6 @@
 ---
 name: CI
-on:
-  push:
-    tags:
-      - v*
-    branches:
-      - master
-  pull_request:
+on: ['push']
 jobs:
   # Check if there any dirty change for go mod tidy
   go-mod:
