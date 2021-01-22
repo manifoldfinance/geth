@@ -1,0 +1,24 @@
+name: golang
+on: ['push']
+jobs:
+  geth-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        golang:
+          - 1.15
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.golang }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.golang }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.golang }}-
+      - name: Run tests
+        run: make build
+
