@@ -40,6 +40,7 @@ import (
 	replicaModule "github.com/ethereum/go-ethereum/replica"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	// "github.com/ethereum/go-ethereum/dashboard"
 	"github.com/ethereum/go-ethereum/log"
@@ -148,7 +149,7 @@ system and acts as an RPC node based on the replicated data.
 		},
 	}
 	nodeConfig = node.Config{
-		DataDir:          node.DefaultDataDir(),
+		DataDir:          vars.DefaultDataDir(),
 		// HTTPHost:         "0.0.0.0",
 		// HTTPPort:         node.DefaultHTTPPort,
 		HTTPModules:      []string{"net", "web3", "replica"},

@@ -629,20 +629,7 @@ func (backend *ReplicaBackend) StateAndHeaderByNumberOrHash(ctx context.Context,
 }
 
 func (backend *ReplicaBackend) initSnapshot() error {
-  header, err := backend.HeaderByNumber(context.Background(), rpc.LatestBlockNumber)
-  if err != nil {
-    log.Warn("Snapshot init failed", "err", err)
-  }
-  backend.snaps = snapshot.New(backend.db, trie.NewDatabase(backend.db), 256, header.Root, true)
-  log.Info("Initialized snapshot", "snaps", backend.snaps)
-  return err
-
-  // var err error
-  // log.Info("Loading snapshot tree from disk")
-  // start := time.Now()
-  // backend.snaps, err = snapshot.LoadSnapshotWithoutJournal(backend.db, trie.NewDatabase(backend.db), 256)
-  // log.Info("Snapshot tree loaded", "time", time.Since(start), "err", err)
-  // return err
+  return fmt.Errorf("Snapshots unsupported")
 }
 
 func NewTestReplicaBackend(db ethdb.Database, hc *core.HeaderChain, bc *core.BlockChain, tp TransactionProducer) (*ReplicaBackend) {

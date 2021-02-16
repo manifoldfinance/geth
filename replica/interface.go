@@ -13,14 +13,10 @@ type EventProducer interface {
 }
 
 type EventConsumer interface {
-  SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscription
-  SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent) event.Subscription
-  SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
-  SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription
-  SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription
-  SubscribeOffsets(ch chan<- OffsetHash) event.Subscription
+  SubscribeChainEvents(ch chan<- *ChainEvents) event.Subscription
   Start()
   Ready() chan struct{}
+  Close()
 }
 
 type TransactionProducer interface {
