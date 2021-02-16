@@ -273,6 +273,21 @@ func (api *PrivateAdminAPI) Ecbp1100(blockNr rpc.BlockNumber) (bool, error) {
 			api.eth.blockchain.CurrentBlock().Number()), err
 }
 
+// MaxPeers sets the maximum peer limit for the protocol manager and the p2p server.
+func (api *PrivateAdminAPI) MaxPeers(n int) (bool, error) {
+	api.eth.protocolManager.maxPeers = n
+	api.eth.p2pServer.MaxPeers = n
+
+	for i := api.eth.protocolManager.peers.Len(); i > n; i = api.eth.protocolManager.peers.Len() {
+		p := api.eth.protocolManager.peers.WorstPeer()
+		if p == nil {
+			break
+		}
+		api.eth.protocolManager.removePeer(p.id)
+	}
+	return true, nil
+}
+
 // PublicDebugAPI is the collection of Ethereum full node APIs exposed
 // over the public debugging endpoint.
 type PublicDebugAPI struct {
@@ -332,9 +347,9 @@ func (api *PrivateDebugAPI) Preimage(ctx context.Context, hash common.Hash) (hex
 
 // BadBlockArgs represents the entries in the list returned when bad blocks are queried.
 type BadBlockArgs struct {
-	Hash  common.Hash            `json:"hash"`
-	Block map[string]interface{} `json:"block"`
-	RLP   string                 `json:"rlp"`
+	Hash  common.Hash              `json:"hash"`
+	Block *ethapi.RPCMarshalBlockT `json:"block"`
+	RLP   string                   `json:"rlp"`
 }
 
 // GetBadBlocks returns a list of the last 'bad blocks' that the client has seen on the network
@@ -354,7 +369,7 @@ func (api *PrivateDebugAPI) GetBadBlocks(ctx context.Context) ([]*BadBlockArgs, 
 			results[i].RLP = fmt.Sprintf("0x%x", rlpBytes)
 		}
 		if results[i].Block, err = ethapi.RPCMarshalBlock(block, true, true); err != nil {
-			results[i].Block = map[string]interface{}{"error": err.Error()}
+			results[i].Block = &ethapi.RPCMarshalBlockT{Error: err.Error()}
 		}
 	}
 	return results, nil
@@ -398,6 +413,8 @@ func (api *PublicDebugAPI) AccountRange(blockNrOrHash rpc.BlockNumberOrHash, sta
 		if err != nil {
 			return state.IteratorDump{}, err
 		}
+	} else {
+		return state.IteratorDump{}, errors.New("either block number or block hash must be specified")
 	}
 
 	if maxResults > AccountRangeMaxResults || maxResults <= 0 {

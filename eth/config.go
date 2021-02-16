@@ -112,8 +112,9 @@ type Config struct {
 	Genesis *genesisT.Genesis `toml:",omitempty"`
 
 	// Protocol options
-	NetworkId uint64 // Network ID to use for selecting peers to connect to
-	SyncMode  downloader.SyncMode
+	NetworkId        uint64 // Network ID to use for selecting peers to connect to
+	ProtocolVersions []uint // Protocol versions are the supported versions of the eth protocol (first is primary).
+	SyncMode         downloader.SyncMode
 
 	// This can be set to list of enrtree:// URLs which will be queried for
 	// for nodes to connect to.
@@ -194,4 +195,8 @@ type Config struct {
 
 	// Manual configuration field for ECBP1100 activation number. Used for modifying genesis config via CLI flag.
 	ECBP1100 *big.Int
+
+	// ECBP1100NoDisable overrides
+	// When this value is *true, ECBP100 will not (ever) be disabled; when *false, it will never be enabled.
+	ECBP1100NoDisable *bool `toml:",omitempty"`
 }

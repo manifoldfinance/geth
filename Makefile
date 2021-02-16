@@ -9,6 +9,7 @@
 .PHONY: geth-linux-arm geth-linux-arm-5 geth-linux-arm-6 geth-linux-arm-7 geth-linux-arm64
 .PHONY: geth-darwin geth-darwin-386 geth-darwin-amd64
 .PHONY: geth-windows geth-windows-386 geth-windows-amd64
+.PHONY: mkdocs-serve
 
 GOBIN = ./build/bin
 GO ?= latest
@@ -126,6 +127,12 @@ lint: ## Run linters.
 clean: clean-evmc
 	env GO111MODULE=on go clean -cache
 	rm -fr build/_workspace/pkg/ $(GOBIN)/*
+
+mkdocs-serve: ## Serve generated documentation (during development)
+	@build/mkdocs-serve.sh
+
+docs-generate: ## Generate JSON RPC API documentation from the OpenRPC service discovery document.
+	env COREGETH_GEN_OPENRPC_DOCS=on go test -count=1 -run BuildStatic ./ethclient
 
 # The devtools target installs tools required for 'go generate'.
 # You need to put $GOBIN (or $GOPATH/bin) in your PATH to use 'go generate'.

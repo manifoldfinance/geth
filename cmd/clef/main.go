@@ -47,6 +47,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/signer/core"
@@ -89,7 +90,7 @@ var (
 	}
 	keystoreFlag = cli.StringFlag{
 		Name:  "keystore",
-		Value: filepath.Join(node.DefaultDataDir(), "keystore"),
+		Value: filepath.Join(vars.DefaultDataDir(), "keystore"),
 		Usage: "Directory for the keystore",
 	}
 	configdirFlag = cli.StringFlag{
@@ -100,7 +101,7 @@ var (
 	chainIdFlag = cli.Int64Flag{
 		Name:  "chainid",
 		Value: params.MainnetChainConfig.ChainID.Int64(),
-		Usage: "Chain id to use for signing (1=foundation, 61=classic, 3=Ropsten, 4=Rinkeby, 5=Goerli, 6=Kotti, 63=Mordor, 133519467574833=Yolo)",
+		Usage: "Chain id to use for signing (1=foundation, 61=classic, 3=Ropsten, 4=Rinkeby, 5=Goerli, 6=Kotti, 63=Mordor, 133519467574834=Yolo)",
 	}
 	rpcPortFlag = cli.IntFlag{
 		Name:  "http.port",

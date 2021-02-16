@@ -38,11 +38,9 @@ import (
 	"github.com/ethereum/go-ethereum/internal/debug"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/internal/openrpc"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/rpc"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	replicaModule "github.com/ethereum/go-ethereum/replica"
 	cli "gopkg.in/urfave/cli.v1"
@@ -144,8 +142,10 @@ var (
 		utils.NodeKeyFileFlag,
 		utils.NodeKeyHexFlag,
 		utils.DNSDiscoveryFlag,
+		utils.EthProtocolsFlag,
 		utils.DeveloperFlag,
 		utils.DeveloperPeriodFlag,
+		utils.DeveloperPoWFlag,
 		utils.ClassicFlag,
 		utils.MordorFlag,
 		utils.SocialFlag,
@@ -156,11 +156,12 @@ var (
 		utils.RinkebyFlag,
 		utils.KottiFlag,
 		utils.GoerliFlag,
-		utils.YoloV1Flag,
+		utils.YoloV2Flag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,
 		utils.EthStatsURLFlag,
 		utils.FakePoWFlag,
+		utils.FakePoWPoissonFlag,
 		utils.NoCompactionFlag,
 		utils.GpoBlocksFlag,
 		utils.LegacyGpoBlocksFlag,
@@ -170,6 +171,7 @@ var (
 		utils.EWASMInterpreterFlag,
 		utils.EVMInterpreterFlag,
 		utils.ECBP1100Flag,
+		utils.ECBP1100NoDisableFlag,
 		configFileFlag,
 		utils.KafkaLogBrokerFlag,
 		utils.KafkaLogTopicFlag,
@@ -307,10 +309,6 @@ func init() {
 		prompt.Stdin.Close() // Resets terminal mode.
 		return nil
 	}
-
-	if err := rpc.SetDefaultOpenRPCSchemaRaw(openrpc.OpenRPCSchema); err != nil {
-		log.Crit("Setting OpenRPC default", "error", err)
-	}
 }
 
 func main() {
@@ -339,7 +337,10 @@ func checkMainnet(ctx *cli.Context) bool {
 		log.Info("Starting Geth on Görli testnet...")
 
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
-		log.Info("Starting Geth in ephemeral dev mode...")
+		log.Info("Starting Geth in ephemeral proof-of-authority network dev mode...")
+
+	case ctx.GlobalIsSet(utils.DeveloperPoWFlag.Name):
+		log.Info("Starting Geth in ephemeral proof-of-work network dev mode...")
 
 	case ctx.GlobalIsSet(utils.ClassicFlag.Name):
 		log.Info("Starting Geth on Ethereum Classic...")
@@ -350,8 +351,8 @@ func checkMainnet(ctx *cli.Context) bool {
 	case ctx.GlobalIsSet(utils.KottiFlag.Name):
 		log.Info("Starting Geth on Kotti testnet...")
 
-	case ctx.GlobalIsSet(utils.YoloV1Flag.Name):
-		log.Info("Starting Geth on YoloV1 testnet...")
+	case ctx.GlobalIsSet(utils.YoloV2Flag.Name):
+		log.Info("Starting Geth on YoloV2 testnet...")
 
 	case ctx.GlobalIsSet(utils.SocialFlag.Name):
 		log.Info("Starting Geth on Social network...")
@@ -425,6 +426,7 @@ func geth(ctx *cli.Context) error {
 	if args := ctx.Args(); len(args) > 0 {
 		return fmt.Errorf("invalid command: %q", args[0])
 	}
+
 	prepare(ctx)
 	stack, backend := makeFullNode(ctx)
 	defer stack.Close()
@@ -515,7 +517,8 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend) {
 	}
 
 	// Start auxiliary services if enabled
-	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name) != "" || ctx.GlobalString(utils.KafkaEventTopicFlag.Name) != "" {
+	isDeveloperMode := ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.DeveloperPoWFlag.Name)
+	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || isDeveloperMode || ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name) != "" || ctx.GlobalString(utils.KafkaEventTopicFlag.Name) != "" {
 		// Mining only makes sense if a full Ethereum node is running
 		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
@@ -524,6 +527,7 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend) {
 		if !ok {
 			utils.Fatalf("Ethereum service not running: %v", err)
 		}
+
 		// Set the gas price to the limits from the CLI and start mining
 		gasprice := utils.GlobalBig(ctx, utils.MinerGasPriceFlag.Name)
 		if ctx.GlobalIsSet(utils.LegacyMinerGasPriceFlag.Name) && !ctx.GlobalIsSet(utils.MinerGasPriceFlag.Name) {
@@ -560,10 +564,11 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend) {
 			threads = ctx.GlobalInt(utils.LegacyMinerThreadsFlag.Name)
 			log.Warn("The flag --minerthreads is deprecated and will be removed in the future, please use --miner.threads")
 		}
-		if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) {
-			if err := ethBackend.StartMining(threads); err != nil {
-				utils.Fatalf("Failed to start mining: %v", err)
-			}
+		if isDeveloperMode && !ctx.GlobalIsSet(utils.MinerThreadsFlag.Name) && !ctx.GlobalIsSet(utils.LegacyMinerThreadsFlag.Name) {
+			threads = 1
+		}
+		if err := ethBackend.StartMining(threads); err != nil {
+			utils.Fatalf("Failed to start mining: %v", err)
 		}
 	}
 }

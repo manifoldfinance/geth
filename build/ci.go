@@ -78,7 +78,6 @@ var (
 		executablePath("echainspec"),
 		executablePath("evm"),
 		executablePath("geth"),
-		executablePath("puppeth"),
 		executablePath("rlpdump"),
 		executablePath("clef"),
 	}
@@ -108,10 +107,6 @@ var (
 		{
 			BinaryName:  "geth",
 			Description: "Ethereum CLI client.",
-		},
-		{
-			BinaryName:  "puppeth",
-			Description: "Ethereum private network manager.",
 		},
 		{
 			BinaryName:  "rlpdump",
@@ -144,11 +139,11 @@ var (
 	// Note: artful is unsupported because it was officially deprecated on Launchpad.
 	// Note: cosmic is unsupported because it was officially deprecated on Launchpad.
 	// Note: disco is unsupported because it was officially deprecated on Launchpad.
+	// Note: eoan is unsupported because it was officially deprecated on Launchpad.
 	debDistroGoBoots = map[string]string{
 		"trusty": "golang-1.11",
 		"xenial": "golang-go",
 		"bionic": "golang-go",
-		"eoan":   "golang-go",
 		"focal":  "golang-go",
 		"groovy": "golang-go",
 	}
@@ -269,8 +264,13 @@ func doInstall(cmdline []string) {
 	// Put the default settings in.
 	gobuild.Args = append(gobuild.Args, buildFlags(env)...)
 
+	/*
+	TODO(meowsbits): The -trimpath flag is commented because it breaks openrpc discovery, for which
+	reflection/AST-parsing gets broken when paths are not full.
+	Is there a better solve for this? Can we just turn reflection off for the geth build?
+	 */
 	// We use -trimpath to avoid leaking local paths into the built executables.
-	gobuild.Args = append(gobuild.Args, "-trimpath")
+	// gobuild.Args = append(gobuild.Args, "-trimpath")
 
 	// Show packages during build.
 	gobuild.Args = append(gobuild.Args, "-v")
@@ -1049,7 +1049,7 @@ func doXCodeFramework(cmdline []string) {
 	if *deploy != "" {
 		meta := newPodMetadata(env, archive)
 		build.Render("build/pod.podspec", "Geth.podspec", 0755, meta)
-		build.MustRunCommand("pod", *deploy, "push", "Geth.podspec", "--allow-warnings", "--verbose")
+		build.MustRunCommand("pod", *deploy, "push", "Geth.podspec", "--allow-warnings")
 	}
 }
 
