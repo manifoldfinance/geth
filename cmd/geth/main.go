@@ -566,8 +566,10 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend) {
 		if isDeveloperMode && !ctx.GlobalIsSet(utils.MinerThreadsFlag.Name) && !ctx.GlobalIsSet(utils.LegacyMinerThreadsFlag.Name) {
 			threads = 1
 		}
-		if err := ethBackend.StartMining(threads); err != nil {
-			utils.Fatalf("Failed to start mining: %v", err)
+		if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || isDeveloperMode {
+			if err := ethBackend.StartMining(threads); err != nil {
+				utils.Fatalf("Failed to start mining: %v", err)
+			}
 		}
 	}
 }
