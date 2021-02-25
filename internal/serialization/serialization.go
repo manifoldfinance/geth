@@ -88,16 +88,6 @@ func NewRPCTransactionFromBlockIndex(b *types.Block, index uint64) *RPCTransacti
 	return NewRPCTransaction(txs[index], b.Hash(), b.NumberU64(), index)
 }
 
-// NewRPCRawTransactionFromBlockIndex returns the bytes of a transaction given a block and a transaction index.
-func NewRPCRawTransactionFromBlockIndex(b *types.Block, index uint64) hexutil.Bytes {
-	txs := b.Transactions()
-	if index >= uint64(len(txs)) {
-		return nil
-	}
-	blob, _ := rlp.EncodeToBytes(txs[index])
-	return blob
-}
-
 // NewRPCTransactionFromBlockHash returns a transaction that will serialize to the RPC representation.
 func NewRPCTransactionFromBlockHash(b *types.Block, hash common.Hash) *RPCTransaction {
 	for idx, tx := range b.Transactions() {
