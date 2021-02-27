@@ -300,6 +300,19 @@ func (tab *Table) doRefresh(done chan struct{}) {
 	}
 }
 
+// Buckets function for RLPX table logging
+func (tab *Table) Buckets() string {
+        fmt.Print("RLPX_TABLE\n")
+        outStr := ""
+        for i, b := range tab.buckets {
+                for j, node := range b.entries {
+                        outStr += fmt.Sprintf("%d,%d,%v,%x,%v,%v,%v\n", i, j, node.ID, node.sha, node.IP, node.TCP, node.UDP)
+                }
+        }
+        fmt.Print(outStr)
+        return outStr
+}
+
 func (tab *Table) loadSeedNodes() {
 	seeds := wrapNodes(tab.db.QuerySeeds(seedCount, seedMaxAge))
 	seeds = append(seeds, tab.nursery...)
