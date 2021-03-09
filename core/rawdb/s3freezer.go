@@ -1,271 +1,280 @@
 package rawdb
 
 import (
-  "encoding/json"
-  "fmt"
-  "bytes"
-  "runtime"
-  "strings"
-  "strconv"
-  "sync"
-  lru "github.com/hashicorp/golang-lru"
-  "github.com/aws/aws-sdk-go/aws"
-  "github.com/aws/aws-sdk-go/aws/session"
-  s3 "github.com/aws/aws-sdk-go/service/s3"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	s3 "github.com/aws/aws-sdk-go/service/s3"
+	lru "github.com/hashicorp/golang-lru"
+	"runtime"
+	"strconv"
+	"strings"
+	"sync"
 	// "github.com/aws/aws-sdk-go/service/s3/s3manager"
-  "github.com/golang/snappy"
-  "github.com/ethereum/go-ethereum/common"
-  "github.com/ethereum/go-ethereum/ethdb"
-  "github.com/ethereum/go-ethereum/log"
-  "github.com/ethereum/go-ethereum/params/vars"
-  "io/ioutil"
-  "path"
-  "time"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params/vars"
+	"github.com/golang/snappy"
+	"io/ioutil"
+	"path"
+	"time"
 )
 
-type freezeInterface interface{
-  ethdb.AncientStore
-  freeze(db ethdb.KeyValueStore)
+type freezeInterface interface {
+	ethdb.AncientStore
+	freeze(db ethdb.KeyValueStore)
 }
 
 type s3freezer struct {
-  sess *session.Session
-  cache *lru.Cache
-  bucket string
-  root string
-  count uint64
-  uploadCh chan s3record
-  concurrency int
-  wg sync.WaitGroup
-  quit chan struct{}
+	sess        *session.Session
+	cache       *lru.Cache
+	bucket      string
+	root        string
+	count       uint64
+	uploadCh    chan s3record
+	concurrency int
+	wg          sync.WaitGroup
+	quit        chan struct{}
 }
 
 type s3record struct {
-  Hash []byte `json:"x"`
-  Header []byte `json:"h"`
-  Body []byte `json:"b"`
-  Receipt []byte `json:"r"`
-  Td []byte `json:"d"`
-  number uint64
+	Hash    []byte `json:"x"`
+	Header  []byte `json:"h"`
+	Body    []byte `json:"b"`
+	Receipt []byte `json:"r"`
+	Td      []byte `json:"d"`
+	number  uint64
 }
 
 func numToPath(number uint64) string {
-  h := fmt.Sprintf("%0.7x", number)
-  x := len(h)
-  return path.Join(h[:x-4], h[x-4:x-2], h[x-2:])
+	h := fmt.Sprintf("%0.7x", number)
+	x := len(h)
+	return path.Join(h[:x-4], h[x-4:x-2], h[x-2:])
 }
 
 func NewS3Freezer(path string, cacheSize int) (freezeInterface, error) {
-  path = strings.TrimPrefix(path, "s3://")
-  parts := strings.SplitN(path, "/", 2)
-  cache, err := lru.New(cacheSize)
-  if err != nil { return nil, err }
-  freezer := &s3freezer{
-    cache: cache,
-    sess: session.Must(session.NewSession()),
-    bucket: parts[0],
-    root: strings.TrimSuffix(parts[1], "/") + "/",
-    concurrency: runtime.NumCPU(),
-    uploadCh: make(chan s3record),
-    quit: make(chan struct{}),
-  }
-  svc := s3.New(freezer.sess)
-  output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{
-    Bucket: &freezer.bucket,
-    Delimiter: aws.String("/"),
-    Prefix: &freezer.root,
-  })
-  log.Info("Getting ancient count:", "bucket", freezer.bucket, "prefix", freezer.root)
-  if len(output.CommonPrefixes) == 0 {
-    // Fresh freezer
-    freezer.count = 0
-    freezer.uploader()
-    return freezer, nil
-  }
-  for output.NextContinuationToken != nil {
-    if err != nil { return nil, err }
-    output, err = svc.ListObjectsV2(&s3.ListObjectsV2Input{
-      Bucket: &freezer.bucket,
-      Delimiter: aws.String("/"),
-      Prefix: &freezer.root,
-      ContinuationToken: output.NextContinuationToken,
-    })
-  }
-  l1prefix := output.CommonPrefixes[len(output.CommonPrefixes) - 1].Prefix
-  output, err = svc.ListObjectsV2(&s3.ListObjectsV2Input{
-    Bucket: &freezer.bucket,
-    Delimiter: aws.String("/"),
-    Prefix: l1prefix,
-  })
-  l2prefix := output.CommonPrefixes[len(output.CommonPrefixes)-1].Prefix
-  output, err = svc.ListObjectsV2(&s3.ListObjectsV2Input{
-    Bucket: &freezer.bucket,
-    Delimiter: aws.String("/"),
-    Prefix: l2prefix,
-  })
-  highest := output.Contents[len(output.Contents) - 1].Key
-  count, err := strconv.ParseInt(strings.Join(strings.Split(strings.TrimPrefix(*highest, freezer.root), "/"), ""), 16, 64)
-  if err != nil { return nil, err }
-  freezer.count = uint64(count) + 1
-  freezer.uploader()
-  return freezer, nil
+	path = strings.TrimPrefix(path, "s3://")
+	parts := strings.SplitN(path, "/", 2)
+	cache, err := lru.New(cacheSize)
+	if err != nil {
+		return nil, err
+	}
+	freezer := &s3freezer{
+		cache:       cache,
+		sess:        session.Must(session.NewSession()),
+		bucket:      parts[0],
+		root:        strings.TrimSuffix(parts[1], "/") + "/",
+		concurrency: runtime.NumCPU(),
+		uploadCh:    make(chan s3record),
+		quit:        make(chan struct{}),
+	}
+	svc := s3.New(freezer.sess)
+	output, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket:    &freezer.bucket,
+		Delimiter: aws.String("/"),
+		Prefix:    &freezer.root,
+	})
+	log.Info("Getting ancient count:", "bucket", freezer.bucket, "prefix", freezer.root)
+	if len(output.CommonPrefixes) == 0 {
+		// Fresh freezer
+		freezer.count = 0
+		freezer.uploader()
+		return freezer, nil
+	}
+	for output.NextContinuationToken != nil {
+		if err != nil {
+			return nil, err
+		}
+		output, err = svc.ListObjectsV2(&s3.ListObjectsV2Input{
+			Bucket:            &freezer.bucket,
+			Delimiter:         aws.String("/"),
+			Prefix:            &freezer.root,
+			ContinuationToken: output.NextContinuationToken,
+		})
+	}
+	l1prefix := output.CommonPrefixes[len(output.CommonPrefixes)-1].Prefix
+	output, err = svc.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket:    &freezer.bucket,
+		Delimiter: aws.String("/"),
+		Prefix:    l1prefix,
+	})
+	l2prefix := output.CommonPrefixes[len(output.CommonPrefixes)-1].Prefix
+	output, err = svc.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket:    &freezer.bucket,
+		Delimiter: aws.String("/"),
+		Prefix:    l2prefix,
+	})
+	highest := output.Contents[len(output.Contents)-1].Key
+	count, err := strconv.ParseInt(strings.Join(strings.Split(strings.TrimPrefix(*highest, freezer.root), "/"), ""), 16, 64)
+	if err != nil {
+		return nil, err
+	}
+	freezer.count = uint64(count) + 1
+	freezer.uploader()
+	return freezer, nil
 }
 
 // HasAncient returns an indicator whether the specified data exists in the
 // ancient store.
 func (f *s3freezer) HasAncient(kind string, number uint64) (bool, error) {
-  if number > f.count + uint64(f.concurrency) {
-    // If the requested number is too high, we definitely won't have it
-    return false, fmt.Errorf("Requested %v (%v) exceeds max (%v)", kind, number, f.count)
-  }
-  key := numToPath(number)
-  svc := s3.New(f.sess)
-  if _, ok := f.cache.Get(key); ok { return true, nil }
-  _, err := svc.HeadObject(&s3.HeadObjectInput{
-    Bucket: &f.bucket,
-    Key: aws.String(path.Join(f.root, key)),
-  })
-  return err == nil, nil
+	if number > f.count+uint64(f.concurrency) {
+		// If the requested number is too high, we definitely won't have it
+		return false, fmt.Errorf("Requested %v (%v) exceeds max (%v)", kind, number, f.count)
+	}
+	key := numToPath(number)
+	svc := s3.New(f.sess)
+	if _, ok := f.cache.Get(key); ok {
+		return true, nil
+	}
+	_, err := svc.HeadObject(&s3.HeadObjectInput{
+		Bucket: &f.bucket,
+		Key:    aws.String(path.Join(f.root, key)),
+	})
+	return err == nil, nil
 }
 
 // Ancient retrieves an ancient binary blob from the append-only immutable files.
 func (f *s3freezer) Ancient(kind string, number uint64) ([]byte, error) {
-  if number > f.count + uint64(f.concurrency) {
-    // If the requested number is too high, we definitely won't have it.
-    return []byte{}, fmt.Errorf("Requested %v (%v) exceeds max (%v)", kind, number, f.count)
-  }
-  key := numToPath(number)
-  var content []byte
-  svc := s3.New(f.sess)
-  cacheContent, ok := f.cache.Get(key)
-  if ok {
-    content = cacheContent.([]byte)
-  } else {
-    value, err := svc.GetObject(&s3.GetObjectInput{
-      Bucket: &f.bucket,
-      Key: aws.String(path.Join(f.root, key)),
-    })
-    if err != nil {
-      return nil, err
-    }
-    content, err = ioutil.ReadAll(snappy.NewReader(value.Body))
-    if err != nil {
-      return nil, err
-    }
-    f.cache.Add(key, content)
-  }
-  record := &s3record{}
-  err := json.Unmarshal(content, &record)
-  if err != nil {
-    return []byte{}, fmt.Errorf("Error parsing '%v' - %v", string(content), err.Error())
-  }
-  switch kind {
-  case freezerHeaderTable:
-    return record.Header, err
-  case freezerHashTable:
-    return record.Hash, err
-  case freezerBodiesTable:
-    return record.Body, err
-  case freezerReceiptTable:
-    return record.Receipt, err
-  case freezerDifficultyTable:
-    return record.Td, err
-  default:
-    return nil, fmt.Errorf("Unknown kind '%v'", kind)
-  }
+	if number > f.count+uint64(f.concurrency) {
+		// If the requested number is too high, we definitely won't have it.
+		return []byte{}, fmt.Errorf("Requested %v (%v) exceeds max (%v)", kind, number, f.count)
+	}
+	key := numToPath(number)
+	var content []byte
+	svc := s3.New(f.sess)
+	cacheContent, ok := f.cache.Get(key)
+	if ok {
+		content = cacheContent.([]byte)
+	} else {
+		value, err := svc.GetObject(&s3.GetObjectInput{
+			Bucket: &f.bucket,
+			Key:    aws.String(path.Join(f.root, key)),
+		})
+		if err != nil {
+			return nil, err
+		}
+		content, err = ioutil.ReadAll(snappy.NewReader(value.Body))
+		if err != nil {
+			return nil, err
+		}
+		f.cache.Add(key, content)
+	}
+	record := &s3record{}
+	err := json.Unmarshal(content, &record)
+	if err != nil {
+		return []byte{}, fmt.Errorf("Error parsing '%v' - %v", string(content), err.Error())
+	}
+	switch kind {
+	case freezerHeaderTable:
+		return record.Header, err
+	case freezerHashTable:
+		return record.Hash, err
+	case freezerBodiesTable:
+		return record.Body, err
+	case freezerReceiptTable:
+		return record.Receipt, err
+	case freezerDifficultyTable:
+		return record.Td, err
+	default:
+		return nil, fmt.Errorf("Unknown kind '%v'", kind)
+	}
 }
 
 // Ancients returns the ancient item numbers in the ancient store.
 func (f *s3freezer) Ancients() (uint64, error) {
-  return f.count, nil
+	return f.count, nil
 }
 
 // AncientSize returns the ancient size of the specified category.
 func (f *s3freezer) AncientSize(kind string) (uint64, error) {
-  return f.count, nil
+	return f.count, nil
 }
+
 // AppendAncient injects all binary blobs belong to block at the end of the
 // append-only immutable table files.
 func (f *s3freezer) AppendAncient(number uint64, hash, header, body, receipt, td []byte) error {
-  log.Debug("Appending")
-  f.uploadCh <- s3record{
-    Hash: hash,
-    Header: header,
-    Body: body,
-    Receipt: receipt,
-    Td: td,
-    number: number,
-  }
-  log.Debug("Appended")
-  f.count++
-  return nil
+	log.Debug("Appending")
+	f.uploadCh <- s3record{
+		Hash:    hash,
+		Header:  header,
+		Body:    body,
+		Receipt: receipt,
+		Td:      td,
+		number:  number,
+	}
+	log.Debug("Appended")
+	f.count++
+	return nil
 }
 
 func (f *s3freezer) uploader() {
-  for i := 0; i < f.concurrency; i++ {
-    go func(i int) {
-      log.Info("Starting uploader thread", "id", i)
-      defer log.Info("Stopping uploader thread", "id", i)
+	for i := 0; i < f.concurrency; i++ {
+		go func(i int) {
+			log.Info("Starting uploader thread", "id", i)
+			defer log.Info("Stopping uploader thread", "id", i)
 
-      for record := range f.uploadCh {
-        f.wg.Add(1)
-        for i := 0; true; i++ {
-          time.Sleep(100 * time.Duration(i) * time.Millisecond) // Backoff on failure
-          log.Debug("Processing record")
-          if exists, _ := f.HasAncient("bodies", record.number); !exists {
-            data, err := json.Marshal(record)
-            if err != nil {
-              log.Error("Error marshalling record", "number", record.number)
-            }
-            buff := &bytes.Buffer{}
-            writer := snappy.NewWriter(buff)
-            writer.Write(data)
-            writer.Flush()
-            svc := s3.New(f.sess)
-            key := numToPath(record.number)
-            _, err = svc.PutObject(&s3.PutObjectInput{
-              Bucket: &f.bucket,
-              Key: aws.String(path.Join(f.root, key)),
-              Body: bytes.NewReader(buff.Bytes()),
-            })
-            if err != nil {
-              log.Error("Error recording block", "number", record.number, "bucket", f.bucket, "key", path.Join(f.root, key), "err", err)
-              continue
-            }
-          }
-          break
-        }
-        f.wg.Done()
-      }
-    }(i)
-  }
+			for record := range f.uploadCh {
+				f.wg.Add(1)
+				for i := 0; true; i++ {
+					time.Sleep(100 * time.Duration(i) * time.Millisecond) // Backoff on failure
+					log.Debug("Processing record")
+					if exists, _ := f.HasAncient("bodies", record.number); !exists {
+						data, err := json.Marshal(record)
+						if err != nil {
+							log.Error("Error marshalling record", "number", record.number)
+						}
+						buff := &bytes.Buffer{}
+						writer := snappy.NewWriter(buff)
+						writer.Write(data)
+						writer.Flush()
+						svc := s3.New(f.sess)
+						key := numToPath(record.number)
+						_, err = svc.PutObject(&s3.PutObjectInput{
+							Bucket: &f.bucket,
+							Key:    aws.String(path.Join(f.root, key)),
+							Body:   bytes.NewReader(buff.Bytes()),
+						})
+						if err != nil {
+							log.Error("Error recording block", "number", record.number, "bucket", f.bucket, "key", path.Join(f.root, key), "err", err)
+							continue
+						}
+					}
+					break
+				}
+				f.wg.Done()
+			}
+		}(i)
+	}
 }
 
 // TruncateAncients discards all but the first n ancient data from the ancient store.
 func (f *s3freezer) TruncateAncients(n uint64) error {
-  if n < f.count {
-    f.count = n
-  }
-  return nil
+	if n < f.count {
+		f.count = n
+	}
+	return nil
 }
 
 // Sync is a no-op, as we will write content as AppendAncient is called
 func (f *s3freezer) Sync() error {
-  f.wg.Wait()
-  return nil
+	f.wg.Wait()
+	return nil
 }
 
 func (f *s3freezer) Close() error {
-  f.quit <- struct{}{}
-  close(f.uploadCh)
-  return nil
+	f.quit <- struct{}{}
+	close(f.uploadCh)
+	return nil
 }
 
 func (f *s3freezer) freeze(db ethdb.KeyValueStore) {
 	nfdb := &nofreezedb{KeyValueStore: db}
- 	backoff := false
+	backoff := false
 	for {
-   		select {
+		select {
 		case <-f.quit:
 			log.Info("Freezer shutting down")
 			return
@@ -317,7 +326,7 @@ func (f *s3freezer) freeze(db ethdb.KeyValueStore) {
 		var (
 			start    = time.Now()
 			first    = f.count
-			ancients = make([]common.Hash, 0, limit - f.count)
+			ancients = make([]common.Hash, 0, limit-f.count)
 		)
 		for f.count < limit {
 			// Retrieves all the components of the canonical block

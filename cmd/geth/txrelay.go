@@ -19,17 +19,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/Shopify/sarama"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/ethdb/cdc"
-	"github.com/Shopify/sarama"
+	"github.com/ethereum/go-ethereum/rlp"
 	"gopkg.in/urfave/cli.v1"
+	"log"
 	"os"
 	"time"
-	"log"
 )
 
 var (
@@ -50,6 +50,7 @@ nodes.
 		},
 	}
 )
+
 // replica starts replica node
 func txrelay(ctx *cli.Context) error {
 	sarama.Logger = log.New(os.Stderr, "[sarama]", 0)
@@ -85,15 +86,14 @@ func txrelay(ctx *cli.Context) error {
 	}
 }
 
-
-type relayConsumerGroup struct{
+type relayConsumerGroup struct {
 	txs ethereum.TransactionSender
 }
 
 func (relayConsumerGroup) Setup(_ sarama.ConsumerGroupSession) error   { return nil }
 func (relayConsumerGroup) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
 func (h relayConsumerGroup) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-  for msg := range claim.Messages() {
+	for msg := range claim.Messages() {
 		transaction := &types.Transaction{}
 		fmt.Printf("Msg: %v\n", msg)
 		if err := rlp.DecodeBytes(msg.Value, transaction); err != nil {
@@ -102,14 +102,14 @@ func (h relayConsumerGroup) ConsumeClaim(sess sarama.ConsumerGroupSession, claim
 		if err := h.txs.SendTransaction(context.Background(), transaction); err != nil {
 			fmt.Printf("Error Sending: %v\n", err.Error())
 		}
-    sess.MarkMessage(msg, "")
+		sess.MarkMessage(msg, "")
 		fmt.Println("Processed a message\n")
-  }
-  return nil
+	}
+	return nil
 }
 
 type KafkaTransactionConsumer struct {
-  producer sarama.SyncProducer
-  // TODO;  sarama.SyncProducer
-  topic string
+	producer sarama.SyncProducer
+	// TODO;  sarama.SyncProducer
+	topic string
 }

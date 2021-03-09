@@ -123,7 +123,7 @@ func (host *hostContext) SetStorage(addr common.Address, key common.Hash, value 
 	original := host.env.StateDB.GetCommittedState(addr, key)
 
 	host.env.StateDB.SetState(addr, key, value)
-	
+
 	// Here's a great example of one of the limits of our (core-geth) current chainconfig interface model.
 	// Should we handle the logic here about historic-featuro logic (which really is nice, because when reading the strange-incantation implemations, it's nice to see why it is),
 	// or should we handle the question where we handle the rest of the questions like this, since this logic is
@@ -153,7 +153,7 @@ func (host *hostContext) SetStorage(addr common.Address, key common.Hash, value 
 
 	if hasEIP2200 {
 		resetClearRefund = vars.SstoreSetGasEIP2200 - vars.SloadGasEIP2200 // 19200
-		cleanRefund = vars.SstoreResetGasEIP2200 - vars.SloadGasEIP2200 // 4200
+		cleanRefund = vars.SstoreResetGasEIP2200 - vars.SloadGasEIP2200    // 4200
 	}
 
 	if original == current {

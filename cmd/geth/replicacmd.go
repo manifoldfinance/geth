@@ -23,30 +23,30 @@ package main
 
 import (
 	// "fmt"
-	"path/filepath"
-	"time"
-	"strings"
 	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/internal/debug"
 	"github.com/ethereum/go-ethereum/eth"
+	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/eth/gasprice"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethdb/overlay"
 	"github.com/ethereum/go-ethereum/ethdb/devnull"
 	"github.com/ethereum/go-ethereum/ethdb/memorydb"
-	replicaModule "github.com/ethereum/go-ethereum/replica"
-	"github.com/ethereum/go-ethereum/eth/gasprice"
+	"github.com/ethereum/go-ethereum/ethdb/overlay"
+	"github.com/ethereum/go-ethereum/internal/debug"
+	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/params/vars"
-	"github.com/ethereum/go-ethereum/eth/downloader"
+	replicaModule "github.com/ethereum/go-ethereum/replica"
+	"path/filepath"
+	"strings"
+	"time"
 	// "github.com/ethereum/go-ethereum/dashboard"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/nat"
-	"github.com/ethereum/go-ethereum/node"
 	// "github.com/ethereum/go-ethereum/rpc"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -134,12 +134,12 @@ system and acts as an RPC node based on the replicated data.
 			DatasetsInMem:  1,
 			DatasetsOnDisk: 2,
 		},
-		NetworkId:     1,
-		LightPeers:    0,
-		DatabaseCache:      512,
-		TrieCleanCache:     0,
-		TrieDirtyCache:     512,
-		TrieTimeout:   5 * time.Minute,
+		NetworkId:      1,
+		LightPeers:     0,
+		DatabaseCache:  512,
+		TrieCleanCache: 0,
+		TrieDirtyCache: 512,
+		TrieTimeout:    5 * time.Minute,
 		// GasPrice:      big.NewInt(18 * params.Shannon),
 
 		TxPool: replicaTxPoolConfig,
@@ -149,7 +149,7 @@ system and acts as an RPC node based on the replicated data.
 		},
 	}
 	nodeConfig = node.Config{
-		DataDir:          vars.DefaultDataDir(),
+		DataDir: vars.DefaultDataDir(),
 		// HTTPHost:         "0.0.0.0",
 		// HTTPPort:         node.DefaultHTTPPort,
 		HTTPModules:      []string{"net", "web3", "replica"},
@@ -157,14 +157,15 @@ system and acts as an RPC node based on the replicated data.
 		WSPort:           node.DefaultWSPort,
 		WSModules:        []string{"net", "web3"},
 		P2P: p2p.Config{
-			ListenAddr: ":30303",
-			MaxPeers:   0,
+			ListenAddr:  ":30303",
+			MaxPeers:    0,
 			NoDiscovery: true,
-			NoDial: true,
-			NAT:        nat.Any(),
+			NoDial:      true,
+			NAT:         nat.Any(),
 		},
 	}
 )
+
 // replica starts replica node
 func replica(ctx *cli.Context) error {
 	// go func() {
@@ -172,7 +173,9 @@ func replica(ctx *cli.Context) error {
 	// }()
 	debug.Setup(ctx)
 	node, _, err := makeReplicaNode(ctx)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer node.Close()
 
 	utils.StartNode(node)
@@ -183,8 +186,8 @@ func replica(ctx *cli.Context) error {
 func makeReplicaNode(ctx *cli.Context) (*node.Node, ethapi.Backend, error) {
 	// Load defaults.
 	cfg := gethConfig{
-		Eth:       ethConfig,
-		Node:      replicaNodeConfig(),
+		Eth:  ethConfig,
+		Node: replicaNodeConfig(),
 		// Dashboard: dashboard.DefaultConfig,
 	}
 
@@ -209,7 +212,7 @@ func makeReplicaNode(ctx *cli.Context) (*node.Node, ethapi.Backend, error) {
 	log.Info("Opening leveldb")
 	var chainKv ethdb.KeyValueStore
 	log.Info("Allocating DB", "path", stack.ResolvePath("chaindata"), "dbcache", cfg.Eth.DatabaseCache, "handles", cfg.Eth.DatabaseHandles)
-	chainKv, err = rawdb.NewLevelDBDatabase(stack.ResolvePath("chaindata"), cfg.Eth.DatabaseCache * 3 / 4, cfg.Eth.DatabaseHandles, "eth/db/chaindata")
+	chainKv, err = rawdb.NewLevelDBDatabase(stack.ResolvePath("chaindata"), cfg.Eth.DatabaseCache*3/4, cfg.Eth.DatabaseHandles, "eth/db/chaindata")
 	// chainKv, err := stack.OpenRawDatabaseWithFreezer("chaindata", cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles, cfg.Eth.DatabaseFreezer, "eth/db/chaindata/")
 	if err != nil {
 		utils.Fatalf("Could not open database: %v", err)
@@ -224,7 +227,7 @@ func makeReplicaNode(ctx *cli.Context) (*node.Node, ethapi.Backend, error) {
 			overlayKv = memorydb.New()
 		} else {
 			log.Info("Cache size", "dbcache", cfg.Eth.DatabaseCache)
-			overlayKv, err = rawdb.NewLevelDBDatabase(cfg.Eth.DatabaseOverlay, cfg.Eth.DatabaseCache * 1 / 4, cfg.Eth.DatabaseHandles, "eth/db/chaindata/overlay/")
+			overlayKv, err = rawdb.NewLevelDBDatabase(cfg.Eth.DatabaseOverlay, cfg.Eth.DatabaseCache*1/4, cfg.Eth.DatabaseHandles, "eth/db/chaindata/overlay/")
 		}
 		if err != nil {
 			utils.Fatalf("Failed to create overlaydb", err)
@@ -250,7 +253,7 @@ func makeReplicaNode(ctx *cli.Context) (*node.Node, ethapi.Backend, error) {
 	if err != nil {
 		utils.Fatalf("Could not open freezer: %v", err)
 	}
-  replica, err := replicaModule.NewKafkaReplica(
+	replica, err := replicaModule.NewKafkaReplica(
 		chainDb,
 		&cfg.Eth,
 		stack,
@@ -267,7 +270,9 @@ func makeReplicaNode(ctx *cli.Context) (*node.Node, ethapi.Backend, error) {
 		ctx.GlobalString(utils.ReplicaWarmAddressesFlag.Name),
 		ctx.GlobalBool(utils.SnapshotFlag.Name),
 	)
-	if err != nil { return stack, nil, err }
+	if err != nil {
+		return stack, nil, err
+	}
 	if ctx.GlobalBool(utils.GraphQLEnabledFlag.Name) {
 		utils.RegisterGraphQLService(stack, replica.GetBackend(), cfg.Node)
 	}

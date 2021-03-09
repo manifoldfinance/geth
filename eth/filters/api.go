@@ -410,11 +410,17 @@ func (api *PublicFilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([
 		if logBlockLimit, err := strconv.Atoi(os.Getenv("LOG_BLOCK_LIMIT")); err == nil {
 			if begin == -1 || end == -1 {
 				header, err := api.backend.HeaderByNumber(ctx, rpc.LatestBlockNumber)
-				if err != nil { return nil, err }
-				if begin == -1 { begin = header.Number.Int64() }
-				if end == -1 { end = header.Number.Int64() }
+				if err != nil {
+					return nil, err
+				}
+				if begin == -1 {
+					begin = header.Number.Int64()
+				}
+				if end == -1 {
+					end = header.Number.Int64()
+				}
 			}
-			if end - begin > int64(logBlockLimit) {
+			if end-begin > int64(logBlockLimit) {
 				return nil, fmt.Errorf("getLogs block count exceeds limit")
 			}
 		}

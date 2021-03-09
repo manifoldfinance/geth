@@ -607,12 +607,14 @@ func (n *Node) OpenDatabase(name string, cache, handles int, namespace string) (
 		db, err = rawdb.NewLevelDBDatabase(n.ResolvePath(name), cache, handles, namespace)
 	}
 
- if n.config.KafkaLogBroker != "" {
+	if n.config.KafkaLogBroker != "" {
 		producer, err := cdc.NewKafkaLogProducerFromURL(
-						n.config.KafkaLogBroker,
-						n.config.KafkaLogTopic,
-				)
-		if err != nil { return nil, err }
+			n.config.KafkaLogBroker,
+			n.config.KafkaLogTopic,
+		)
+		if err != nil {
+			return nil, err
+		}
 		// TODO: Add options for a readStream
 		db = cdc.NewDBWrapper(db, producer, nil)
 	}
@@ -628,7 +630,9 @@ func (n *Node) OpenDatabaseWithOverlayAndFreezer(name string, underlayCache, ove
 	var err error
 	chainKv, err = rawdb.NewLevelDBDatabase(n.config.ResolvePath(name), underlayCache, handles, namespace)
 	// chainKv, err := sctx.OpenRawDatabaseWithFreezer("chaindata", cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles, freezer, "eth/db/chaindata/")
-	if err != nil { return nil, err  }
+	if err != nil {
+		return nil, err
+	}
 	if overlayPath != "" {
 		log.Info("Opening overlay folder", "path", overlayPath)
 		var overlayKv ethdb.KeyValueStore
@@ -661,16 +665,20 @@ func (n *Node) OpenDatabaseWithOverlayAndFreezer(name string, underlayCache, ove
 		freezer = n.config.ResolvePath(freezer)
 	}
 	db, err := rawdb.NewDatabaseWithFreezer(chainKv, freezer, "eth/db/chaindata")
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	if n.config.KafkaLogBroker != "" {
-    producer, err := cdc.NewKafkaLogProducerFromURL(
-            n.config.KafkaLogBroker,
-            n.config.KafkaLogTopic,
-    )
-    if err != nil { return nil, err }
-    // TODO: Add options for a readStream
-    db = cdc.NewDBWrapper(db, producer, nil)
-  }
+		producer, err := cdc.NewKafkaLogProducerFromURL(
+			n.config.KafkaLogBroker,
+			n.config.KafkaLogTopic,
+		)
+		if err != nil {
+			return nil, err
+		}
+		// TODO: Add options for a readStream
+		db = cdc.NewDBWrapper(db, producer, nil)
+	}
 	return db, nil
 }
 
@@ -719,15 +727,17 @@ func (n *Node) OpenDatabaseWithFreezer(name string, cache, handles int, freezer,
 		}
 		db, err = rawdb.NewLevelDBDatabaseWithFreezer(root, cache, handles, freezer, namespace)
 	}
-  if n.config.KafkaLogBroker != "" {
-    producer, err := cdc.NewKafkaLogProducerFromURL(
-            n.config.KafkaLogBroker,
-            n.config.KafkaLogTopic,
-    )
-    if err != nil { return nil, err }
-    // TODO: Add options for a readStream
-    db = cdc.NewDBWrapper(db, producer, nil)
-  }
+	if n.config.KafkaLogBroker != "" {
+		producer, err := cdc.NewKafkaLogProducerFromURL(
+			n.config.KafkaLogBroker,
+			n.config.KafkaLogTopic,
+		)
+		if err != nil {
+			return nil, err
+		}
+		// TODO: Add options for a readStream
+		db = cdc.NewDBWrapper(db, producer, nil)
+	}
 	if err == nil {
 		db = n.wrapDatabase(db)
 	}

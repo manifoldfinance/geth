@@ -816,11 +816,15 @@ type PreviousState struct {
 }
 
 func (prevState *PreviousState) copy() *PreviousState {
-	if prevState == nil { return nil }
+	if prevState == nil {
+		return nil
+	}
 	state := prevState.state
-	if state != nil { state = state.Copy() }
+	if state != nil {
+		state = state.Copy()
+	}
 	return &PreviousState{
-		state: state,
+		state:  state,
 		header: prevState.header,
 	}
 }
@@ -954,9 +958,9 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNrOr
 	}
 	var timeout time.Duration
 	if args.Gas != nil {
-		timeout = time.Duration(*args.Gas / 10000000) * time.Second
+		timeout = time.Duration(*args.Gas/10000000) * time.Second
 	}
-	if timeout < 5 * time.Second {
+	if timeout < 5*time.Second {
 		timeout = 5 * time.Second
 	}
 
@@ -1057,7 +1061,9 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 		args.Gas = (*hexutil.Uint64)(&gas)
 
 		result, prevS, err := DoCall(ctx, b, args, prevState.copy(), blockNrOrHash, nil, vm.Config{}, 0, gasCap)
-		if prevS != nil && !result.Failed() { stateData = prevS }
+		if prevS != nil && !result.Failed() {
+			stateData = prevS
+		}
 		if err != nil {
 			if errors.Is(err, core.ErrIntrinsicGas) {
 				return true, nil, nil // Special case, raise gas limit
@@ -1082,9 +1088,11 @@ func DoEstimateGas(ctx context.Context, b Backend, args CallArgs, prevState *Pre
 		} else {
 			hi = mid
 		}
-		if approx && (hi - lo) < (hi / 100) { break }
+		if approx && (hi-lo) < (hi/100) {
+			break
+		}
 	}
-	log.Info("Gas estimation complete", "hi", hi, "lo", lo, "mid", (hi + lo) / 2)
+	log.Info("Gas estimation complete", "hi", hi, "lo", lo, "mid", (hi+lo)/2)
 	// Reject the transaction as invalid if it still fails at the highest allowance
 	if hi == cap {
 		failed, result, err := executable(hi)

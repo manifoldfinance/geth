@@ -123,7 +123,7 @@ type keyvalue struct {
 
 // batch is a write-only memory batch that commits changes to its host
 // database when Write is called. A batch cannot be used concurrently.
-type batch struct {}
+type batch struct{}
 
 // Put inserts the given value into the batch for later committing.
 func (b *batch) Put(key, value []byte) error {
@@ -156,7 +156,7 @@ func (b *batch) Replay(w ethdb.KeyValueWriter) error {
 // iterator can walk over the (potentially partial) keyspace of a memory key
 // value store. Internally it is a deep copy of the entire iterated state,
 // sorted by keys.
-type iterator struct {}
+type iterator struct{}
 
 // Next moves the iterator to the next key/value pair. It returns whether the
 // iterator is exhausted.

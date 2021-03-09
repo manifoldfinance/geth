@@ -261,7 +261,6 @@ func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezerPath string, namespac
 			return nil, validateErr
 		}
 
-
 		log.Warn("Freezer repair OK")
 
 		truncateKVtoFreezer(frdb, db)

@@ -126,7 +126,7 @@ func New(stack *node.Node, config *Config) (*Ethereum, error) {
 	if config.DatabaseFreezerRemote != "" {
 		chainDb, err = stack.OpenDatabaseWithFreezerRemote("chaindata", config.DatabaseCache, config.DatabaseHandles, config.DatabaseFreezerRemote)
 	} else {
-		chainDb, err = stack.OpenDatabaseWithOverlayAndFreezer("chaindata", config.DatabaseCache * 3/4, config.DatabaseCache/4, config.DatabaseHandles, config.DatabaseFreezer, config.DatabaseOverlay, "eth/db/chaindata/")
+		chainDb, err = stack.OpenDatabaseWithOverlayAndFreezer("chaindata", config.DatabaseCache*3/4, config.DatabaseCache/4, config.DatabaseHandles, config.DatabaseFreezer, config.DatabaseOverlay, "eth/db/chaindata/")
 	}
 	if err != nil {
 		return nil, err

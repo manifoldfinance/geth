@@ -711,66 +711,65 @@ var (
 		Usage: "Restrict connection between two whisper light clients",
 	}
 	KafkaLogBrokerFlag = cli.StringFlag{
-		 // TODO: Make this into a list, and if the argument is provided multiple
-		 // times append each occurrence
-		 Name: "kafka.broker",
-		 Usage: "Kafka broker hostname and port",
+		// TODO: Make this into a list, and if the argument is provided multiple
+		// times append each occurrence
+		Name:  "kafka.broker",
+		Usage: "Kafka broker hostname and port",
 	}
 	KafkaLogTopicFlag = cli.StringFlag{
-		 Name: "kafka.topic",
-		 Usage: "Kafka broker hostname and port",
-		 Value: "geth", // TODO: Maybe the default could be based on the Ethereum network we connect to
+		Name:  "kafka.topic",
+		Usage: "Kafka broker hostname and port",
+		Value: "geth", // TODO: Maybe the default could be based on the Ethereum network we connect to
 	}
 	KafkaTransactionTopicFlag = cli.StringFlag{
-		 Name: "kafka.tx.topic",
-		 Usage: "Kafka transaction topic name",
-		 Value: "geth-tx",
+		Name:  "kafka.tx.topic",
+		Usage: "Kafka transaction topic name",
+		Value: "geth-tx",
 	}
 	KafkaTransactionPoolTopicFlag = cli.StringFlag{
-		 Name: "kafka.txpool.topic",
-		 Usage: "Kafka transaction pool topic name",
-		 Value: "",
+		Name:  "kafka.txpool.topic",
+		Usage: "Kafka transaction pool topic name",
+		Value: "",
 	}
 	KafkaEventTopicFlag = cli.StringFlag{
-		 Name: "kafka.event.topic",
-		 Usage: "Kafka event topic name",
-		 Value: "",
+		Name:  "kafka.event.topic",
+		Usage: "Kafka event topic name",
+		Value: "",
 	}
 	KafkaTransactionConsumerGroupFlag = cli.StringFlag{
-		 Name: "kafka.tx.consumergroup",
-		 Usage: "Kafka transaction consumer group name",
-		 Value: "geth-tx",
+		Name:  "kafka.tx.consumergroup",
+		Usage: "Kafka transaction consumer group name",
+		Value: "geth-tx",
 	}
 	// TODO: Consider consolidating this with exitwhensynced
 	ReplicaSyncShutdownFlag = cli.BoolFlag{
-		 Name: "replica.syncshutdown",
-		 Usage: "Shutdown replica when it has finished syncing from kafka",
+		Name:  "replica.syncshutdown",
+		Usage: "Shutdown replica when it has finished syncing from kafka",
 	}
 	ReplicaStartupMaxAgeFlag = cli.Int64Flag{
-		 Name: "replica.startup.age",
-		 Usage: "Do not start serving RPC while the latest block exceeds this age in seconds",
-		 Value: 0,
+		Name:  "replica.startup.age",
+		Usage: "Do not start serving RPC while the latest block exceeds this age in seconds",
+		Value: 0,
 	}
 	ReplicaRuntimeMaxOffsetAgeFlag = cli.Int64Flag{
-		 Name: "replica.offset.age",
-		 Usage: "If the replica has not received a message in this number of seconds, shut down.",
-		 Value: 0,
+		Name:  "replica.offset.age",
+		Usage: "If the replica has not received a message in this number of seconds, shut down.",
+		Value: 0,
 	}
 	ReplicaRuntimeMaxBlockAgeFlag = cli.Int64Flag{
-		 Name: "replica.block.age",
-		 Usage: "If the replica's current block is older than this number of seconds, shut down.",
-		 Value: 0,
+		Name:  "replica.block.age",
+		Usage: "If the replica's current block is older than this number of seconds, shut down.",
+		Value: 0,
 	}
 	ReplicaEVMConcurrencyFlag = cli.Int64Flag{
-		 Name: "replica.evm.concurrency",
-		 Usage: "How many EVM instances may run in parallel",
-		 Value: 0,
+		Name:  "replica.evm.concurrency",
+		Usage: "How many EVM instances may run in parallel",
+		Value: 0,
 	}
 	ReplicaWarmAddressesFlag = cli.StringFlag{
-		 Name: "replica.warm.addresses",
-		 Usage: "A file containing a JSON list of addresses to warm before running the replica",
+		Name:  "replica.warm.addresses",
+		Usage: "A file containing a JSON list of addresses to warm before running the replica",
 	}
-
 
 	// Metrics flags
 	MetricsEnabledFlag = cli.BoolFlag{
@@ -2056,7 +2055,7 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node) ethdb.Database {
 		chainDb, err = stack.OpenDatabaseWithFreezerRemote(name, cache, handles, ctx.GlobalString(AncientRPCFlag.Name))
 	} else {
 		if ctx.GlobalString(OverlayFlag.Name) != "" {
-			chainDb, err = stack.OpenDatabaseWithOverlayAndFreezer(name, cache * 3/4, cache / 4, handles, ctx.GlobalString(AncientFlag.Name), ctx.GlobalString(OverlayFlag.Name), "")
+			chainDb, err = stack.OpenDatabaseWithOverlayAndFreezer(name, cache*3/4, cache/4, handles, ctx.GlobalString(AncientFlag.Name), ctx.GlobalString(OverlayFlag.Name), "")
 		} else {
 			chainDb, err = stack.OpenDatabaseWithFreezer(name, cache, handles, ctx.GlobalString(AncientFlag.Name), "")
 		}

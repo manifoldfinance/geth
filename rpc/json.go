@@ -220,7 +220,7 @@ func NewCodec(conn Conn, ctx context.Context) ServerCodec {
 	return NewFuncCodec(conn, enc.Encode, dec.Decode, ctx)
 }
 
-func (c *jsonCodec) context() context.Context{
+func (c *jsonCodec) context() context.Context {
 	if c.ctx == nil {
 		c.ctx = context.Background()
 	}
