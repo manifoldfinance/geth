@@ -50,10 +50,14 @@ type Server struct {
 
 // NewServer creates a new server instance with no registered handlers.
 func NewServer() *Server {
-	server := &Server{idgen: randomIDGenerator(), codecs: mapset.NewSet(), run: 1}
+	server := &Server{
+		idgen:  randomIDGenerator(),
+		codecs: mapset.NewSet(),
+		run:    1,
+	}
 	// Register the default service providing meta information about the RPC service such
 	// as the services and methods it offers.
-	rpcService := &RPCService{server}
+	rpcService := &RPCService{server: server}
 	server.RegisterName(MetadataApi, rpcService)
 	return server
 }
@@ -144,4 +148,22 @@ func (s *RPCService) Modules() map[string]string {
 		modules[name] = "1.0"
 	}
 	return modules
+}
+
+func (s *RPCService) methods() map[string][]string {
+	s.server.services.mu.Lock()
+	defer s.server.services.mu.Unlock()
+
+	methods := make(map[string][]string)
+	for name, ser := range s.server.services.services {
+		for s := range ser.callbacks {
+			_, ok := methods[name]
+			if !ok {
+				methods[name] = []string{s}
+			} else {
+				methods[name] = append(methods[name], s)
+			}
+		}
+	}
+	return methods
 }

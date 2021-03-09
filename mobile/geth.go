@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -35,6 +34,8 @@ import (
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/nat"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
+	"github.com/ethereum/go-ethereum/params/vars"
 )
 
 // NodeConfig represents the collection of configuration values to fine tune the Geth
@@ -80,7 +81,7 @@ var defaultNodeConfig = &NodeConfig{
 	BootstrapNodes:        FoundationBootnodes(),
 	MaxPeers:              25,
 	EthereumEnabled:       true,
-	EthereumNetworkID:     1,
+	EthereumNetworkID:     int64(vars.DefaultNetworkID),
 	EthereumDatabaseCache: 16,
 }
 
@@ -151,14 +152,14 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 
 	debug.Memsize.Add("node", rawStack)
 
-	var genesis *core.Genesis
+	var genesis *genesisT.Genesis
 	if config.EthereumGenesis != "" {
 		// Parse the user supplied genesis spec if not mainnet
-		genesis = new(core.Genesis)
+		genesis = new(genesisT.Genesis)
 		if err := json.Unmarshal([]byte(config.EthereumGenesis), genesis); err != nil {
 			return nil, fmt.Errorf("invalid genesis spec: %v", err)
 		}
-		// If we have the Ropsten testnet, hard code the chain configs too
+		// If we have the testnet, hard code the chain configs too
 		if config.EthereumGenesis == RopstenGenesis() {
 			genesis.Config = params.RopstenChainConfig
 			if config.EthereumNetworkID == 1 {
@@ -179,13 +180,25 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 				config.EthereumNetworkID = 5
 			}
 		}
+		if config.EthereumGenesis == KottiGenesis() {
+			genesis.Config = params.KottiChainConfig
+			if config.EthereumNetworkID == 1 {
+				config.EthereumNetworkID = 6
+			}
+		}
+		if config.EthereumGenesis == MordorGenesis() {
+			genesis.Config = params.MordorChainConfig
+			if config.EthereumNetworkID == 1 {
+				config.EthereumNetworkID = 7
+			}
+		}
 	}
 	// Register the Ethereum protocol if requested
 	if config.EthereumEnabled {
 		ethConf := eth.DefaultConfig
 		ethConf.Genesis = genesis
 		ethConf.SyncMode = downloader.LightSync
-		ethConf.NetworkId = uint64(config.EthereumNetworkID)
+		ethConf.NetworkId = *genesis.Config.GetNetworkID()
 		ethConf.DatabaseCache = config.EthereumDatabaseCache
 		lesBackend, err := les.New(rawStack, &ethConf)
 		if err != nil {

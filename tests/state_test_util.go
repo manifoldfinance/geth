@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -36,7 +37,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
@@ -44,6 +46,9 @@ import (
 // StateTest checks transaction processing without block context.
 // See https://github.com/ethereum/EIPs/issues/176 for the test format specification.
 type StateTest struct {
+	// Name is only used for writing tests (Marshaling).
+	// It is set by inference, using the test's filepath base.
+	Name string
 	json stJSON
 }
 
@@ -57,12 +62,34 @@ func (t *StateTest) UnmarshalJSON(in []byte) error {
 	return json.Unmarshal(in, &t.json)
 }
 
+func (t StateTest) MarshalJSON() ([]byte, error) {
+	m := map[string]stJSON{
+		t.Name: t.json,
+	}
+	return json.MarshalIndent(m, "", "    ")
+}
+
 type stJSON struct {
+	Info stInfo                   `json:"_info"`
 	Env  stEnv                    `json:"env"`
-	Pre  core.GenesisAlloc        `json:"pre"`
+	Pre  genesisT.GenesisAlloc    `json:"pre"`
 	Tx   stTransaction            `json:"transaction"`
 	Out  hexutil.Bytes            `json:"out"`
 	Post map[string][]stPostState `json:"post"`
+}
+
+type stInfo struct {
+	Comment            string         `json:"comment"`
+	FillingRPCServer   string         `json:"filling-rpc-server"`
+	FillingToolVersion string         `json:"filling-tool-version"`
+	FilledWith         string         `json:"filledWith"`
+	LLLCVersion        string         `json:"lllcversion"`
+	Source             string         `json:"source"`
+	SourceHash         string         `json:"sourceHash"`
+	WrittenWith        string         `json:"written-with"`
+	Parent             string         `json:"parent"`
+	ParentSha1Sum      string         `json:"parentSha1Sum"`
+	Chainspecs         chainspecRefsT `json:"chainspecs"`
 }
 
 type stPostState struct {
@@ -116,7 +143,7 @@ type stTransactionMarshaling struct {
 // The fork definition can be
 // - a plain forkname, e.g. `Byzantium`,
 // - a fork basename, and a list of EIPs to enable; e.g. `Byzantium+1884+1283`.
-func GetChainConfig(forkString string) (baseConfig *params.ChainConfig, eips []int, err error) {
+func GetChainConfig(forkString string) (baseConfig ctypes.ChainConfigurator, eips []int, err error) {
 	var (
 		splitForks            = strings.Split(forkString, "+")
 		ok                    bool
@@ -139,9 +166,15 @@ func GetChainConfig(forkString string) (baseConfig *params.ChainConfig, eips []i
 }
 
 // Subtests returns all valid subtests of the test.
-func (t *StateTest) Subtests() []StateSubtest {
+func (t *StateTest) Subtests(skipForks []*regexp.Regexp) []StateSubtest {
 	var sub []StateSubtest
+outer:
 	for fork, pss := range t.json.Post {
+		for _, skip := range skipForks {
+			if skip.MatchString(fork) {
+				continue outer
+			}
+		}
 		for i := range pss {
 			sub = append(sub, StateSubtest{fork, i})
 		}
@@ -174,7 +207,7 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 		return nil, nil, common.Hash{}, UnsupportedForkError{subtest.Fork}
 	}
 	vmconfig.ExtraEips = eips
-	block := t.genesis(config).ToBlock(nil)
+	block := core.GenesisToBlock(t.genesis(config), nil)
 	snaps, statedb := MakePreState(rawdb.NewMemoryDatabase(), t.json.Pre, snapshotter)
 
 	post := t.json.Post[subtest.Fork][subtest.Index]
@@ -182,18 +215,18 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 	if err != nil {
 		return nil, nil, common.Hash{}, err
 	}
-	txContext := core.NewEVMTxContext(msg)
-	context := core.NewEVMBlockContext(block.Header(), nil, &t.json.Env.Coinbase)
+	context := core.NewEVMContext(msg, block.Header(), nil, &t.json.Env.Coinbase)
 	context.GetHash = vmTestBlockHash
-	evm := vm.NewEVM(context, txContext, statedb, config, vmconfig)
 
-	if config.IsYoloV2(context.BlockNumber) {
+	evm := vm.NewEVM(context, statedb, config, vmconfig)
+
+	if config.IsEnabled(config.GetEIP2929Transition, block.Number()) {
 		statedb.AddAddressToAccessList(msg.From())
 		if dst := msg.To(); dst != nil {
 			statedb.AddAddressToAccessList(*dst)
 			// If it's a create-tx, the destination will be added inside evm.create
 		}
-		for _, addr := range evm.ActivePrecompiles() {
+		for addr := range vm.PrecompiledContractsForConfig(config, block.Number()) {
 			statedb.AddAddressToAccessList(addr)
 		}
 	}
@@ -204,7 +237,7 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 		statedb.RevertToSnapshot(snapshot)
 	}
 	// Commit block
-	statedb.Commit(config.IsEIP158(block.Number()))
+	statedb.Commit(config.IsEnabled(config.GetEIP161dTransition, block.Number()))
 	// Add 0-value mining reward. This only makes a difference in the cases
 	// where
 	// - the coinbase suicided, or
@@ -212,7 +245,7 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 	//   the coinbase gets no txfee, so isn't created, and thus needs to be touched
 	statedb.AddBalance(block.Coinbase(), new(big.Int))
 	// And _now_ get the state root
-	root := statedb.IntermediateRoot(config.IsEIP158(block.Number()))
+	root := statedb.IntermediateRoot(config.IsEnabled(config.GetEIP161dTransition, block.Number()))
 	return snaps, statedb, root, nil
 }
 
@@ -220,7 +253,7 @@ func (t *StateTest) gasLimit(subtest StateSubtest) uint64 {
 	return t.json.Tx.GasLimit[t.json.Post[subtest.Fork][subtest.Index].Indexes.Gas]
 }
 
-func MakePreState(db ethdb.Database, accounts core.GenesisAlloc, snapshotter bool) (*snapshot.Tree, *state.StateDB) {
+func MakePreState(db ethdb.Database, accounts genesisT.GenesisAlloc, snapshotter bool) (*snapshot.Tree, *state.StateDB) {
 	sdb := state.NewDatabase(db)
 	statedb, _ := state.New(common.Hash{}, sdb, nil)
 	for addr, a := range accounts {
@@ -242,8 +275,8 @@ func MakePreState(db ethdb.Database, accounts core.GenesisAlloc, snapshotter boo
 	return snaps, statedb
 }
 
-func (t *StateTest) genesis(config *params.ChainConfig) *core.Genesis {
-	return &core.Genesis{
+func (t *StateTest) genesis(config ctypes.ChainConfigurator) *genesisT.Genesis {
+	return &genesisT.Genesis{
 		Config:     config,
 		Coinbase:   t.json.Env.Coinbase,
 		Difficulty: t.json.Env.Difficulty,

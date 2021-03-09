@@ -26,7 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/checkpointoracle"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 	"github.com/ethereum/go-ethereum/rpc"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -61,8 +61,8 @@ func getContractAddr(client *rpc.Client) common.Address {
 
 // getCheckpoint retrieves the specified checkpoint or the latest one
 // through rpc request.
-func getCheckpoint(ctx *cli.Context, client *rpc.Client) *params.TrustedCheckpoint {
-	var checkpoint *params.TrustedCheckpoint
+func getCheckpoint(ctx *cli.Context, client *rpc.Client) *ctypes.TrustedCheckpoint {
+	var checkpoint *ctypes.TrustedCheckpoint
 
 	if ctx.GlobalIsSet(indexFlag.Name) {
 		var result [3]string
@@ -70,7 +70,7 @@ func getCheckpoint(ctx *cli.Context, client *rpc.Client) *params.TrustedCheckpoi
 		if err := client.Call(&result, "les_getCheckpoint", index); err != nil {
 			utils.Fatalf("Failed to get local checkpoint %v, please ensure the les API is exposed", err)
 		}
-		checkpoint = &params.TrustedCheckpoint{
+		checkpoint = &ctypes.TrustedCheckpoint{
 			SectionIndex: index,
 			SectionHead:  common.HexToHash(result[0]),
 			CHTRoot:      common.HexToHash(result[1]),
@@ -86,7 +86,7 @@ func getCheckpoint(ctx *cli.Context, client *rpc.Client) *params.TrustedCheckpoi
 		if err != nil {
 			utils.Fatalf("Failed to parse checkpoint index %v", err)
 		}
-		checkpoint = &params.TrustedCheckpoint{
+		checkpoint = &ctypes.TrustedCheckpoint{
 			SectionIndex: index,
 			SectionHead:  common.HexToHash(result[1]),
 			CHTRoot:      common.HexToHash(result[2]),
@@ -103,7 +103,7 @@ func newContract(client *rpc.Client) (common.Address, *checkpointoracle.Checkpoi
 	if addr == (common.Address{}) {
 		utils.Fatalf("No specified registrar contract address")
 	}
-	contract, err := checkpointoracle.NewCheckpointOracle(addr, ethclient.NewClient(client))
+	contract, err := checkpointoracle.NewCheckPointOracle(addr, ethclient.NewClient(client))
 	if err != nil {
 		utils.Fatalf("Failed to setup registrar contract %s: %v", addr, err)
 	}

@@ -31,7 +31,6 @@ import (
 
 const (
 	vsn                      = "2.0"
-	serviceMethodSeparator   = "_"
 	subscribeMethodSuffix    = "_subscribe"
 	unsubscribeMethodSuffix  = "_unsubscribe"
 	notificationMethodSuffix = "_subscription"
@@ -39,7 +38,28 @@ const (
 	defaultWriteTimeout = 10 * time.Second // used if context has no deadline
 )
 
-var null = json.RawMessage("null")
+var (
+	null                    = json.RawMessage("null")
+	serviceMethodSeparators = []string{"_", "."}
+	errInvalidMethodName    = errors.New("invalid method name")
+)
+
+// elementizeMethodName parses a full method name (eg. "eth_syncing") into
+// - module
+// - method (name)
+// It uses the serviceMethodSeparators to split the original value into these pieces.
+// It uses these separators in the order they are defined, returning the first positive result,
+// where a positive result is defined as having split the original value into 2 values.
+// This means that method names SHOULD NOT use '_' or '.' (or any other separator value) in the name
+// unless it's being used as a separator.
+func elementizeMethodName(methodName string) (module, method string, err error) {
+	for _, sep := range serviceMethodSeparators {
+		if s := strings.SplitN(methodName, sep, 2); len(s) == 2 {
+			return s[0], s[1], nil
+		}
+	}
+	return "", "", errInvalidMethodName
+}
 
 type subscriptionResult struct {
 	ID     string          `json:"subscription"`
@@ -82,8 +102,8 @@ func (msg *jsonrpcMessage) isUnsubscribe() bool {
 }
 
 func (msg *jsonrpcMessage) namespace() string {
-	elem := strings.SplitN(msg.Method, serviceMethodSeparator, 2)
-	return elem[0]
+	module, _, _ := elementizeMethodName(msg.Method)
+	return module // even if err != nil, empty string is returned so err can be ignored
 }
 
 func (msg *jsonrpcMessage) String() string {
@@ -171,17 +191,19 @@ type jsonCodec struct {
 	encMu   sync.Mutex                // guards the encoder
 	encode  func(v interface{}) error // encoder to allow multiple transports
 	conn    deadlineCloser
+	ctx     context.Context
 }
 
 // NewFuncCodec creates a codec which uses the given functions to read and write. If conn
 // implements ConnRemoteAddr, log messages will use it to include the remote address of
 // the connection.
-func NewFuncCodec(conn deadlineCloser, encode, decode func(v interface{}) error) ServerCodec {
+func NewFuncCodec(conn deadlineCloser, encode, decode func(v interface{}) error, ctx context.Context) ServerCodec {
 	codec := &jsonCodec{
 		closeCh: make(chan interface{}),
 		encode:  encode,
 		decode:  decode,
 		conn:    conn,
+		ctx:     ctx,
 	}
 	if ra, ok := conn.(ConnRemoteAddr); ok {
 		codec.remote = ra.RemoteAddr()
@@ -191,11 +213,18 @@ func NewFuncCodec(conn deadlineCloser, encode, decode func(v interface{}) error)
 
 // NewCodec creates a codec on the given connection. If conn implements ConnRemoteAddr, log
 // messages will use it to include the remote address of the connection.
-func NewCodec(conn Conn) ServerCodec {
+func NewCodec(conn Conn, ctx context.Context) ServerCodec {
 	enc := json.NewEncoder(conn)
 	dec := json.NewDecoder(conn)
 	dec.UseNumber()
-	return NewFuncCodec(conn, enc.Encode, dec.Decode)
+	return NewFuncCodec(conn, enc.Encode, dec.Decode, ctx)
+}
+
+func (c *jsonCodec) context() context.Context{
+	if c.ctx == nil {
+		c.ctx = context.Background()
+	}
+	return c.ctx
 }
 
 func (c *jsonCodec) remoteAddr() string {

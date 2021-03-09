@@ -95,7 +95,6 @@ var filterFlags = map[string]nodeFilterC{
 	"-min-age":     {1, minAgeFilter},
 	"-eth-network": {1, ethFilter},
 	"-les-server":  {0, lesFilter},
-	"-snap":        {0, snapFilter},
 }
 
 func parseFilters(args []string) ([]nodeFilter, error) {
@@ -105,15 +104,15 @@ func parseFilters(args []string) ([]nodeFilter, error) {
 		if !ok {
 			return nil, fmt.Errorf("invalid filter %q", args[0])
 		}
-		if len(args)-1 < fc.narg {
-			return nil, fmt.Errorf("filter %q wants %d arguments, have %d", args[0], fc.narg, len(args)-1)
+		if len(args) < fc.narg {
+			return nil, fmt.Errorf("filter %q wants %d arguments, have %d", args[0], fc.narg, len(args))
 		}
-		filter, err := fc.fn(args[1 : 1+fc.narg])
+		filter, err := fc.fn(args[1:])
 		if err != nil {
 			return nil, fmt.Errorf("%s: %v", args[0], err)
 		}
 		filters = append(filters, filter)
-		args = args[1+fc.narg:]
+		args = args[fc.narg+1:]
 	}
 	return filters, nil
 }
@@ -166,6 +165,12 @@ func ethFilter(args []string) (nodeFilter, error) {
 		filter = forkid.NewStaticFilter(params.GoerliChainConfig, params.GoerliGenesisHash)
 	case "ropsten":
 		filter = forkid.NewStaticFilter(params.RopstenChainConfig, params.RopstenGenesisHash)
+	case "classic":
+		filter = forkid.NewStaticFilter(params.ClassicChainConfig, params.MainnetGenesisHash)
+	case "kotti":
+		filter = forkid.NewStaticFilter(params.KottiChainConfig, params.KottiGenesisHash)
+	case "mordor":
+		filter = forkid.NewStaticFilter(params.MordorChainConfig, params.MordorGenesisHash)
 	default:
 		return nil, fmt.Errorf("unknown network %q", args[0])
 	}
@@ -189,16 +194,6 @@ func lesFilter(args []string) (nodeFilter, error) {
 			_ []rlp.RawValue `rlp:"tail"`
 		}
 		return n.N.Load(enr.WithEntry("les", &les)) == nil
-	}
-	return f, nil
-}
-
-func snapFilter(args []string) (nodeFilter, error) {
-	f := func(n nodeJSON) bool {
-		var snap struct {
-			_ []rlp.RawValue `rlp:"tail"`
-		}
-		return n.N.Load(enr.WithEntry("snap", &snap)) == nil
 	}
 	return f, nil
 }

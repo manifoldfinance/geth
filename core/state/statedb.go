@@ -318,7 +318,7 @@ func (s *StateDB) GetState(addr common.Address, hash common.Hash) common.Hash {
 func (s *StateDB) GetProof(a common.Address) ([][]byte, error) {
 	var proof proofList
 	err := s.trie.Prove(crypto.Keccak256(a.Bytes()), 0, &proof)
-	return proof, err
+	return [][]byte(proof), err
 }
 
 // GetStorageProof returns the StorageProof for given key
@@ -329,7 +329,7 @@ func (s *StateDB) GetStorageProof(a common.Address, key common.Hash) ([][]byte, 
 		return proof, errors.New("storage trie for requested address does not exist")
 	}
 	err := trie.Prove(crypto.Keccak256(key.Bytes()), 0, &proof)
-	return proof, err
+	return [][]byte(proof), err
 }
 
 // GetCommittedState retrieves a value from the given account's committed storage trie.
@@ -743,6 +743,7 @@ func (s *StateDB) GetRefund() uint64 {
 // Finalise finalises the state by removing the s destructed objects and clears
 // the journal as well as the refunds. Finalise, however, will not push any updates
 // into the tries just yet. Only IntermediateRoot or Commit will do that.
+// NOTE: EIP161d
 func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 	for addr := range s.journal.dirties {
 		obj, exist := s.stateObjects[addr]

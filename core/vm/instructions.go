@@ -19,9 +19,10 @@ package vm
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/holiman/uint256"
 	"golang.org/x/crypto/sha3"
+	"runtime"
 )
 
 func opAdd(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
@@ -341,7 +342,7 @@ func opReturnDataCopy(pc *uint64, interpreter *EVMInterpreter, callContext *call
 
 func opExtCodeSize(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
 	slot := callContext.stack.peek()
-	slot.SetUint64(uint64(interpreter.evm.StateDB.GetCodeSize(slot.Bytes20())))
+	slot.SetUint64(uint64(interpreter.evm.StateDB.GetCodeSize(common.Address(slot.Bytes20()))))
 	return nil, nil
 }
 
@@ -438,14 +439,14 @@ func opBlockhash(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) 
 		return nil, nil
 	}
 	var upper, lower uint64
-	upper = interpreter.evm.Context.BlockNumber.Uint64()
+	upper = interpreter.evm.BlockNumber.Uint64()
 	if upper < 257 {
 		lower = 0
 	} else {
 		lower = upper - 256
 	}
 	if num64 >= lower && num64 < upper {
-		num.SetBytes(interpreter.evm.Context.GetHash(num64).Bytes())
+		num.SetBytes(interpreter.evm.GetHash(num64).Bytes())
 	} else {
 		num.Clear()
 	}
@@ -453,30 +454,30 @@ func opBlockhash(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) 
 }
 
 func opCoinbase(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
-	callContext.stack.push(new(uint256.Int).SetBytes(interpreter.evm.Context.Coinbase.Bytes()))
+	callContext.stack.push(new(uint256.Int).SetBytes(interpreter.evm.Coinbase.Bytes()))
 	return nil, nil
 }
 
 func opTimestamp(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
-	v, _ := uint256.FromBig(interpreter.evm.Context.Time)
+	v, _ := uint256.FromBig(interpreter.evm.Time)
 	callContext.stack.push(v)
 	return nil, nil
 }
 
 func opNumber(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
-	v, _ := uint256.FromBig(interpreter.evm.Context.BlockNumber)
+	v, _ := uint256.FromBig(interpreter.evm.BlockNumber)
 	callContext.stack.push(v)
 	return nil, nil
 }
 
 func opDifficulty(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
-	v, _ := uint256.FromBig(interpreter.evm.Context.Difficulty)
+	v, _ := uint256.FromBig(interpreter.evm.Difficulty)
 	callContext.stack.push(v)
 	return nil, nil
 }
 
 func opGasLimit(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
-	callContext.stack.push(new(uint256.Int).SetUint64(interpreter.evm.Context.GasLimit))
+	callContext.stack.push(new(uint256.Int).SetUint64(interpreter.evm.GasLimit))
 	return nil, nil
 }
 
@@ -517,7 +518,7 @@ func opSstore(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]
 	loc := callContext.stack.pop()
 	val := callContext.stack.pop()
 	interpreter.evm.StateDB.SetState(callContext.contract.Address(),
-		loc.Bytes32(), val.Bytes32())
+		common.Hash(loc.Bytes32()), common.Hash(val.Bytes32()))
 	return nil, nil
 }
 
@@ -599,15 +600,12 @@ func opCreate(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]
 		value        = callContext.stack.pop()
 		offset, size = callContext.stack.pop(), callContext.stack.pop()
 		input        = callContext.memory.GetCopy(int64(offset.Uint64()), int64(size.Uint64()))
-		gas          = callContext.contract.Gas
+		gas          = interpreter.evm.CallGasTemp
 	)
-	if interpreter.evm.chainRules.IsEIP150 {
-		gas -= gas / 64
-	}
+	runtime.Gosched()
 	// reuse size int for stackvalue
 	stackvalue := size
 
-	callContext.contract.UseGas(gas)
 	//TODO: use uint256.Int instead of converting with toBig()
 	var bigVal = big0
 	if !value.IsZero() {
@@ -619,10 +617,12 @@ func opCreate(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]
 	// homestead we must check for CodeStoreOutOfGasError (homestead only
 	// rule) and treat as an error, if the ruleset is frontier we must
 	// ignore this error and pretend the operation was successful.
-	if interpreter.evm.chainRules.IsHomestead && suberr == ErrCodeStoreOutOfGas {
+	if interpreter.evm.ChainConfig().IsEnabled(interpreter.evm.chainConfig.GetEIP2Transition, interpreter.evm.BlockNumber) && suberr == ErrCodeStoreOutOfGas {
 		stackvalue.Clear()
+		interpreter.evm.CallErrorTemp = suberr // temp storage, for debug tracing
 	} else if suberr != nil && suberr != ErrCodeStoreOutOfGas {
 		stackvalue.Clear()
+		interpreter.evm.CallErrorTemp = suberr // temp storage, for debug tracing
 	} else {
 		stackvalue.SetBytes(addr.Bytes())
 	}
@@ -641,12 +641,8 @@ func opCreate2(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([
 		offset, size = callContext.stack.pop(), callContext.stack.pop()
 		salt         = callContext.stack.pop()
 		input        = callContext.memory.GetCopy(int64(offset.Uint64()), int64(size.Uint64()))
-		gas          = callContext.contract.Gas
+		gas          = interpreter.evm.CallGasTemp
 	)
-
-	// Apply EIP150
-	gas -= gas / 64
-	callContext.contract.UseGas(gas)
 	// reuse size int for stackvalue
 	stackvalue := size
 	//TODO: use uint256.Int instead of converting with toBig()
@@ -659,6 +655,7 @@ func opCreate2(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([
 	// Push item on the stack based on the returned error.
 	if suberr != nil {
 		stackvalue.Clear()
+		interpreter.evm.CallErrorTemp = suberr // temp storage, for debug tracing
 	} else {
 		stackvalue.SetBytes(addr.Bytes())
 	}
@@ -672,11 +669,12 @@ func opCreate2(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([
 }
 
 func opCall(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
+	runtime.Gosched()
 	stack := callContext.stack
-	// Pop gas. The actual gas in interpreter.evm.callGasTemp.
+	// Pop gas. The actual gas in interpreter.evm.CallGasTemp.
 	// We can use this as a temporary value
 	temp := stack.pop()
-	gas := interpreter.evm.callGasTemp
+	gas := interpreter.evm.CallGasTemp
 	// Pop other call parameters.
 	addr, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	toAddr := common.Address(addr.Bytes20())
@@ -688,7 +686,7 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]by
 	// By using big0 here, we save an alloc for the most common case (non-ether-transferring contract calls),
 	// but it would make more sense to extend the usage of uint256.Int
 	if !value.IsZero() {
-		gas += params.CallStipend
+		gas += vars.CallStipend
 		bigVal = value.ToBig()
 	}
 
@@ -696,6 +694,7 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]by
 
 	if err != nil {
 		temp.Clear()
+		interpreter.evm.CallErrorTemp = err // temp storage, for debug tracing
 	} else {
 		temp.SetOne()
 	}
@@ -709,11 +708,12 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]by
 }
 
 func opCallCode(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
-	// Pop gas. The actual gas is in interpreter.evm.callGasTemp.
+	runtime.Gosched()
+	// Pop gas. The actual gas is in interpreter.evm.CallGasTemp.
 	stack := callContext.stack
 	// We use it as a temporary value
 	temp := stack.pop()
-	gas := interpreter.evm.callGasTemp
+	gas := interpreter.evm.CallGasTemp
 	// Pop other call parameters.
 	addr, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	toAddr := common.Address(addr.Bytes20())
@@ -723,13 +723,14 @@ func opCallCode(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) (
 	//TODO: use uint256.Int instead of converting with toBig()
 	var bigVal = big0
 	if !value.IsZero() {
-		gas += params.CallStipend
+		gas += vars.CallStipend
 		bigVal = value.ToBig()
 	}
 
 	ret, returnGas, err := interpreter.evm.CallCode(callContext.contract, toAddr, args, gas, bigVal)
 	if err != nil {
 		temp.Clear()
+		interpreter.evm.CallErrorTemp = err // temp storage, for debug tracing
 	} else {
 		temp.SetOne()
 	}
@@ -743,11 +744,12 @@ func opCallCode(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) (
 }
 
 func opDelegateCall(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
+	runtime.Gosched()
 	stack := callContext.stack
-	// Pop gas. The actual gas is in interpreter.evm.callGasTemp.
+	// Pop gas. The actual gas is in interpreter.evm.CallGasTemp.
 	// We use it as a temporary value
 	temp := stack.pop()
-	gas := interpreter.evm.callGasTemp
+	gas := interpreter.evm.CallGasTemp
 	// Pop other call parameters.
 	addr, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	toAddr := common.Address(addr.Bytes20())
@@ -757,6 +759,7 @@ func opDelegateCall(pc *uint64, interpreter *EVMInterpreter, callContext *callCt
 	ret, returnGas, err := interpreter.evm.DelegateCall(callContext.contract, toAddr, args, gas)
 	if err != nil {
 		temp.Clear()
+		interpreter.evm.CallErrorTemp = err // temp storage, for debug tracing
 	} else {
 		temp.SetOne()
 	}
@@ -770,11 +773,12 @@ func opDelegateCall(pc *uint64, interpreter *EVMInterpreter, callContext *callCt
 }
 
 func opStaticCall(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
-	// Pop gas. The actual gas is in interpreter.evm.callGasTemp.
+	runtime.Gosched()
+	// Pop gas. The actual gas is in interpreter.evm.CallGasTemp.
 	stack := callContext.stack
 	// We use it as a temporary value
 	temp := stack.pop()
-	gas := interpreter.evm.callGasTemp
+	gas := interpreter.evm.CallGasTemp
 	// Pop other call parameters.
 	addr, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	toAddr := common.Address(addr.Bytes20())
@@ -784,6 +788,7 @@ func opStaticCall(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx)
 	ret, returnGas, err := interpreter.evm.StaticCall(callContext.contract, toAddr, args, gas)
 	if err != nil {
 		temp.Clear()
+		interpreter.evm.CallErrorTemp = err // temp storage, for debug tracing
 	} else {
 		temp.SetOne()
 	}
@@ -817,7 +822,7 @@ func opStop(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]by
 func opSuicide(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
 	beneficiary := callContext.stack.pop()
 	balance := interpreter.evm.StateDB.GetBalance(callContext.contract.Address())
-	interpreter.evm.StateDB.AddBalance(beneficiary.Bytes20(), balance)
+	interpreter.evm.StateDB.AddBalance(common.Address(beneficiary.Bytes20()), balance)
 	interpreter.evm.StateDB.Suicide(callContext.contract.Address())
 	return nil, nil
 }
@@ -832,7 +837,7 @@ func makeLog(size int) executionFunc {
 		mStart, mSize := stack.pop(), stack.pop()
 		for i := 0; i < size; i++ {
 			addr := stack.pop()
-			topics[i] = addr.Bytes32()
+			topics[i] = common.Hash(addr.Bytes32())
 		}
 
 		d := callContext.memory.GetCopy(int64(mStart.Uint64()), int64(mSize.Uint64()))
@@ -842,7 +847,7 @@ func makeLog(size int) executionFunc {
 			Data:    d,
 			// This is a non-consensus field, but assigned here because
 			// core/state doesn't know the current block number.
-			BlockNumber: interpreter.evm.Context.BlockNumber.Uint64(),
+			BlockNumber: interpreter.evm.BlockNumber.Uint64(),
 		})
 
 		return nil, nil

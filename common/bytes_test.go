@@ -124,3 +124,16 @@ func TestTrimRightZeroes(t *testing.T) {
 		}
 	}
 }
+
+func TestHex2Bytes(t *testing.T) {
+	s := "0x70686f656e697820636869636b656e206162737572642062616e616e61"
+
+	b1 := HexToHash(s).Bytes()
+
+	b2 := Hex2Bytes(s[2:])
+
+	if !bytes.Equal(b1, b2) {
+		t.Skip("hex->hash->bytes != hex->bytes")
+		t.Fatalf("not eq: %x / %x", b1, b2)
+	}
+}

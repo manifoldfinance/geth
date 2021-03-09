@@ -135,6 +135,8 @@ func (req *ReceiptsRequest) StoreResult(db ethdb.Database) {
 
 // ChtRequest is the ODR request type for retrieving header by Canonical Hash Trie
 type ChtRequest struct {
+	Untrusted        bool   // Indicator whether the result retrieved is trusted or not
+	PeerId           string // The specified peer id from which to retrieve data.
 	Config           *IndexerConfig
 	ChtNum, BlockNum uint64
 	ChtRoot          common.Hash
@@ -146,9 +148,12 @@ type ChtRequest struct {
 // StoreResult stores the retrieved data in local database
 func (req *ChtRequest) StoreResult(db ethdb.Database) {
 	hash, num := req.Header.Hash(), req.Header.Number.Uint64()
-	rawdb.WriteHeader(db, req.Header)
-	rawdb.WriteTd(db, hash, num, req.Td)
-	rawdb.WriteCanonicalHash(db, hash, num)
+
+	if !req.Untrusted {
+		rawdb.WriteHeader(db, req.Header)
+		rawdb.WriteTd(db, hash, num, req.Td)
+		rawdb.WriteCanonicalHash(db, hash, num)
+	}
 }
 
 // BloomRequest is the ODR request type for retrieving bloom filters from a CHT structure

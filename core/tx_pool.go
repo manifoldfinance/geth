@@ -31,7 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 )
 
 const (
@@ -215,15 +215,13 @@ func (config *TxPoolConfig) sanitize() TxPoolConfig {
 // two states over time as they are received and processed.
 type TxPool struct {
 	config      TxPoolConfig
-	chainconfig *params.ChainConfig
+	chainconfig ctypes.ChainConfigurator
 	chain       blockChain
 	gasPrice    *big.Int
 	txFeed      event.Feed
 	scope       event.SubscriptionScope
 	signer      types.Signer
 	mu          sync.RWMutex
-
-	istanbul bool // Fork indicator whether we are in the istanbul stage.
 
 	currentState  *state.StateDB // Current state in the blockchain head
 	pendingNonces *txNoncer      // Pending state tracking virtual nonces
@@ -232,12 +230,11 @@ type TxPool struct {
 	locals  *accountSet // Set of local transaction to exempt from eviction rules
 	journal *txJournal  // Journal of local transaction to back up to disk
 
-	pending    map[common.Address]*txList   // All currently processable transactions
-	queue      map[common.Address]*txList   // Queued but non-processable transactions
-	beats      map[common.Address]time.Time // Last heartbeat from each known account
-	mevBundles []mevBundle
-	all        *txLookup     // All transactions to allow lookups
-	priced     *txPricedList // All transactions sorted by price
+	pending map[common.Address]*txList   // All currently processable transactions
+	queue   map[common.Address]*txList   // Queued but non-processable transactions
+	beats   map[common.Address]time.Time // Last heartbeat from each known account
+	all     *txLookup                    // All transactions to allow lookups
+	priced  *txPricedList                // All transactions sorted by price
 
 	chainHeadCh     chan ChainHeadEvent
 	chainHeadSub    event.Subscription
@@ -247,6 +244,9 @@ type TxPool struct {
 	reorgDoneCh     chan chan struct{}
 	reorgShutdownCh chan struct{}  // requests shutdown of scheduleReorgLoop
 	wg              sync.WaitGroup // tracks loop, scheduleReorgLoop
+
+	eip2f    bool
+	eip2028f bool
 }
 
 type txpoolResetRequest struct {
@@ -255,7 +255,7 @@ type txpoolResetRequest struct {
 
 // NewTxPool creates a new transaction pool to gather, sort and filter inbound
 // transactions from the network.
-func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain blockChain) *TxPool {
+func NewTxPool(config TxPoolConfig, chainconfig ctypes.ChainConfigurator, chain blockChain) *TxPool {
 	// Sanitize the input to ensure no vulnerable gas prices are set
 	config = (&config).sanitize()
 
@@ -264,7 +264,7 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 		config:          config,
 		chainconfig:     chainconfig,
 		chain:           chain,
-		signer:          types.NewEIP155Signer(chainconfig.ChainID),
+		signer:          types.NewEIP155Signer(chainconfig.GetChainID()),
 		pending:         make(map[common.Address]*txList),
 		queue:           make(map[common.Address]*txList),
 		beats:           make(map[common.Address]time.Time),
@@ -333,6 +333,12 @@ func (pool *TxPool) loop() {
 		// Handle ChainHeadEvent
 		case ev := <-pool.chainHeadCh:
 			if ev.Block != nil {
+				if pool.chainconfig.IsEnabled(pool.chainconfig.GetEIP2Transition, ev.Block.Number()) {
+					pool.eip2f = true
+				}
+				if pool.chainconfig.IsEnabled(pool.chainconfig.GetEIP2028Transition, ev.Block.Number()) {
+					pool.eip2028f = true
+				}
 				pool.requestReset(head.Header(), ev.Block.Header())
 				head = ev.Block
 			}
@@ -491,58 +497,6 @@ func (pool *TxPool) Pending() (map[common.Address]types.Transactions, error) {
 	return pending, nil
 }
 
-/// AllMevBundles returns all the MEV Bundles currently in the pool
-func (pool *TxPool) AllMevBundles() []mevBundle {
-	return pool.mevBundles
-}
-
-// MevBundles returns a list of bundles valid for the given blockNumber/blockTimestamp
-// also prunes bundles that are outdated
-func (pool *TxPool) MevBundles(blockNumber *big.Int, blockTimestamp uint64) ([]types.Transactions, error) {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
-
-	// returned values
-	var txBundles []types.Transactions
-	// rolled over values
-	var bundles []mevBundle
-
-	for _, bundle := range pool.mevBundles {
-		// Prune outdated bundles
-		if (bundle.maxTimestamp != 0 && blockTimestamp > bundle.maxTimestamp) || blockNumber.Cmp(bundle.blockNumber) > 0 {
-			continue
-		}
-
-		// Roll over future bundles
-		if (bundle.minTimestamp != 0 && blockTimestamp < bundle.minTimestamp) || blockNumber.Cmp(bundle.blockNumber) < 0 {
-			bundles = append(bundles, bundle)
-			continue
-		}
-
-		// return the ones which are in time
-		txBundles = append(txBundles, bundle.txs)
-		// keep the bundles around internally until they need to be pruned
-		bundles = append(bundles, bundle)
-	}
-
-	pool.mevBundles = bundles
-	return txBundles, nil
-}
-
-// AddMevBundle adds a mev bundle to the pool
-func (pool *TxPool) AddMevBundle(txs types.Transactions, blockNumber *big.Int, minTimestamp, maxTimestamp uint64) error {
-	pool.mu.Lock()
-	defer pool.mu.Unlock()
-
-	pool.mevBundles = append(pool.mevBundles, mevBundle{
-		txs:          txs,
-		blockNumber:  blockNumber,
-		minTimestamp: minTimestamp,
-		maxTimestamp: maxTimestamp,
-	})
-	return nil
-}
-
 // Locals retrieves the accounts currently considered local by the pool.
 func (pool *TxPool) Locals() []common.Address {
 	pool.mu.Lock()
@@ -603,7 +557,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		return ErrInsufficientFunds
 	}
 	// Ensure the transaction has more gas than the basic tx fee.
-	intrGas, err := IntrinsicGas(tx.Data(), tx.To() == nil, true, pool.istanbul)
+	intrGas, err := IntrinsicGas(tx.Data(), tx.To() == nil, pool.eip2f, pool.eip2028f)
 	if err != nil {
 		return err
 	}
@@ -979,6 +933,15 @@ func (pool *TxPool) removeTx(hash common.Hash, outofbound bool) {
 	}
 }
 
+// RemoveTx publicizes the removeTx method since the API method txpool_removeTx
+// needs to allow public access to internal `removeTx()`
+func (pool *TxPool) RemoveTx(hash common.Hash) *types.Transaction {
+	tx := pool.Get(hash)
+	pool.removeTx(hash, true)
+
+	return tx
+}
+
 // requestPromoteExecutables requests a pool reset to the new head block.
 // The returned channel is closed when the reset has occurred.
 func (pool *TxPool) requestReset(oldHead *types.Header, newHead *types.Header) chan struct{} {
@@ -1232,7 +1195,7 @@ func (pool *TxPool) reset(oldHead, newHead *types.Header) {
 
 	// Update all fork indicator by next pending block number.
 	next := new(big.Int).Add(newHead.Number, big.NewInt(1))
-	pool.istanbul = pool.chainconfig.IsIstanbul(next)
+	pool.eip2028f = pool.chainconfig.IsEnabled(pool.chainconfig.GetEIP2028Transition, next)
 }
 
 // promoteExecutables moves transactions that have become processable from the

@@ -36,6 +36,9 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
+	"github.com/ethereum/go-ethereum/params/vars"
 )
 
 const (
@@ -50,8 +53,8 @@ const (
 var (
 	// Test chain configurations
 	testTxPoolConfig  core.TxPoolConfig
-	ethashChainConfig *params.ChainConfig
-	cliqueChainConfig *params.ChainConfig
+	ethashChainConfig ctypes.ChainConfigurator
+	cliqueChainConfig ctypes.ChainConfigurator
 
 	// Test accounts
 	testBankKey, _  = crypto.GenerateKey()
@@ -67,8 +70,8 @@ var (
 
 	testConfig = &Config{
 		Recommit: time.Second,
-		GasFloor: params.GenesisGasLimit,
-		GasCeil:  params.GenesisGasLimit,
+		GasFloor: vars.GenesisGasLimit,
+		GasCeil:  vars.GenesisGasLimit,
 	}
 )
 
@@ -77,13 +80,12 @@ func init() {
 	testTxPoolConfig.Journal = ""
 	ethashChainConfig = params.TestChainConfig
 	cliqueChainConfig = params.TestChainConfig
-	cliqueChainConfig.Clique = &params.CliqueConfig{
-		Period: 10,
-		Epoch:  30000,
-	}
-	tx1, _ := types.SignTx(types.NewTransaction(0, testUserAddress, big.NewInt(1000), params.TxGas, nil, nil), types.HomesteadSigner{}, testBankKey)
+	cliqueChainConfig.MustSetConsensusEngineType(ctypes.ConsensusEngineT_Clique)
+	cliqueChainConfig.SetCliquePeriod(10)
+	cliqueChainConfig.SetCliqueEpoch(30000)
+	tx1, _ := types.SignTx(types.NewTransaction(0, testUserAddress, big.NewInt(1000), vars.TxGas, nil, nil), types.HomesteadSigner{}, testBankKey)
 	pendingTxs = append(pendingTxs, tx1)
-	tx2, _ := types.SignTx(types.NewTransaction(1, testUserAddress, big.NewInt(1000), params.TxGas, nil, nil), types.HomesteadSigner{}, testBankKey)
+	tx2, _ := types.SignTx(types.NewTransaction(1, testUserAddress, big.NewInt(1000), vars.TxGas, nil, nil), types.HomesteadSigner{}, testBankKey)
 	newTxs = append(newTxs, tx2)
 	rand.Seed(time.Now().UnixNano())
 }
@@ -94,14 +96,14 @@ type testWorkerBackend struct {
 	txPool     *core.TxPool
 	chain      *core.BlockChain
 	testTxFeed event.Feed
-	genesis    *core.Genesis
+	genesis    *genesisT.Genesis
 	uncleBlock *types.Block
 }
 
-func newTestWorkerBackend(t *testing.T, chainConfig *params.ChainConfig, engine consensus.Engine, db ethdb.Database, n int) *testWorkerBackend {
-	var gspec = core.Genesis{
+func newTestWorkerBackend(t *testing.T, chainConfig ctypes.ChainConfigurator, engine consensus.Engine, db ethdb.Database, n int) *testWorkerBackend {
+	var gspec = genesisT.Genesis{
 		Config: chainConfig,
-		Alloc:  core.GenesisAlloc{testBankAddress: {Balance: testBankFunds}},
+		Alloc:  genesisT.GenesisAlloc{testBankAddress: {Balance: testBankFunds}},
 	}
 
 	switch e := engine.(type) {
@@ -115,7 +117,7 @@ func newTestWorkerBackend(t *testing.T, chainConfig *params.ChainConfig, engine 
 	default:
 		t.Fatalf("unexpected consensus engine type: %T", engine)
 	}
-	genesis := gspec.MustCommit(db)
+	genesis := core.MustCommitGenesis(db, &gspec)
 
 	chain, _ := core.NewBlockChain(db, &core.CacheConfig{TrieDirtyDisabled: true}, gspec.Config, engine, vm.Config{}, nil, nil)
 	txpool := core.NewTxPool(testTxPoolConfig, chainConfig, chain)
@@ -170,12 +172,12 @@ func (b *testWorkerBackend) newRandomTx(creation bool) *types.Transaction {
 	if creation {
 		tx, _ = types.SignTx(types.NewContractCreation(b.txPool.Nonce(testBankAddress), big.NewInt(0), testGas, nil, common.FromHex(testCode)), types.HomesteadSigner{}, testBankKey)
 	} else {
-		tx, _ = types.SignTx(types.NewTransaction(b.txPool.Nonce(testBankAddress), testUserAddress, big.NewInt(1000), params.TxGas, nil, nil), types.HomesteadSigner{}, testBankKey)
+		tx, _ = types.SignTx(types.NewTransaction(b.txPool.Nonce(testBankAddress), testUserAddress, big.NewInt(1000), vars.TxGas, nil, nil), types.HomesteadSigner{}, testBankKey)
 	}
 	return tx
 }
 
-func newTestWorker(t *testing.T, chainConfig *params.ChainConfig, engine consensus.Engine, db ethdb.Database, blocks int) (*worker, *testWorkerBackend) {
+func newTestWorker(t *testing.T, chainConfig ctypes.ChainConfigurator, engine consensus.Engine, db ethdb.Database, blocks int) (*worker, *testWorkerBackend) {
 	backend := newTestWorkerBackend(t, chainConfig, engine, db, blocks)
 	backend.txPool.AddLocals(pendingTxs)
 	w := newWorker(testConfig, chainConfig, engine, backend, new(event.TypeMux), nil, false)
@@ -194,13 +196,17 @@ func TestGenerateBlockAndImportClique(t *testing.T) {
 func testGenerateBlockAndImport(t *testing.T, isClique bool) {
 	var (
 		engine      consensus.Engine
-		chainConfig *params.ChainConfig
+		chainConfig ctypes.ChainConfigurator
 		db          = rawdb.NewMemoryDatabase()
 	)
 	if isClique {
 		chainConfig = params.AllCliqueProtocolChanges
-		chainConfig.Clique = &params.CliqueConfig{Period: 1, Epoch: 30000}
-		engine = clique.New(chainConfig.Clique, db)
+		chainConfig.SetCliquePeriod(1)
+		chainConfig.SetCliqueEpoch(30000)
+		engine = clique.New(&ctypes.CliqueConfig{
+			Period: chainConfig.GetCliquePeriod(),
+			Epoch:  chainConfig.GetCliqueEpoch(),
+		}, db)
 	} else {
 		chainConfig = params.AllEthashProtocolChanges
 		engine = ethash.NewFaker()
@@ -211,7 +217,7 @@ func testGenerateBlockAndImport(t *testing.T, isClique bool) {
 
 	// This test chain imports the mined blocks.
 	db2 := rawdb.NewMemoryDatabase()
-	b.genesis.MustCommit(db2)
+	core.MustCommitGenesis(db2, b.genesis)
 	chain, _ := core.NewBlockChain(db2, nil, b.chain.Config(), engine, vm.Config{}, nil, nil)
 	defer chain.Stop()
 
@@ -249,10 +255,13 @@ func TestEmptyWorkEthash(t *testing.T) {
 	testEmptyWork(t, ethashChainConfig, ethash.NewFaker())
 }
 func TestEmptyWorkClique(t *testing.T) {
-	testEmptyWork(t, cliqueChainConfig, clique.New(cliqueChainConfig.Clique, rawdb.NewMemoryDatabase()))
+	testEmptyWork(t, cliqueChainConfig, clique.New(&ctypes.CliqueConfig{
+		Period: cliqueChainConfig.GetCliquePeriod(),
+		Epoch:  cliqueChainConfig.GetCliqueEpoch(),
+	}, rawdb.NewMemoryDatabase()))
 }
 
-func testEmptyWork(t *testing.T, chainConfig *params.ChainConfig, engine consensus.Engine) {
+func testEmptyWork(t *testing.T, chainConfig ctypes.ChainConfigurator, engine consensus.Engine) {
 	defer engine.Close()
 
 	w, _ := newTestWorker(t, chainConfig, engine, rawdb.NewMemoryDatabase(), 0)
@@ -353,10 +362,13 @@ func TestRegenerateMiningBlockEthash(t *testing.T) {
 }
 
 func TestRegenerateMiningBlockClique(t *testing.T) {
-	testRegenerateMiningBlock(t, cliqueChainConfig, clique.New(cliqueChainConfig.Clique, rawdb.NewMemoryDatabase()))
+	testRegenerateMiningBlock(t, cliqueChainConfig, clique.New(&ctypes.CliqueConfig{
+		Period: cliqueChainConfig.GetCliquePeriod(),
+		Epoch:  cliqueChainConfig.GetCliqueEpoch(),
+	}, rawdb.NewMemoryDatabase()))
 }
 
-func testRegenerateMiningBlock(t *testing.T, chainConfig *params.ChainConfig, engine consensus.Engine) {
+func testRegenerateMiningBlock(t *testing.T, chainConfig ctypes.ChainConfigurator, engine consensus.Engine) {
 	defer engine.Close()
 
 	w, b := newTestWorker(t, chainConfig, engine, rawdb.NewMemoryDatabase(), 0)
@@ -413,10 +425,13 @@ func TestAdjustIntervalEthash(t *testing.T) {
 }
 
 func TestAdjustIntervalClique(t *testing.T) {
-	testAdjustInterval(t, cliqueChainConfig, clique.New(cliqueChainConfig.Clique, rawdb.NewMemoryDatabase()))
+	testAdjustInterval(t, cliqueChainConfig, clique.New(&ctypes.CliqueConfig{
+		Period: cliqueChainConfig.GetCliquePeriod(),
+		Epoch:  cliqueChainConfig.GetCliqueEpoch(),
+	}, rawdb.NewMemoryDatabase()))
 }
 
-func testAdjustInterval(t *testing.T, chainConfig *params.ChainConfig, engine consensus.Engine) {
+func testAdjustInterval(t *testing.T, chainConfig ctypes.ChainConfigurator, engine consensus.Engine) {
 	defer engine.Close()
 
 	w, _ := newTestWorker(t, chainConfig, engine, rawdb.NewMemoryDatabase(), 0)

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -31,17 +32,31 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 )
 
 // Command line flags to configure the interpreters.
 var (
-	testEVM   = flag.String("vm.evm", "", "EVM configuration")
-	testEWASM = flag.String("vm.ewasm", "", "EWASM configuration")
+	// The API of this value => filepath<str/ing>,capabilities<k=v>,...
+	testEVM   = flag.String("evmc.evm", "", "EVMC EVM1 configuration")
+	testEWASM = flag.String("evmc.ewasm", "", "EVMC EWASM configuration")
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
+
+	if *testEVM != "" {
+		log.Printf("Running tests with %s=%s", "evmc.evm", *testEVM)
+		vm.InitEVMCEVM(*testEVM)
+	}
+
+	if *testEWASM != "" {
+		log.Printf("Running tests with %s=%s", "evmc.ewasm", *testEWASM)
+		vm.InitEVMCEwasm(*testEWASM)
+	}
+
 	os.Exit(m.Run())
 }
 
@@ -105,12 +120,13 @@ type testMatcher struct {
 	failpat      []testFailure
 	skiploadpat  []*regexp.Regexp
 	slowpat      []*regexp.Regexp
+	skipforkpat  []*regexp.Regexp
 	whitelistpat *regexp.Regexp
 }
 
 type testConfig struct {
 	p      *regexp.Regexp
-	config params.ChainConfig
+	config ctypes.ChainConfigurator
 }
 
 type testFailure struct {
@@ -128,6 +144,11 @@ func (tm *testMatcher) skipLoad(pattern string) {
 	tm.skiploadpat = append(tm.skiploadpat, regexp.MustCompile(pattern))
 }
 
+// skipFork skips subtests with fork configs matching the pattern.
+func (tm *testMatcher) skipFork(pattern string) {
+	tm.skipforkpat = append(tm.skipforkpat, regexp.MustCompile(pattern))
+}
+
 // fails adds an expected failure for tests matching the pattern.
 func (tm *testMatcher) fails(pattern string, reason string) {
 	if reason == "" {
@@ -141,7 +162,7 @@ func (tm *testMatcher) whitelist(pattern string) {
 }
 
 // config defines chain config for tests matching the pattern.
-func (tm *testMatcher) config(pattern string, cfg params.ChainConfig) {
+func (tm *testMatcher) config(pattern string, cfg ctypes.ChainConfigurator) {
 	tm.configpat = append(tm.configpat, testConfig{regexp.MustCompile(pattern), cfg})
 }
 
@@ -167,14 +188,15 @@ func (tm *testMatcher) findSkip(name string) (reason string, skipload bool) {
 }
 
 // findConfig returns the chain config matching defined patterns.
-func (tm *testMatcher) findConfig(name string) *params.ChainConfig {
+func (tm *testMatcher) findConfig(name string) (ctypes.ChainConfigurator, string) {
 	// TODO(fjl): name can be derived from testing.T when min Go version is 1.8
 	for _, m := range tm.configpat {
 		if m.p.MatchString(name) {
-			return &m.config
+			return m.config, m.p.String()
 		}
 	}
-	return new(params.ChainConfig)
+	log.Println("using empty config", name)
+	return new(coregeth.CoreGethChainConfig), ""
 }
 
 // checkFailure checks whether a failure is expected.
@@ -207,7 +229,7 @@ func (tm *testMatcher) walk(t *testing.T, dir string, runTest interface{}) {
 	dirinfo, err := os.Stat(dir)
 	if os.IsNotExist(err) || !dirinfo.IsDir() {
 		fmt.Fprintf(os.Stderr, "can't find test files in %s, did you clone the tests submodule?\n", dir)
-		t.Skip("missing test files")
+		t.Fatal("missing test files")
 	}
 	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		name := filepath.ToSlash(strings.TrimPrefix(path, dir+string(filepath.Separator)))

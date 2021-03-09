@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/console"
 	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rpc"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -118,7 +119,7 @@ func remoteConsole(ctx *cli.Context) error {
 	// Attach to a remotely running geth instance and start the JavaScript console
 	endpoint := ctx.Args().First()
 	if endpoint == "" {
-		path := node.DefaultDataDir()
+		path := vars.DefaultDataDir()
 		if ctx.GlobalIsSet(utils.DataDirFlag.Name) {
 			path = ctx.GlobalString(utils.DataDirFlag.Name)
 		}
@@ -134,6 +135,18 @@ func remoteConsole(ctx *cli.Context) error {
 				}
 			} else if ctx.GlobalBool(utils.RinkebyFlag.Name) {
 				path = filepath.Join(path, "rinkeby")
+			} else if ctx.GlobalBool(utils.KottiFlag.Name) {
+				path = filepath.Join(path, "kotti")
+			} else if ctx.GlobalBool(utils.ClassicFlag.Name) {
+				path = filepath.Join(path, "classic")
+			} else if ctx.GlobalBool(utils.MordorFlag.Name) {
+				path = filepath.Join(path, "mordor")
+			} else if ctx.GlobalBool(utils.SocialFlag.Name) {
+				path = filepath.Join(path, "social")
+			} else if ctx.GlobalBool(utils.MixFlag.Name) {
+				path = filepath.Join(path, "mix")
+			} else if ctx.GlobalBool(utils.EthersocialFlag.Name) {
+				path = filepath.Join(path, "ethersocial")
 			} else if ctx.GlobalBool(utils.GoerliFlag.Name) {
 				path = filepath.Join(path, "goerli")
 			} else if ctx.GlobalBool(utils.YoloV2Flag.Name) {
@@ -176,7 +189,7 @@ func remoteConsole(ctx *cli.Context) error {
 // for "geth attach" and "geth monitor" with no argument.
 func dialRPC(endpoint string) (*rpc.Client, error) {
 	if endpoint == "" {
-		endpoint = node.DefaultIPCEndpoint(clientIdentifier)
+		endpoint = node.DefaultIPCEndpoint(databaseIdentifier)
 	} else if strings.HasPrefix(endpoint, "rpc:") || strings.HasPrefix(endpoint, "ipc:") {
 		// Backwards compatibility with geth < 1.5 which required
 		// these prefixes.

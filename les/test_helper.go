@@ -48,6 +48,9 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/nodestate"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
+	"github.com/ethereum/go-ethereum/params/vars"
 )
 
 var (
@@ -112,22 +115,21 @@ func prepare(n int, backend *backends.SimulatedBackend) {
 		switch i {
 		case 0:
 			// deploy checkpoint contract
-			auth, _ := bind.NewKeyedTransactorWithChainID(bankKey, big.NewInt(1337))
-			registrarAddr, _, _, _ = contract.DeployCheckpointOracle(auth, backend, []common.Address{signerAddr}, sectionSize, processConfirms, big.NewInt(1))
+			registrarAddr, _, _, _ = contract.DeployCheckpointOracle(bind.NewKeyedTransactor(bankKey), backend, []common.Address{signerAddr}, sectionSize, processConfirms, big.NewInt(1))
 			// bankUser transfers some ether to user1
 			nonce, _ := backend.PendingNonceAt(ctx, bankAddr)
-			tx, _ := types.SignTx(types.NewTransaction(nonce, userAddr1, big.NewInt(10000), params.TxGas, nil, nil), signer, bankKey)
+			tx, _ := types.SignTx(types.NewTransaction(nonce, userAddr1, big.NewInt(10000), vars.TxGas, nil, nil), signer, bankKey)
 			backend.SendTransaction(ctx, tx)
 		case 1:
 			bankNonce, _ := backend.PendingNonceAt(ctx, bankAddr)
 			userNonce1, _ := backend.PendingNonceAt(ctx, userAddr1)
 
 			// bankUser transfers more ether to user1
-			tx1, _ := types.SignTx(types.NewTransaction(bankNonce, userAddr1, big.NewInt(1000), params.TxGas, nil, nil), signer, bankKey)
+			tx1, _ := types.SignTx(types.NewTransaction(bankNonce, userAddr1, big.NewInt(1000), vars.TxGas, nil, nil), signer, bankKey)
 			backend.SendTransaction(ctx, tx1)
 
 			// user1 relays ether to user2
-			tx2, _ := types.SignTx(types.NewTransaction(userNonce1, userAddr2, big.NewInt(1000), params.TxGas, nil, nil), signer, userKey1)
+			tx2, _ := types.SignTx(types.NewTransaction(userNonce1, userAddr2, big.NewInt(1000), vars.TxGas, nil, nil), signer, userKey1)
 			backend.SendTransaction(ctx, tx2)
 
 			// user1 deploys a test contract
@@ -141,7 +143,7 @@ func prepare(n int, backend *backends.SimulatedBackend) {
 		case 2:
 			// bankUser transfer some ether to signer
 			bankNonce, _ := backend.PendingNonceAt(ctx, bankAddr)
-			tx1, _ := types.SignTx(types.NewTransaction(bankNonce, signerAddr, big.NewInt(1000000000), params.TxGas, nil, nil), signer, bankKey)
+			tx1, _ := types.SignTx(types.NewTransaction(bankNonce, signerAddr, big.NewInt(1000000000), vars.TxGas, nil, nil), signer, bankKey)
 			backend.SendTransaction(ctx, tx1)
 
 			// invoke test contract
@@ -174,25 +176,25 @@ func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, index
 	var (
 		evmux  = new(event.TypeMux)
 		engine = ethash.NewFaker()
-		gspec  = core.Genesis{
+		gspec  = genesisT.Genesis{
 			Config:   params.AllEthashProtocolChanges,
-			Alloc:    core.GenesisAlloc{bankAddr: {Balance: bankFunds}},
+			Alloc:    genesisT.GenesisAlloc{bankAddr: {Balance: bankFunds}},
 			GasLimit: 100000000,
 		}
 		oracle *checkpointoracle.CheckpointOracle
 	)
-	genesis := gspec.MustCommit(db)
+	genesis := core.MustCommitGenesis(db, &gspec)
 	chain, _ := light.NewLightChain(odr, gspec.Config, engine, nil)
 	if indexers != nil {
-		checkpointConfig := &params.CheckpointOracleConfig{
+		checkpointConfig := &ctypes.CheckpointOracleConfig{
 			Address:   crypto.CreateAddress(bankAddr, 0),
 			Signers:   []common.Address{signerAddr},
 			Threshold: 1,
 		}
-		getLocal := func(index uint64) params.TrustedCheckpoint {
+		getLocal := func(index uint64) ctypes.TrustedCheckpoint {
 			chtIndexer := indexers[0]
 			sectionHead := chtIndexer.SectionHead(index)
-			return params.TrustedCheckpoint{
+			return ctypes.TrustedCheckpoint{
 				SectionIndex: index,
 				SectionHead:  sectionHead,
 				CHTRoot:      light.GetChtRoot(db, index, sectionHead),
@@ -231,14 +233,14 @@ func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, index
 
 func newTestServerHandler(blocks int, indexers []*core.ChainIndexer, db ethdb.Database, clock mclock.Clock) (*serverHandler, *backends.SimulatedBackend) {
 	var (
-		gspec = core.Genesis{
+		gspec = genesisT.Genesis{
 			Config:   params.AllEthashProtocolChanges,
-			Alloc:    core.GenesisAlloc{bankAddr: {Balance: bankFunds}},
+			Alloc:    genesisT.GenesisAlloc{bankAddr: {Balance: bankFunds}},
 			GasLimit: 100000000,
 		}
 		oracle *checkpointoracle.CheckpointOracle
 	)
-	genesis := gspec.MustCommit(db)
+	genesis := core.MustCommitGenesis(db, &gspec)
 
 	// create a simulation backend and pre-commit several customized block to the database.
 	simulation := backends.NewSimulatedBackendWithDatabase(db, gspec.Alloc, 100000000)
@@ -248,15 +250,15 @@ func newTestServerHandler(blocks int, indexers []*core.ChainIndexer, db ethdb.Da
 	txpoolConfig.Journal = ""
 	txpool := core.NewTxPool(txpoolConfig, gspec.Config, simulation.Blockchain())
 	if indexers != nil {
-		checkpointConfig := &params.CheckpointOracleConfig{
+		checkpointConfig := &ctypes.CheckpointOracleConfig{
 			Address:   crypto.CreateAddress(bankAddr, 0),
 			Signers:   []common.Address{signerAddr},
 			Threshold: 1,
 		}
-		getLocal := func(index uint64) params.TrustedCheckpoint {
+		getLocal := func(index uint64) ctypes.TrustedCheckpoint {
 			chtIndexer := indexers[0]
 			sectionHead := chtIndexer.SectionHead(index)
-			return params.TrustedCheckpoint{
+			return ctypes.TrustedCheckpoint{
 				SectionIndex: index,
 				SectionHead:  sectionHead,
 				CHTRoot:      light.GetChtRoot(db, index, sectionHead),

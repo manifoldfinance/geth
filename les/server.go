@@ -33,7 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/ethereum/go-ethereum/p2p/nodestate"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -96,8 +96,8 @@ func NewLesServer(node *node.Node, e *eth.Ethereum, config *eth.Config) (*LesSer
 			iConfig:          light.DefaultServerIndexerConfig,
 			chainDb:          e.ChainDb(),
 			chainReader:      e.BlockChain(),
-			chtIndexer:       light.NewChtIndexer(e.ChainDb(), nil, params.CHTFrequency, params.HelperTrieProcessConfirmations, true),
-			bloomTrieIndexer: light.NewBloomTrieIndexer(e.ChainDb(), nil, params.BloomBitsBlocks, params.BloomTrieFrequency, true),
+			chtIndexer:       light.NewChtIndexer(e.ChainDb(), nil, vars.CHTFrequency, vars.HelperTrieProcessConfirmations, true),
+			bloomTrieIndexer: light.NewBloomTrieIndexer(e.ChainDb(), nil, vars.BloomBitsBlocks, vars.BloomTrieFrequency, true),
 			closeCh:          make(chan struct{}),
 		},
 		ns:           ns,

@@ -33,7 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -75,8 +75,9 @@ func (b *benchmarkBlockHeaders) init(h *serverHandler, count int) error {
 func (b *benchmarkBlockHeaders) request(peer *serverPeer, index int) error {
 	if b.byHash {
 		return peer.requestHeadersByHash(0, b.hashes[index], b.amount, b.skip, b.reverse)
+	} else {
+		return peer.requestHeadersByNumber(0, uint64(b.offset+rand.Int63n(b.randMax)), b.amount, b.skip, b.reverse)
 	}
-	return peer.requestHeadersByNumber(0, uint64(b.offset+rand.Int63n(b.randMax)), b.amount, b.skip, b.reverse)
 }
 
 // benchmarkBodiesOrReceipts implements requestBenchmark
@@ -97,8 +98,9 @@ func (b *benchmarkBodiesOrReceipts) init(h *serverHandler, count int) error {
 func (b *benchmarkBodiesOrReceipts) request(peer *serverPeer, index int) error {
 	if b.receipts {
 		return peer.requestReceipts(0, []common.Hash{b.hashes[index]})
+	} else {
+		return peer.requestBodies(0, []common.Hash{b.hashes[index]})
 	}
-	return peer.requestBodies(0, []common.Hash{b.hashes[index]})
 }
 
 // benchmarkProofsOrCode implements requestBenchmark
@@ -117,8 +119,9 @@ func (b *benchmarkProofsOrCode) request(peer *serverPeer, index int) error {
 	rand.Read(key)
 	if b.code {
 		return peer.requestCode(0, []CodeReq{{BHash: b.headHash, AccKey: key}})
+	} else {
+		return peer.requestProofs(0, []ProofReq{{BHash: b.headHash, Key: key}})
 	}
-	return peer.requestProofs(0, []ProofReq{{BHash: b.headHash, Key: key}})
 }
 
 // benchmarkHelperTrie implements requestBenchmark
@@ -133,7 +136,7 @@ func (b *benchmarkHelperTrie) init(h *serverHandler, count int) error {
 		b.sectionCount, b.headNum, _ = h.server.bloomTrieIndexer.Sections()
 	} else {
 		b.sectionCount, _, _ = h.server.chtIndexer.Sections()
-		b.headNum = b.sectionCount*params.CHTFrequency - 1
+		b.headNum = b.sectionCount*vars.CHTFrequency - 1
 	}
 	if b.sectionCount == 0 {
 		return fmt.Errorf("no processed sections available")

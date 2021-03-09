@@ -110,7 +110,7 @@ type clientConn struct {
 }
 
 func (c *Client) newClientConn(conn ServerCodec) *clientConn {
-	ctx := context.WithValue(context.Background(), clientContextKey{}, c)
+	ctx := context.WithValue(conn.context(), clientContextKey{}, c)
 	handler := newHandler(ctx, conn, c.idgen, c.services)
 	return &clientConn{conn, handler}
 }
@@ -404,8 +404,9 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 
 	if c.isHTTP {
 		return c.sendHTTP(ctx, op, msg)
+	} else {
+		return c.send(ctx, op, msg)
 	}
-	return c.send(ctx, op, msg)
 }
 
 // EthSubscribe registers a subscripion under the "eth" namespace.

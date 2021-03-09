@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
 )
 
 // VMTest checks EVM execution without block or transaction context.
@@ -49,8 +50,8 @@ type vmJSON struct {
 	Logs          common.UnprefixedHash `json:"logs"`
 	GasRemaining  *math.HexOrDecimal64  `json:"gas"`
 	Out           hexutil.Bytes         `json:"out"`
-	Pre           core.GenesisAlloc     `json:"pre"`
-	Post          core.GenesisAlloc     `json:"post"`
+	Pre           genesisT.GenesisAlloc `json:"pre"`
+	Post          genesisT.GenesisAlloc `json:"post"`
 	PostStateRoot common.Hash           `json:"postStateRoot"`
 }
 
@@ -138,22 +139,20 @@ func (t *VMTest) newEVM(statedb *state.StateDB, vmconfig vm.Config) *vm.EVM {
 		return core.CanTransfer(db, address, amount)
 	}
 	transfer := func(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {}
-	txContext := vm.TxContext{
-		Origin:   t.json.Exec.Origin,
-		GasPrice: t.json.Exec.GasPrice,
-	}
-	context := vm.BlockContext{
+	context := vm.Context{
 		CanTransfer: canTransfer,
 		Transfer:    transfer,
 		GetHash:     vmTestBlockHash,
+		Origin:      t.json.Exec.Origin,
 		Coinbase:    t.json.Env.Coinbase,
 		BlockNumber: new(big.Int).SetUint64(t.json.Env.Number),
 		Time:        new(big.Int).SetUint64(t.json.Env.Timestamp),
 		GasLimit:    t.json.Env.GasLimit,
 		Difficulty:  t.json.Env.Difficulty,
+		GasPrice:    t.json.Exec.GasPrice,
 	}
 	vmconfig.NoRecursion = true
-	return vm.NewEVM(context, txContext, statedb, params.MainnetChainConfig, vmconfig)
+	return vm.NewEVM(context, statedb, params.MainnetChainConfig, vmconfig)
 }
 
 func vmTestBlockHash(n uint64) common.Hash {

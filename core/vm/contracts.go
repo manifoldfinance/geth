@@ -28,7 +28,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/blake2b"
 	"github.com/ethereum/go-ethereum/crypto/bls12381"
 	"github.com/ethereum/go-ethereum/crypto/bn256"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/vars"
 
 	//lint:ignore SA1019 Needed for precompile
 	"golang.org/x/crypto/ripemd160"
@@ -42,85 +43,57 @@ type PrecompiledContract interface {
 	Run(input []byte) ([]byte, error) // Run runs the precompiled contract
 }
 
-// PrecompiledContractsHomestead contains the default set of pre-compiled Ethereum
-// contracts used in the Frontier and Homestead releases.
-var PrecompiledContractsHomestead = map[common.Address]PrecompiledContract{
+var basePrecompiledContracts = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{1}): &ecrecover{},
 	common.BytesToAddress([]byte{2}): &sha256hash{},
 	common.BytesToAddress([]byte{3}): &ripemd160hash{},
 	common.BytesToAddress([]byte{4}): &dataCopy{},
 }
 
-// PrecompiledContractsByzantium contains the default set of pre-compiled Ethereum
-// contracts used in the Byzantium release.
-var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}): &ecrecover{},
-	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{4}): &dataCopy{},
-	common.BytesToAddress([]byte{5}): &bigModExp{eip2565: false},
-	common.BytesToAddress([]byte{6}): &bn256AddByzantium{},
-	common.BytesToAddress([]byte{7}): &bn256ScalarMulByzantium{},
-	common.BytesToAddress([]byte{8}): &bn256PairingByzantium{},
-}
-
-// PrecompiledContractsIstanbul contains the default set of pre-compiled Ethereum
-// contracts used in the Istanbul release.
-var PrecompiledContractsIstanbul = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}): &ecrecover{},
-	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{4}): &dataCopy{},
-	common.BytesToAddress([]byte{5}): &bigModExp{eip2565: false},
-	common.BytesToAddress([]byte{6}): &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{7}): &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
-	common.BytesToAddress([]byte{9}): &blake2F{},
-}
-
-// PrecompiledContractsYoloV2 contains the default set of pre-compiled Ethereum
-// contracts used in the Yolo v2 test release.
-var PrecompiledContractsYoloV2 = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}):  &ecrecover{},
-	common.BytesToAddress([]byte{2}):  &sha256hash{},
-	common.BytesToAddress([]byte{3}):  &ripemd160hash{},
-	common.BytesToAddress([]byte{4}):  &dataCopy{},
-	common.BytesToAddress([]byte{5}):  &bigModExp{eip2565: false},
-	common.BytesToAddress([]byte{6}):  &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{7}):  &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{8}):  &bn256PairingIstanbul{},
-	common.BytesToAddress([]byte{9}):  &blake2F{},
-	common.BytesToAddress([]byte{10}): &bls12381G1Add{},
-	common.BytesToAddress([]byte{11}): &bls12381G1Mul{},
-	common.BytesToAddress([]byte{12}): &bls12381G1MultiExp{},
-	common.BytesToAddress([]byte{13}): &bls12381G2Add{},
-	common.BytesToAddress([]byte{14}): &bls12381G2Mul{},
-	common.BytesToAddress([]byte{15}): &bls12381G2MultiExp{},
-	common.BytesToAddress([]byte{16}): &bls12381Pairing{},
-	common.BytesToAddress([]byte{17}): &bls12381MapG1{},
-	common.BytesToAddress([]byte{18}): &bls12381MapG2{},
-}
-
-var (
-	PrecompiledAddressesYoloV2    []common.Address
-	PrecompiledAddressesIstanbul  []common.Address
-	PrecompiledAddressesByzantium []common.Address
-	PrecompiledAddressesHomestead []common.Address
-)
-
-func init() {
-	for k := range PrecompiledContractsHomestead {
-		PrecompiledAddressesHomestead = append(PrecompiledAddressesHomestead, k)
+// PrecompiledContractsForConfig returns a map containing valid precompiled contracts for a given point in a chain config.
+func PrecompiledContractsForConfig(config ctypes.ChainConfigurator, bn *big.Int) map[common.Address]PrecompiledContract {
+	// Copying to a new map is necessary because assigning to the original map
+	// creates a memory reference. Further, setting the vals to nil in case of nonconfiguration causes
+	// a panic during tests because they run asynchronously (also a valid reason for using an explicit copy).
+	precompileds := make(map[common.Address]PrecompiledContract)
+	for k, v := range basePrecompiledContracts {
+		precompileds[k] = v
 	}
-	for k := range PrecompiledContractsByzantium {
-		PrecompiledAddressesHomestead = append(PrecompiledAddressesByzantium, k)
+	if config.IsEnabled(config.GetEIP198Transition, bn) {
+		precompileds[common.BytesToAddress([]byte{5})] = &bigModExp{}
 	}
-	for k := range PrecompiledContractsIstanbul {
-		PrecompiledAddressesIstanbul = append(PrecompiledAddressesIstanbul, k)
+	if config.IsEnabled(config.GetEIP213Transition, bn) {
+		if config.IsEnabled(config.GetEIP1108Transition, bn) {
+			precompileds[common.BytesToAddress([]byte{6})] = &bn256AddIstanbul{}
+			precompileds[common.BytesToAddress([]byte{7})] = &bn256ScalarMulIstanbul{}
+		} else {
+			precompileds[common.BytesToAddress([]byte{6})] = &bn256AddByzantium{}
+			precompileds[common.BytesToAddress([]byte{7})] = &bn256ScalarMulByzantium{}
+		}
 	}
-	for k := range PrecompiledContractsYoloV2 {
-		PrecompiledAddressesYoloV2 = append(PrecompiledAddressesYoloV2, k)
+	if config.IsEnabled(config.GetEIP212Transition, bn) {
+		if config.IsEnabled(config.GetEIP1108Transition, bn) {
+			precompileds[common.BytesToAddress([]byte{8})] = &bn256PairingIstanbul{}
+		} else {
+			precompileds[common.BytesToAddress([]byte{8})] = &bn256PairingByzantium{}
+		}
 	}
+	if config.IsEnabled(config.GetEIP152Transition, bn) {
+		precompileds[common.BytesToAddress([]byte{9})] = &blake2F{}
+	}
+	if config.IsEnabled(config.GetEIP2537Transition, bn) {
+		precompileds[common.BytesToAddress([]byte{10})] = &bls12381G1Add{}
+		precompileds[common.BytesToAddress([]byte{11})] = &bls12381G1Mul{}
+		precompileds[common.BytesToAddress([]byte{12})] = &bls12381G1MultiExp{}
+		precompileds[common.BytesToAddress([]byte{13})] = &bls12381G2Add{}
+		precompileds[common.BytesToAddress([]byte{14})] = &bls12381G2Mul{}
+		precompileds[common.BytesToAddress([]byte{15})] = &bls12381G2MultiExp{}
+		precompileds[common.BytesToAddress([]byte{16})] = &bls12381Pairing{}
+		precompileds[common.BytesToAddress([]byte{17})] = &bls12381MapG1{}
+		precompileds[common.BytesToAddress([]byte{18})] = &bls12381MapG2{}
+	}
+
+	return precompileds
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.
@@ -142,7 +115,7 @@ func RunPrecompiledContract(p PrecompiledContract, input []byte, suppliedGas uin
 type ecrecover struct{}
 
 func (c *ecrecover) RequiredGas(input []byte) uint64 {
-	return params.EcrecoverGas
+	return vars.EcrecoverGas
 }
 
 func (c *ecrecover) Run(input []byte) ([]byte, error) {
@@ -184,7 +157,7 @@ type sha256hash struct{}
 // This method does not require any overflow checking as the input size gas costs
 // required for anything significant is so high it's impossible to pay for.
 func (c *sha256hash) RequiredGas(input []byte) uint64 {
-	return uint64(len(input)+31)/32*params.Sha256PerWordGas + params.Sha256BaseGas
+	return uint64(len(input)+31)/32*vars.Sha256PerWordGas + vars.Sha256BaseGas
 }
 func (c *sha256hash) Run(input []byte) ([]byte, error) {
 	h := sha256.Sum256(input)
@@ -199,7 +172,7 @@ type ripemd160hash struct{}
 // This method does not require any overflow checking as the input size gas costs
 // required for anything significant is so high it's impossible to pay for.
 func (c *ripemd160hash) RequiredGas(input []byte) uint64 {
-	return uint64(len(input)+31)/32*params.Ripemd160PerWordGas + params.Ripemd160BaseGas
+	return uint64(len(input)+31)/32*vars.Ripemd160PerWordGas + vars.Ripemd160BaseGas
 }
 func (c *ripemd160hash) Run(input []byte) ([]byte, error) {
 	ripemd := ripemd160.New()
@@ -215,26 +188,21 @@ type dataCopy struct{}
 // This method does not require any overflow checking as the input size gas costs
 // required for anything significant is so high it's impossible to pay for.
 func (c *dataCopy) RequiredGas(input []byte) uint64 {
-	return uint64(len(input)+31)/32*params.IdentityPerWordGas + params.IdentityBaseGas
+	return uint64(len(input)+31)/32*vars.IdentityPerWordGas + vars.IdentityBaseGas
 }
 func (c *dataCopy) Run(in []byte) ([]byte, error) {
 	return in, nil
 }
 
 // bigModExp implements a native big integer exponential modular operation.
-type bigModExp struct {
-	eip2565 bool
-}
+type bigModExp struct{}
 
 var (
 	big0      = big.NewInt(0)
 	big1      = big.NewInt(1)
-	big3      = big.NewInt(3)
 	big4      = big.NewInt(4)
-	big7      = big.NewInt(7)
 	big8      = big.NewInt(8)
 	big16     = big.NewInt(16)
-	big20     = big.NewInt(20)
 	big32     = big.NewInt(32)
 	big64     = big.NewInt(64)
 	big96     = big.NewInt(96)
@@ -243,34 +211,6 @@ var (
 	big3072   = big.NewInt(3072)
 	big199680 = big.NewInt(199680)
 )
-
-// modexpMultComplexity implements bigModexp multComplexity formula, as defined in EIP-198
-//
-// def mult_complexity(x):
-//    if x <= 64: return x ** 2
-//    elif x <= 1024: return x ** 2 // 4 + 96 * x - 3072
-//    else: return x ** 2 // 16 + 480 * x - 199680
-//
-// where is x is max(length_of_MODULUS, length_of_BASE)
-func modexpMultComplexity(x *big.Int) *big.Int {
-	switch {
-	case x.Cmp(big64) <= 0:
-		x.Mul(x, x) // x ** 2
-	case x.Cmp(big1024) <= 0:
-		// (x ** 2 // 4 ) + ( 96 * x - 3072)
-		x = new(big.Int).Add(
-			new(big.Int).Div(new(big.Int).Mul(x, x), big4),
-			new(big.Int).Sub(new(big.Int).Mul(big96, x), big3072),
-		)
-	default:
-		// (x ** 2 // 16) + (480 * x - 199680)
-		x = new(big.Int).Add(
-			new(big.Int).Div(new(big.Int).Mul(x, x), big16),
-			new(big.Int).Sub(new(big.Int).Mul(big480, x), big199680),
-		)
-	}
-	return x
-}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bigModExp) RequiredGas(input []byte) uint64 {
@@ -306,36 +246,25 @@ func (c *bigModExp) RequiredGas(input []byte) uint64 {
 		adjExpLen.Mul(big8, adjExpLen)
 	}
 	adjExpLen.Add(adjExpLen, big.NewInt(int64(msb)))
+
 	// Calculate the gas cost of the operation
 	gas := new(big.Int).Set(math.BigMax(modLen, baseLen))
-	if c.eip2565 {
-		// EIP-2565 has three changes
-		// 1. Different multComplexity (inlined here)
-		// in EIP-2565 (https://eips.ethereum.org/EIPS/eip-2565):
-		//
-		// def mult_complexity(x):
-		//    ceiling(x/8)^2
-		//
-		//where is x is max(length_of_MODULUS, length_of_BASE)
-		gas = gas.Add(gas, big7)
-		gas = gas.Div(gas, big8)
+	switch {
+	case gas.Cmp(big64) <= 0:
 		gas.Mul(gas, gas)
-
-		gas.Mul(gas, math.BigMax(adjExpLen, big1))
-		// 2. Different divisor (`GQUADDIVISOR`) (3)
-		gas.Div(gas, big3)
-		if gas.BitLen() > 64 {
-			return math.MaxUint64
-		}
-		// 3. Minimum price of 200 gas
-		if gas.Uint64() < 200 {
-			return 200
-		}
-		return gas.Uint64()
+	case gas.Cmp(big1024) <= 0:
+		gas = new(big.Int).Add(
+			new(big.Int).Div(new(big.Int).Mul(gas, gas), big4),
+			new(big.Int).Sub(new(big.Int).Mul(big96, gas), big3072),
+		)
+	default:
+		gas = new(big.Int).Add(
+			new(big.Int).Div(new(big.Int).Mul(gas, gas), big16),
+			new(big.Int).Sub(new(big.Int).Mul(big480, gas), big199680),
+		)
 	}
-	gas = modexpMultComplexity(gas)
 	gas.Mul(gas, math.BigMax(adjExpLen, big1))
-	gas.Div(gas, big20)
+	gas.Div(gas, new(big.Int).SetUint64(vars.ModExpQuadCoeffDiv))
 
 	if gas.BitLen() > 64 {
 		return math.MaxUint64
@@ -413,7 +342,7 @@ type bn256AddIstanbul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256AddIstanbul) RequiredGas(input []byte) uint64 {
-	return params.Bn256AddGasIstanbul
+	return vars.Bn256AddGasIstanbul
 }
 
 func (c *bn256AddIstanbul) Run(input []byte) ([]byte, error) {
@@ -426,7 +355,7 @@ type bn256AddByzantium struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256AddByzantium) RequiredGas(input []byte) uint64 {
-	return params.Bn256AddGasByzantium
+	return vars.Bn256AddGasByzantium
 }
 
 func (c *bn256AddByzantium) Run(input []byte) ([]byte, error) {
@@ -451,7 +380,7 @@ type bn256ScalarMulIstanbul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256ScalarMulIstanbul) RequiredGas(input []byte) uint64 {
-	return params.Bn256ScalarMulGasIstanbul
+	return vars.Bn256ScalarMulGasIstanbul
 }
 
 func (c *bn256ScalarMulIstanbul) Run(input []byte) ([]byte, error) {
@@ -464,7 +393,7 @@ type bn256ScalarMulByzantium struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256ScalarMulByzantium) RequiredGas(input []byte) uint64 {
-	return params.Bn256ScalarMulGasByzantium
+	return vars.Bn256ScalarMulGasByzantium
 }
 
 func (c *bn256ScalarMulByzantium) Run(input []byte) ([]byte, error) {
@@ -519,7 +448,7 @@ type bn256PairingIstanbul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256PairingIstanbul) RequiredGas(input []byte) uint64 {
-	return params.Bn256PairingBaseGasIstanbul + uint64(len(input)/192)*params.Bn256PairingPerPointGasIstanbul
+	return vars.Bn256PairingBaseGasIstanbul + uint64(len(input)/192)*vars.Bn256PairingPerPointGasIstanbul
 }
 
 func (c *bn256PairingIstanbul) Run(input []byte) ([]byte, error) {
@@ -532,7 +461,7 @@ type bn256PairingByzantium struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bn256PairingByzantium) RequiredGas(input []byte) uint64 {
-	return params.Bn256PairingBaseGasByzantium + uint64(len(input)/192)*params.Bn256PairingPerPointGasByzantium
+	return vars.Bn256PairingBaseGasByzantium + uint64(len(input)/192)*vars.Bn256PairingPerPointGasByzantium
 }
 
 func (c *bn256PairingByzantium) Run(input []byte) ([]byte, error) {
@@ -612,7 +541,7 @@ type bls12381G1Add struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381G1Add) RequiredGas(input []byte) uint64 {
-	return params.Bls12381G1AddGas
+	return vars.Bls12381G1AddGas
 }
 
 func (c *bls12381G1Add) Run(input []byte) ([]byte, error) {
@@ -650,7 +579,7 @@ type bls12381G1Mul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381G1Mul) RequiredGas(input []byte) uint64 {
-	return params.Bls12381G1MulGas
+	return vars.Bls12381G1MulGas
 }
 
 func (c *bls12381G1Mul) Run(input []byte) ([]byte, error) {
@@ -694,13 +623,13 @@ func (c *bls12381G1MultiExp) RequiredGas(input []byte) uint64 {
 	}
 	// Lookup discount value for G1 point, scalar value pair length
 	var discount uint64
-	if dLen := len(params.Bls12381MultiExpDiscountTable); k < dLen {
-		discount = params.Bls12381MultiExpDiscountTable[k-1]
+	if dLen := len(vars.Bls12381MultiExpDiscountTable); k < dLen {
+		discount = vars.Bls12381MultiExpDiscountTable[k-1]
 	} else {
-		discount = params.Bls12381MultiExpDiscountTable[dLen-1]
+		discount = vars.Bls12381MultiExpDiscountTable[dLen-1]
 	}
 	// Calculate gas and return the result
-	return (uint64(k) * params.Bls12381G1MulGas * discount) / 1000
+	return (uint64(k) * vars.Bls12381G1MulGas * discount) / 1000
 }
 
 func (c *bls12381G1MultiExp) Run(input []byte) ([]byte, error) {
@@ -743,7 +672,7 @@ type bls12381G2Add struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381G2Add) RequiredGas(input []byte) uint64 {
-	return params.Bls12381G2AddGas
+	return vars.Bls12381G2AddGas
 }
 
 func (c *bls12381G2Add) Run(input []byte) ([]byte, error) {
@@ -781,7 +710,7 @@ type bls12381G2Mul struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381G2Mul) RequiredGas(input []byte) uint64 {
-	return params.Bls12381G2MulGas
+	return vars.Bls12381G2MulGas
 }
 
 func (c *bls12381G2Mul) Run(input []byte) ([]byte, error) {
@@ -825,13 +754,13 @@ func (c *bls12381G2MultiExp) RequiredGas(input []byte) uint64 {
 	}
 	// Lookup discount value for G2 point, scalar value pair length
 	var discount uint64
-	if dLen := len(params.Bls12381MultiExpDiscountTable); k < dLen {
-		discount = params.Bls12381MultiExpDiscountTable[k-1]
+	if dLen := len(vars.Bls12381MultiExpDiscountTable); k < dLen {
+		discount = vars.Bls12381MultiExpDiscountTable[k-1]
 	} else {
-		discount = params.Bls12381MultiExpDiscountTable[dLen-1]
+		discount = vars.Bls12381MultiExpDiscountTable[dLen-1]
 	}
 	// Calculate gas and return the result
-	return (uint64(k) * params.Bls12381G2MulGas * discount) / 1000
+	return (uint64(k) * vars.Bls12381G2MulGas * discount) / 1000
 }
 
 func (c *bls12381G2MultiExp) Run(input []byte) ([]byte, error) {
@@ -874,7 +803,7 @@ type bls12381Pairing struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381Pairing) RequiredGas(input []byte) uint64 {
-	return params.Bls12381PairingBaseGas + uint64(len(input)/384)*params.Bls12381PairingPerPairGas
+	return vars.Bls12381PairingBaseGas + uint64(len(input)/384)*vars.Bls12381PairingPerPairGas
 }
 
 func (c *bls12381Pairing) Run(input []byte) ([]byte, error) {
@@ -953,7 +882,7 @@ type bls12381MapG1 struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381MapG1) RequiredGas(input []byte) uint64 {
-	return params.Bls12381MapG1Gas
+	return vars.Bls12381MapG1Gas
 }
 
 func (c *bls12381MapG1) Run(input []byte) ([]byte, error) {
@@ -988,7 +917,7 @@ type bls12381MapG2 struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bls12381MapG2) RequiredGas(input []byte) uint64 {
-	return params.Bls12381MapG2Gas
+	return vars.Bls12381MapG2Gas
 }
 
 func (c *bls12381MapG2) Run(input []byte) ([]byte, error) {

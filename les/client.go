@@ -42,7 +42,10 @@ import (
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/confp"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
+	"github.com/ethereum/go-ethereum/params/types/goethereum"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -85,7 +88,7 @@ func New(stack *node.Node, config *eth.Config) (*LightEthereum, error) {
 		return nil, err
 	}
 	chainConfig, genesisHash, genesisErr := core.SetupGenesisBlock(chainDb, config.Genesis)
-	if _, isCompat := genesisErr.(*params.ConfigCompatError); genesisErr != nil && !isCompat {
+	if _, isCompat := genesisErr.(*confp.ConfigCompatError); genesisErr != nil && !isCompat {
 		return nil, genesisErr
 	}
 	log.Info("Initialised chain configuration", "config", chainConfig)
@@ -106,13 +109,13 @@ func New(stack *node.Node, config *eth.Config) (*LightEthereum, error) {
 		accountManager: stack.AccountManager(),
 		engine:         eth.CreateConsensusEngine(stack, chainConfig, &config.Ethash, nil, false, chainDb),
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
-		bloomIndexer:   eth.NewBloomIndexer(chainDb, params.BloomBitsBlocksClient, params.HelperTrieConfirmations),
+		bloomIndexer:   eth.NewBloomIndexer(chainDb, vars.BloomBitsBlocksClient, vars.HelperTrieConfirmations),
 		valueTracker:   lpc.NewValueTracker(lespayDb, &mclock.System{}, requestList, time.Minute, 1/float64(time.Hour), 1/float64(time.Hour*100), 1/float64(time.Hour*1000)),
 		p2pServer:      stack.Server(),
 	}
 	peers.subscribe((*vtSubscription)(leth.valueTracker))
 
-	dnsdisc, err := leth.setupDiscovery()
+	dnsdisc, err := leth.setupDiscovery(&stack.Config().P2P)
 	if err != nil {
 		return nil, err
 	}
@@ -124,13 +127,17 @@ func New(stack *node.Node, config *eth.Config) (*LightEthereum, error) {
 	leth.relay = newLesTxRelay(peers, leth.retriever)
 
 	leth.odr = NewLesOdr(chainDb, light.DefaultClientIndexerConfig, leth.retriever)
-	leth.chtIndexer = light.NewChtIndexer(chainDb, leth.odr, params.CHTFrequency, params.HelperTrieConfirmations, config.LightNoPrune)
-	leth.bloomTrieIndexer = light.NewBloomTrieIndexer(chainDb, leth.odr, params.BloomBitsBlocksClient, params.BloomTrieFrequency, config.LightNoPrune)
+	leth.chtIndexer = light.NewChtIndexer(chainDb, leth.odr, vars.CHTFrequency, vars.HelperTrieConfirmations, config.LightNoPrune)
+	leth.bloomTrieIndexer = light.NewBloomTrieIndexer(chainDb, leth.odr, vars.BloomBitsBlocksClient, vars.BloomTrieFrequency, config.LightNoPrune)
 	leth.odr.SetIndexers(leth.chtIndexer, leth.bloomTrieIndexer, leth.bloomIndexer)
 
 	checkpoint := config.Checkpoint
 	if checkpoint == nil {
-		checkpoint = params.TrustedCheckpoints[genesisHash]
+		if p, ok := chainConfig.(*coregeth.CoreGethChainConfig); ok {
+			checkpoint = p.TrustedCheckpoint
+		} else if p, ok := chainConfig.(*goethereum.ChainConfig); ok {
+			checkpoint = p.TrustedCheckpoint
+		}
 	}
 	// Note: NewLightChain adds the trusted checkpoint so it needs an ODR with
 	// indexers already set but not started yet
@@ -152,7 +159,7 @@ func New(stack *node.Node, config *eth.Config) (*LightEthereum, error) {
 	leth.pruner = newPruner(chainDb, leth.chtIndexer, leth.bloomTrieIndexer)
 
 	// Rewind the chain in case of an incompatible config upgrade.
-	if compat, ok := genesisErr.(*params.ConfigCompatError); ok {
+	if compat, ok := genesisErr.(*confp.ConfigCompatError); ok {
 		log.Warn("Rewinding chain to upgrade configuration", "err", compat)
 		leth.blockchain.SetHead(compat.RewindTo)
 		rawdb.WriteChainConfig(chainDb, genesisHash, chainConfig)
@@ -289,7 +296,7 @@ func (s *LightEthereum) Start() error {
 	s.serverPool.start()
 	// Start bloom request workers.
 	s.wg.Add(bloomServiceThreads)
-	s.startBloomHandlers(params.BloomBitsBlocksClient)
+	s.startBloomHandlers(vars.BloomBitsBlocksClient)
 	s.handler.start()
 
 	return nil

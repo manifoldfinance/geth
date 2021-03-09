@@ -20,11 +20,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"reflect"
 	"unicode"
 
-	"gopkg.in/urfave/cli.v1"
+	"github.com/ethereum/go-ethereum/common/math"
+	cli "gopkg.in/urfave/cli.v1"
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/eth"
@@ -107,7 +109,7 @@ func loadConfig(file string, cfg *gethConfig) error {
 
 func defaultNodeConfig() node.Config {
 	cfg := node.DefaultConfig
-	cfg.Name = clientIdentifier
+	cfg.Name = databaseIdentifier
 	cfg.Version = params.VersionWithCommit(gitCommit, gitDate)
 	cfg.HTTPModules = append(cfg.HTTPModules, "eth")
 	cfg.WSModules = append(cfg.WSModules, "eth")
@@ -161,6 +163,18 @@ func checkWhisper(ctx *cli.Context) {
 // makeFullNode loads geth configuration and creates the Ethereum backend.
 func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	stack, cfg := makeConfigNode(ctx)
+
+	// Handle cross-chain configuration override cases.
+	if ctx.GlobalIsSet(utils.ECBP1100Flag.Name) {
+		if n := ctx.GlobalUint64(utils.ECBP1100Flag.Name); n != math.MaxUint64 {
+			cfg.Eth.ECBP1100 = new(big.Int).SetUint64(n)
+		}
+	}
+	if ctx.GlobalIsSet(utils.ECBP1100NoDisableFlag.Name) {
+		if enable := ctx.GlobalBool(utils.ECBP1100NoDisableFlag.Name); enable {
+			cfg.Eth.ECBP1100NoDisable = &enable
+		}
+	}
 
 	backend := utils.RegisterEthService(stack, &cfg.Eth)
 

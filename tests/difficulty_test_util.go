@@ -17,6 +17,7 @@
 package tests
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 
@@ -25,17 +26,114 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/types/goethereum"
 )
 
-//go:generate gencodec -type DifficultyTest -field-override difficultyTestMarshaling -out gen_difficultytest.go
+//go:generate [gencodec -type DifficultyTest -field-override difficultyTestMarshaling -out gen_difficultytest.go]
+
+var (
+	mainnetChainConfig = &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
+		ChainID:        big.NewInt(1),
+		HomesteadBlock: big.NewInt(1150000),
+		DAOForkBlock:   big.NewInt(1920000),
+		DAOForkSupport: true,
+		EIP150Block:    big.NewInt(2463000),
+		EIP150Hash:     common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
+		EIP155Block:    big.NewInt(2675000),
+		EIP158Block:    big.NewInt(2675000),
+		ByzantiumBlock: big.NewInt(4370000),
+	}
+)
+
+var difficultyChainConfigurations = map[string]ctypes.ChainConfigurator{
+	"Ropsten":  params.RopstenChainConfig,
+	"Morden":   params.RopstenChainConfig,
+	"Frontier": &goethereum.ChainConfig{},
+	"Homestead": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
+		HomesteadBlock: big.NewInt(0),
+	},
+	"Byzantium": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
+		ByzantiumBlock: big.NewInt(0),
+	},
+	"MainNetwork":       mainnetChainConfig,
+	"CustomMainNetwork": mainnetChainConfig,
+	"Constantinople": &goethereum.ChainConfig{
+		Ethash:              new(ctypes.EthashConfig),
+		HomesteadBlock:      big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+	},
+	"difficulty.json": mainnetChainConfig,
+	"ETC_Atlantis": &coregeth.CoreGethChainConfig{
+		Ethash:        new(ctypes.EthashConfig),
+		EIP100FBlock:  big.NewInt(0),
+		EIP140FBlock:  big.NewInt(0),
+		EIP198FBlock:  big.NewInt(0),
+		EIP211FBlock:  big.NewInt(0),
+		EIP212FBlock:  big.NewInt(0),
+		EIP213FBlock:  big.NewInt(0),
+		EIP214FBlock:  big.NewInt(0),
+		EIP658FBlock:  big.NewInt(0),
+		DisposalBlock: big.NewInt(0),
+	},
+	"ETC_Agharta": &coregeth.CoreGethChainConfig{
+		Ethash:        new(ctypes.EthashConfig),
+		EIP100FBlock:  big.NewInt(0),
+		EIP140FBlock:  big.NewInt(0),
+		EIP198FBlock:  big.NewInt(0),
+		EIP211FBlock:  big.NewInt(0),
+		EIP212FBlock:  big.NewInt(0),
+		EIP213FBlock:  big.NewInt(0),
+		EIP214FBlock:  big.NewInt(0),
+		EIP658FBlock:  big.NewInt(0),
+		EIP145FBlock:  big.NewInt(0),
+		EIP1014FBlock: big.NewInt(0),
+		EIP1052FBlock: big.NewInt(0),
+		EIP1283FBlock: big.NewInt(0),
+		EIP2200FBlock: big.NewInt(0), // Petersburg
+		DisposalBlock: big.NewInt(0),
+	},
+	"EIP2384": &goethereum.ChainConfig{
+		Ethash:              new(ctypes.EthashConfig),
+		HomesteadBlock:      big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		IstanbulBlock:       big.NewInt(0),
+		MuirGlacierBlock:    big.NewInt(0),
+	},
+	"ETC_Phoenix": &coregeth.CoreGethChainConfig{
+		Ethash:        new(ctypes.EthashConfig),
+		EIP100FBlock:  big.NewInt(0),
+		EIP140FBlock:  big.NewInt(0),
+		EIP198FBlock:  big.NewInt(0),
+		EIP211FBlock:  big.NewInt(0),
+		EIP212FBlock:  big.NewInt(0),
+		EIP213FBlock:  big.NewInt(0),
+		EIP214FBlock:  big.NewInt(0),
+		EIP658FBlock:  big.NewInt(0),
+		EIP145FBlock:  big.NewInt(0),
+		EIP1014FBlock: big.NewInt(0),
+		EIP1052FBlock: big.NewInt(0),
+		EIP1283FBlock: big.NewInt(0),
+		EIP2200FBlock: big.NewInt(0), // Petersburg
+		DisposalBlock: big.NewInt(0),
+	},
+}
 
 type DifficultyTest struct {
-	ParentTimestamp    uint64      `json:"parentTimestamp"`
-	ParentDifficulty   *big.Int    `json:"parentDifficulty"`
-	UncleHash          common.Hash `json:"parentUncles"`
-	CurrentTimestamp   uint64      `json:"currentTimestamp"`
-	CurrentBlockNumber uint64      `json:"currentBlockNumber"`
-	CurrentDifficulty  *big.Int    `json:"currentDifficulty"`
+	ParentTimestamp    uint64       `json:"parentTimestamp"`
+	ParentDifficulty   *big.Int     `json:"parentDifficulty"`
+	UncleHash          common.Hash  `json:"parentUncles"`
+	CurrentTimestamp   uint64       `json:"currentTimestamp"`
+	CurrentBlockNumber uint64       `json:"currentBlockNumber"`
+	CurrentDifficulty  *big.Int     `json:"currentDifficulty"`
+	Chainspec          chainspecRef `json:"chainspec"`
+	Name               string       `json:"name"`
 }
 
 type difficultyTestMarshaling struct {
@@ -45,9 +143,16 @@ type difficultyTestMarshaling struct {
 	CurrentDifficulty  *math.HexOrDecimal256
 	UncleHash          common.Hash
 	CurrentBlockNumber math.HexOrDecimal64
+	Chainspec          chainspecRef `json:"chainspec"`
+	Name               string
 }
 
-func (test *DifficultyTest) Run(config *params.ChainConfig) error {
+func (t *DifficultyTest) String() string {
+	b, _ := json.Marshal(t)
+	return string(b)
+}
+
+func (test *DifficultyTest) Run(config ctypes.ChainConfigurator) error {
 	parentNumber := big.NewInt(int64(test.CurrentBlockNumber - 1))
 	parent := &types.Header{
 		Difficulty: test.ParentDifficulty,
@@ -59,10 +164,11 @@ func (test *DifficultyTest) Run(config *params.ChainConfig) error {
 	actual := ethash.CalcDifficulty(config, test.CurrentTimestamp, parent)
 	exp := test.CurrentDifficulty
 
+	b, _ := json.Marshal(config)
 	if actual.Cmp(exp) != 0 {
-		return fmt.Errorf("parent[time %v diff %v unclehash:%x] child[time %v number %v] diff %v != expected %v",
-			test.ParentTimestamp, test.ParentDifficulty, test.UncleHash,
-			test.CurrentTimestamp, test.CurrentBlockNumber, actual, exp)
+		return fmt.Errorf(`%s got: %v, want: %v
+test: %v
+config: %s`, test.Name, actual, exp, test, string(b))
 	}
 	return nil
 

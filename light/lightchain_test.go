@@ -18,7 +18,6 @@ package light
 
 import (
 	"context"
-	"errors"
 	"math/big"
 	"testing"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
 )
 
 // So we can deterministically seed different blockchains
@@ -54,8 +54,8 @@ func makeHeaderChain(parent *types.Header, n int, db ethdb.Database, seed int) [
 // header only chain.
 func newCanonical(n int) (ethdb.Database, *LightChain, error) {
 	db := rawdb.NewMemoryDatabase()
-	gspec := core.Genesis{Config: params.TestChainConfig}
-	genesis := gspec.MustCommit(db)
+	gspec := genesisT.Genesis{Config: params.TestChainConfig}
+	genesis := core.MustCommitGenesis(db, &gspec)
 	blockchain, _ := NewLightChain(&dummyOdr{db: db, indexerConfig: TestClientIndexerConfig}, gspec.Config, ethash.NewFaker(), nil)
 
 	// Create and inject the requested chain
@@ -71,11 +71,11 @@ func newCanonical(n int) (ethdb.Database, *LightChain, error) {
 // newTestLightChain creates a LightChain that doesn't validate anything.
 func newTestLightChain() *LightChain {
 	db := rawdb.NewMemoryDatabase()
-	gspec := &core.Genesis{
+	gspec := &genesisT.Genesis{
 		Difficulty: big.NewInt(1),
 		Config:     params.TestChainConfig,
 	}
-	gspec.MustCommit(db)
+	core.MustCommitGenesis(db, gspec)
 	lc, err := NewLightChain(&dummyOdr{db: db}, gspec.Config, ethash.NewFullFaker(), nil)
 	if err != nil {
 		panic(err)
@@ -322,7 +322,7 @@ func TestBadHeaderHashes(t *testing.T) {
 	var err error
 	headers := makeHeaderChainWithDiff(bc.genesisBlock, []int{1, 2, 4}, 10)
 	core.BadHashes[headers[2].Hash()] = true
-	if _, err = bc.InsertHeaderChain(headers, 1); !errors.Is(err, core.ErrBlacklistedHash) {
+	if _, err = bc.InsertHeaderChain(headers, 1); err != core.ErrBlacklistedHash {
 		t.Errorf("error mismatch: have: %v, want %v", err, core.ErrBlacklistedHash)
 	}
 }

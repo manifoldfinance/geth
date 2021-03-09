@@ -24,20 +24,20 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 )
 
 // statePrefetcher is a basic Prefetcher, which blindly executes a block on top
 // of an arbitrary state with the goal of prefetching potentially useful state
 // data from disk before the main block processor start executing.
 type statePrefetcher struct {
-	config *params.ChainConfig // Chain configuration options
-	bc     *BlockChain         // Canonical block chain
-	engine consensus.Engine    // Consensus engine used for block rewards
+	config ctypes.ChainConfigurator // Chain configuration options
+	bc     *BlockChain              // Canonical block chain
+	engine consensus.Engine         // Consensus engine used for block rewards
 }
 
 // newStatePrefetcher initialises a new statePrefetcher.
-func newStatePrefetcher(config *params.ChainConfig, bc *BlockChain, engine consensus.Engine) *statePrefetcher {
+func newStatePrefetcher(config ctypes.ChainConfigurator, bc *BlockChain, engine consensus.Engine) *statePrefetcher {
 	return &statePrefetcher{
 		config: config,
 		bc:     bc,
@@ -54,7 +54,7 @@ func (p *statePrefetcher) Prefetch(block *types.Block, statedb *state.StateDB, c
 		gaspool = new(GasPool).AddGas(block.GasLimit())
 	)
 	// Iterate over and process the individual transactions
-	byzantium := p.config.IsByzantium(block.Number())
+	byzantium := p.config.IsEnabled(p.config.GetEIP161abcTransition, block.Number())
 	for i, tx := range block.Transactions() {
 		// If block precaching was interrupted, abort
 		if interrupt != nil && atomic.LoadUint32(interrupt) == 1 {
@@ -79,16 +79,15 @@ func (p *statePrefetcher) Prefetch(block *types.Block, statedb *state.StateDB, c
 // precacheTransaction attempts to apply a transaction to the given state database
 // and uses the input parameters for its environment. The goal is not to execute
 // the transaction successfully, rather to warm up touched data slots.
-func precacheTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gaspool *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, cfg vm.Config) error {
+func precacheTransaction(config ctypes.ChainConfigurator, bc ChainContext, author *common.Address, gaspool *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, cfg vm.Config) error {
 	// Convert the transaction into an executable message and pre-cache its sender
 	msg, err := tx.AsMessage(types.MakeSigner(config, header.Number))
 	if err != nil {
 		return err
 	}
 	// Create the EVM and execute the transaction
-	context := NewEVMBlockContext(header, bc, author)
-	txContext := NewEVMTxContext(msg)
-	vm := vm.NewEVM(context, txContext, statedb, config, cfg)
+	context := NewEVMContext(msg, header, bc, author)
+	vm := vm.NewEVM(context, statedb, config, cfg)
 
 	_, err = ApplyMessage(vm, msg, gaspool)
 	return err

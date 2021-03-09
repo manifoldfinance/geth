@@ -79,7 +79,7 @@ var (
 	codePrefix            = []byte("c") // codePrefix + code hash -> account code
 
 	preimagePrefix = []byte("secure-key-")      // preimagePrefix + hash -> preimage
-	configPrefix   = []byte("ethereum-config-") // config prefix for the db
+	ConfigPrefix   = []byte("ethereum-config-") // config prefix for the db
 
 	// Chain index prefixes (use `i` + single byte to avoid mixing data types).
 	BloomBitsIndexPrefix = []byte("iB") // BloomBitsIndexPrefix is the data table of a chain indexer to track its progress
@@ -89,6 +89,37 @@ var (
 )
 
 const (
+
+	// FreezerRemoteHeaderTable indicates the name of the freezer header table.
+	// This is an exported value for remote freezer servers to use if they want.
+	// It is equivalent to the corresponding private value,
+	// and exists only to minimize code differentiation from the built-in freezer implementation.
+	FreezerRemoteHeaderTable = freezerHeaderTable
+
+	// FreezerRemoteHashTable indicates the name of the freezer canonical hash table.
+	// This is an exported value for remote freezer servers to use if they want.
+	// It is equivalent to the corresponding private value,
+	// and exists only to minimize code differentiation from the built-in freezer implementation.
+	FreezerRemoteHashTable = freezerHashTable
+
+	// FreezerRemoteBodiesTable indicates the name of the freezer block body table.
+	// This is an exported value for remote freezer servers to use if they want.
+	// It is equivalent to the corresponding private value,
+	// and exists only to minimize code differentiation from the built-in freezer implementation.
+	FreezerRemoteBodiesTable = freezerBodiesTable
+
+	// FreezerRemoteReceiptTable indicates the name of the freezer receipts table.
+	// This is an exported value for remote freezer servers to use if they want.
+	// It is equivalent to the corresponding private value,
+	// and exists only to minimize code differentiation from the built-in freezer implementation.
+	FreezerRemoteReceiptTable = freezerReceiptTable
+
+	// FreezerRemoteDifficultyTable indicates the name of the freezer total difficulty table.
+	// This is an exported value for remote freezer servers to use if they want.
+	// It is equivalent to the corresponding private value,
+	// and exists only to minimize code differentiation from the built-in freezer implementation.
+	FreezerRemoteDifficultyTable = freezerDifficultyTable
+
 	// freezerHeaderTable indicates the name of the freezer header table.
 	freezerHeaderTable = "headers"
 
@@ -214,7 +245,7 @@ func IsCodeKey(key []byte) (bool, []byte) {
 	return false, nil
 }
 
-// configKey = configPrefix + hash
-func configKey(hash common.Hash) []byte {
-	return append(configPrefix, hash.Bytes()...)
+// ConfigKey = ConfigPrefix + hash
+func ConfigKey(hash common.Hash) []byte {
+	return append(ConfigPrefix, hash.Bytes()...)
 }

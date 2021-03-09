@@ -21,89 +21,198 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/types/goethereum"
 )
 
 // Forks table defines supported forks and their chain config.
-var Forks = map[string]*params.ChainConfig{
-	"Frontier": {
+var Forks = map[string]ctypes.ChainConfigurator{
+	"Frontier": &goethereum.ChainConfig{
+		Ethash:  new(ctypes.EthashConfig),
 		ChainID: big.NewInt(1),
 	},
-	"Homestead": {
+	"Homestead": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
 		ChainID:        big.NewInt(1),
 		HomesteadBlock: big.NewInt(0),
 	},
-	"EIP150": {
-		ChainID:        big.NewInt(1),
-		HomesteadBlock: big.NewInt(0),
-		EIP150Block:    big.NewInt(0),
-	},
-	"EIP158": {
+	"EIP150": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
 		ChainID:        big.NewInt(1),
 		HomesteadBlock: big.NewInt(0),
 		EIP150Block:    big.NewInt(0),
-		EIP155Block:    big.NewInt(0),
-		EIP158Block:    big.NewInt(0),
 	},
-	"Byzantium": {
+	"EIP158": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
 		ChainID:        big.NewInt(1),
 		HomesteadBlock: big.NewInt(0),
 		EIP150Block:    big.NewInt(0),
 		EIP155Block:    big.NewInt(0),
 		EIP158Block:    big.NewInt(0),
-		DAOForkBlock:   big.NewInt(0),
+	},
+	"Byzantium": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
+		ChainID:        big.NewInt(1),
+		HomesteadBlock: big.NewInt(0),
+		EIP150Block:    big.NewInt(0),
+		EIP155Block:    big.NewInt(0),
+		EIP158Block:    big.NewInt(0),
 		ByzantiumBlock: big.NewInt(0),
 	},
-	"Constantinople": {
+	"ETC_Atlantis": &coregeth.CoreGethChainConfig{
+		NetworkID:          1,
+		Ethash:             new(ctypes.EthashConfig),
+		ChainID:            big.NewInt(61),
+		EIP2FBlock:         big.NewInt(0),
+		EIP7FBlock:         big.NewInt(0),
+		EIP150Block:        big.NewInt(0),
+		EIP155Block:        big.NewInt(0),
+		EIP160FBlock:       big.NewInt(0),
+		EIP161FBlock:       big.NewInt(0),
+		EIP170FBlock:       big.NewInt(0),
+		EIP100FBlock:       big.NewInt(0),
+		EIP140FBlock:       big.NewInt(0),
+		EIP198FBlock:       big.NewInt(0),
+		EIP211FBlock:       big.NewInt(0),
+		EIP212FBlock:       big.NewInt(0),
+		EIP213FBlock:       big.NewInt(0),
+		EIP214FBlock:       big.NewInt(0),
+		EIP658FBlock:       big.NewInt(0),
+		EIP145FBlock:       nil,
+		EIP1014FBlock:      nil,
+		EIP1052FBlock:      nil,
+		EIP1283FBlock:      nil,
+		EIP2200FBlock:      nil, // RePetersburg
+		DisposalBlock:      big.NewInt(0),
+		ECIP1017FBlock:     big.NewInt(5000000), // FIXME(meows) maybe
+		ECIP1017EraRounds:  big.NewInt(5000000),
+		ECIP1010PauseBlock: nil,
+		ECIP1010Length:     nil,
+	},
+	"Constantinople": &goethereum.ChainConfig{
+		Ethash:              new(ctypes.EthashConfig),
 		ChainID:             big.NewInt(1),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
-		DAOForkBlock:        big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
 		ConstantinopleBlock: big.NewInt(0),
-		PetersburgBlock:     big.NewInt(10000000),
+		PetersburgBlock:     nil,
 	},
-	"ConstantinopleFix": {
+	"ConstantinopleFix": &goethereum.ChainConfig{
+		Ethash:              new(ctypes.EthashConfig),
 		ChainID:             big.NewInt(1),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
-		DAOForkBlock:        big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
 		ConstantinopleBlock: big.NewInt(0),
 		PetersburgBlock:     big.NewInt(0),
 	},
-	"Istanbul": {
+	"ETC_Agharta": &coregeth.CoreGethChainConfig{
+		NetworkID:          1,
+		Ethash:             new(ctypes.EthashConfig),
+		ChainID:            big.NewInt(61),
+		EIP2FBlock:         big.NewInt(0),
+		EIP7FBlock:         big.NewInt(0),
+		EIP150Block:        big.NewInt(0),
+		EIP155Block:        big.NewInt(0),
+		EIP160FBlock:       big.NewInt(0),
+		EIP161FBlock:       big.NewInt(0),
+		EIP170FBlock:       big.NewInt(0),
+		EIP100FBlock:       big.NewInt(0),
+		EIP140FBlock:       big.NewInt(0),
+		EIP198FBlock:       big.NewInt(0),
+		EIP211FBlock:       big.NewInt(0),
+		EIP212FBlock:       big.NewInt(0),
+		EIP213FBlock:       big.NewInt(0),
+		EIP214FBlock:       big.NewInt(0),
+		EIP658FBlock:       big.NewInt(0),
+		EIP145FBlock:       big.NewInt(0),
+		EIP1014FBlock:      big.NewInt(0),
+		EIP1052FBlock:      big.NewInt(0),
+		EIP1283FBlock:      big.NewInt(0),
+		PetersburgBlock:    big.NewInt(0),
+		DisposalBlock:      big.NewInt(0),
+		ECIP1017FBlock:     big.NewInt(5000000), // FIXME(meows) maybe
+		ECIP1017EraRounds:  big.NewInt(5000000),
+		ECIP1010PauseBlock: nil,
+		ECIP1010Length:     nil,
+	},
+	"Istanbul": &goethereum.ChainConfig{
+		Ethash:              new(ctypes.EthashConfig),
 		ChainID:             big.NewInt(1),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),
 		EIP155Block:         big.NewInt(0),
 		EIP158Block:         big.NewInt(0),
-		DAOForkBlock:        big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
 		ConstantinopleBlock: big.NewInt(0),
 		PetersburgBlock:     big.NewInt(0),
 		IstanbulBlock:       big.NewInt(0),
 	},
-	"FrontierToHomesteadAt5": {
+	"ETC_Phoenix": &coregeth.CoreGethChainConfig{
+		NetworkID:       1,
+		Ethash:          new(ctypes.EthashConfig),
+		ChainID:         big.NewInt(61),
+		EIP2FBlock:      big.NewInt(0),
+		EIP7FBlock:      big.NewInt(0),
+		EIP150Block:     big.NewInt(0),
+		EIP155Block:     big.NewInt(0),
+		EIP160FBlock:    big.NewInt(0),
+		EIP161FBlock:    big.NewInt(0),
+		EIP170FBlock:    big.NewInt(0),
+		EIP100FBlock:    big.NewInt(0),
+		EIP140FBlock:    big.NewInt(0),
+		EIP198FBlock:    big.NewInt(0),
+		EIP211FBlock:    big.NewInt(0),
+		EIP212FBlock:    big.NewInt(0),
+		EIP213FBlock:    big.NewInt(0),
+		EIP214FBlock:    big.NewInt(0),
+		EIP658FBlock:    big.NewInt(0),
+		EIP145FBlock:    big.NewInt(0),
+		EIP1014FBlock:   big.NewInt(0),
+		EIP1052FBlock:   big.NewInt(0),
+		EIP1283FBlock:   big.NewInt(0),
+		PetersburgBlock: big.NewInt(0),
+		// Istanbul eq, aka Phoenix
+		// ECIP-1088
+		EIP152FBlock:  big.NewInt(0),
+		EIP1108FBlock: big.NewInt(0),
+		EIP1344FBlock: big.NewInt(0),
+		EIP1884FBlock: big.NewInt(0),
+		EIP2028FBlock: big.NewInt(0),
+		EIP2200FBlock: big.NewInt(0), // RePetersburg (=~ re-1283)
+
+		DisposalBlock:      big.NewInt(0),
+		ECIP1017FBlock:     big.NewInt(5000000), // FIXME(meows) maybe
+		ECIP1017EraRounds:  big.NewInt(5000000),
+		ECIP1010PauseBlock: nil,
+		ECIP1010Length:     nil,
+	},
+	"FrontierToHomesteadAt5": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
 		ChainID:        big.NewInt(1),
 		HomesteadBlock: big.NewInt(5),
 	},
-	"HomesteadToEIP150At5": {
+	"HomesteadToEIP150At5": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
 		ChainID:        big.NewInt(1),
 		HomesteadBlock: big.NewInt(0),
 		EIP150Block:    big.NewInt(5),
 	},
-	"HomesteadToDaoAt5": {
+	"HomesteadToDaoAt5": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
 		ChainID:        big.NewInt(1),
 		HomesteadBlock: big.NewInt(0),
 		DAOForkBlock:   big.NewInt(5),
 		DAOForkSupport: true,
 	},
-	"EIP158ToByzantiumAt5": {
+	"EIP158ToByzantiumAt5": &goethereum.ChainConfig{
+		Ethash:         new(ctypes.EthashConfig),
 		ChainID:        big.NewInt(1),
 		HomesteadBlock: big.NewInt(0),
 		EIP150Block:    big.NewInt(0),
@@ -111,7 +220,8 @@ var Forks = map[string]*params.ChainConfig{
 		EIP158Block:    big.NewInt(0),
 		ByzantiumBlock: big.NewInt(5),
 	},
-	"ByzantiumToConstantinopleAt5": {
+	"ByzantiumToConstantinopleAt5": &goethereum.ChainConfig{
+		Ethash:              new(ctypes.EthashConfig),
 		ChainID:             big.NewInt(1),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),
@@ -120,7 +230,8 @@ var Forks = map[string]*params.ChainConfig{
 		ByzantiumBlock:      big.NewInt(0),
 		ConstantinopleBlock: big.NewInt(5),
 	},
-	"ByzantiumToConstantinopleFixAt5": {
+	"ByzantiumToConstantinopleFixAt5": &goethereum.ChainConfig{
+		Ethash:              new(ctypes.EthashConfig),
 		ChainID:             big.NewInt(1),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),
@@ -130,7 +241,8 @@ var Forks = map[string]*params.ChainConfig{
 		ConstantinopleBlock: big.NewInt(5),
 		PetersburgBlock:     big.NewInt(5),
 	},
-	"ConstantinopleFixToIstanbulAt5": {
+	"ConstantinopleFixToIstanbulAt5": &goethereum.ChainConfig{
+		Ethash:              new(ctypes.EthashConfig),
 		ChainID:             big.NewInt(1),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),
@@ -141,7 +253,8 @@ var Forks = map[string]*params.ChainConfig{
 		PetersburgBlock:     big.NewInt(0),
 		IstanbulBlock:       big.NewInt(5),
 	},
-	"YOLOv2": {
+	"YOLOv2": &goethereum.ChainConfig{
+		Clique:              new(ctypes.CliqueConfig),
 		ChainID:             big.NewInt(1),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),
@@ -155,7 +268,7 @@ var Forks = map[string]*params.ChainConfig{
 	},
 	// This specification is subject to change, but is for now identical to YOLOv2
 	// for cross-client testing purposes
-	"Berlin": {
+	"Berlin": &goethereum.ChainConfig{
 		ChainID:             big.NewInt(1),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),

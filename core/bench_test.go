@@ -32,6 +32,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
+	"github.com/ethereum/go-ethereum/params/vars"
 )
 
 func BenchmarkInsertChain_empty_memdb(b *testing.B) {
@@ -114,8 +116,8 @@ func genTxRing(naccounts int) func(int, *BlockGen) {
 		block := gen.PrevBlock(i - 1)
 		gas := CalcGasLimit(block, block.GasLimit(), block.GasLimit())
 		for {
-			gas -= params.TxGas
-			if gas < params.TxGas {
+			gas -= vars.TxGas
+			if gas < vars.TxGas {
 				break
 			}
 			to := (from + 1) % naccounts
@@ -123,7 +125,7 @@ func genTxRing(naccounts int) func(int, *BlockGen) {
 				gen.TxNonce(ringAddrs[from]),
 				ringAddrs[to],
 				benchRootFunds,
-				params.TxGas,
+				vars.TxGas,
 				nil,
 				nil,
 			)
@@ -166,11 +168,11 @@ func benchInsertChain(b *testing.B, disk bool, gen func(int, *BlockGen)) {
 
 	// Generate a chain of b.N blocks using the supplied block
 	// generator function.
-	gspec := Genesis{
+	gspec := genesisT.Genesis{
 		Config: params.TestChainConfig,
-		Alloc:  GenesisAlloc{benchRootAddr: {Balance: benchRootFunds}},
+		Alloc:  genesisT.GenesisAlloc{benchRootAddr: {Balance: benchRootFunds}},
 	}
-	genesis := gspec.MustCommit(db)
+	genesis := MustCommitGenesis(db, &gspec)
 	chain, _ := GenerateChain(gspec.Config, genesis, ethash.NewFaker(), db, b.N, gen)
 
 	// Time the insertion of the new chain.

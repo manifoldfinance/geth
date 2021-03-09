@@ -327,7 +327,11 @@ func (r *ChtRequest) CanSend(peer *serverPeer) bool {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 
-	return peer.headInfo.Number >= r.Config.ChtConfirms && r.ChtNum <= (peer.headInfo.Number-r.Config.ChtConfirms)/r.Config.ChtSize
+	if r.Untrusted {
+		return peer.headInfo.Number >= r.BlockNum && peer.id == r.PeerId
+	} else {
+		return peer.headInfo.Number >= r.Config.ChtConfirms && r.ChtNum <= (peer.headInfo.Number-r.Config.ChtConfirms)/r.Config.ChtSize
+	}
 }
 
 // Request sends an ODR request to the LES network (implementation of LesOdrRequest)
@@ -366,34 +370,39 @@ func (r *ChtRequest) Validate(db ethdb.Database, msg *Msg) error {
 	if err := rlp.DecodeBytes(headerEnc, header); err != nil {
 		return errHeaderUnavailable
 	}
-	// Verify the CHT
-	var (
-		node      light.ChtNode
-		encNumber [8]byte
-	)
-	binary.BigEndian.PutUint64(encNumber[:], r.BlockNum)
 
-	reads := &readTraceDB{db: nodeSet}
-	value, err := trie.VerifyProof(r.ChtRoot, encNumber[:], reads)
-	if err != nil {
-		return fmt.Errorf("merkle proof verification failed: %v", err)
-	}
-	if len(reads.reads) != nodeSet.KeyCount() {
-		return errUselessNodes
-	}
-	if err := rlp.DecodeBytes(value, &node); err != nil {
-		return err
-	}
-	if node.Hash != header.Hash() {
-		return errCHTHashMismatch
-	}
-	if r.BlockNum != header.Number.Uint64() {
-		return errCHTNumberMismatch
+	// Verify the CHT
+	// Note: For untrusted CHT request, there is no proof response but
+	// header data.
+	var node light.ChtNode
+	if !r.Untrusted {
+		var encNumber [8]byte
+		binary.BigEndian.PutUint64(encNumber[:], r.BlockNum)
+
+		reads := &readTraceDB{db: nodeSet}
+		value, err := trie.VerifyProof(r.ChtRoot, encNumber[:], reads)
+		if err != nil {
+			return fmt.Errorf("merkle proof verification failed: %v", err)
+		}
+		if len(reads.reads) != nodeSet.KeyCount() {
+			return errUselessNodes
+		}
+
+		if err := rlp.DecodeBytes(value, &node); err != nil {
+			return err
+		}
+		if node.Hash != header.Hash() {
+			return errCHTHashMismatch
+		}
+		if r.BlockNum != header.Number.Uint64() {
+			return errCHTNumberMismatch
+		}
 	}
 	// Verifications passed, store and return
 	r.Header = header
 	r.Proof = nodeSet
-	r.Td = node.Td
+	r.Td = node.Td // For untrusted request, td here is nil, todo improve the les/2 protocol
+
 	return nil
 }
 

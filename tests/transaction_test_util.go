@@ -23,7 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -44,8 +44,9 @@ type ttFork struct {
 	Hash   common.UnprefixedHash    `json:"hash"`
 }
 
-func (tt *TransactionTest) Run(config *params.ChainConfig) error {
-	validateTx := func(rlpData hexutil.Bytes, signer types.Signer, isHomestead bool, isIstanbul bool) (*common.Address, *common.Hash, error) {
+func (tt *TransactionTest) Run(config ctypes.ChainConfigurator) error {
+
+	validateTx := func(rlpData hexutil.Bytes, signer types.Signer, isEIP2F bool, isEIP2028F bool) (*common.Address, *common.Hash, error) {
 		tx := new(types.Transaction)
 		if err := rlp.DecodeBytes(rlpData, tx); err != nil {
 			return nil, nil, err
@@ -55,7 +56,7 @@ func (tt *TransactionTest) Run(config *params.ChainConfig) error {
 			return nil, nil, err
 		}
 		// Intrinsic gas
-		requiredGas, err := core.IntrinsicGas(tx.Data(), tx.To() == nil, isHomestead, isIstanbul)
+		requiredGas, err := core.IntrinsicGas(tx.Data(), tx.To() == nil, isEIP2F, isEIP2028F)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -76,10 +77,10 @@ func (tt *TransactionTest) Run(config *params.ChainConfig) error {
 		{"Frontier", types.FrontierSigner{}, tt.Frontier, false, false},
 		{"Homestead", types.HomesteadSigner{}, tt.Homestead, true, false},
 		{"EIP150", types.HomesteadSigner{}, tt.EIP150, true, false},
-		{"EIP158", types.NewEIP155Signer(config.ChainID), tt.EIP158, true, false},
-		{"Byzantium", types.NewEIP155Signer(config.ChainID), tt.Byzantium, true, false},
-		{"Constantinople", types.NewEIP155Signer(config.ChainID), tt.Constantinople, true, false},
-		{"Istanbul", types.NewEIP155Signer(config.ChainID), tt.Istanbul, true, true},
+		{"EIP158", types.NewEIP155Signer(config.GetChainID()), tt.EIP158, true, false},
+		{"Byzantium", types.NewEIP155Signer(config.GetChainID()), tt.Byzantium, true, false},
+		{"Constantinople", types.NewEIP155Signer(config.GetChainID()), tt.Constantinople, true, false},
+		{"Istanbul", types.NewEIP155Signer(config.GetChainID()), tt.Istanbul, true, true},
 	} {
 		sender, txhash, err := validateTx(tt.RLP, testcase.signer, testcase.isHomestead, testcase.isIstanbul)
 

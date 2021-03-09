@@ -47,6 +47,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/signer/core"
@@ -54,7 +55,7 @@ import (
 	"github.com/ethereum/go-ethereum/signer/rules"
 	"github.com/ethereum/go-ethereum/signer/storage"
 
-	"github.com/mattn/go-colorable"
+	colorable "github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -89,7 +90,7 @@ var (
 	}
 	keystoreFlag = cli.StringFlag{
 		Name:  "keystore",
-		Value: filepath.Join(node.DefaultDataDir(), "keystore"),
+		Value: filepath.Join(vars.DefaultDataDir(), "keystore"),
 		Usage: "Directory for the keystore",
 	}
 	configdirFlag = cli.StringFlag{
@@ -100,7 +101,7 @@ var (
 	chainIdFlag = cli.Int64Flag{
 		Name:  "chainid",
 		Value: params.MainnetChainConfig.ChainID.Int64(),
-		Usage: "Chain id to use for signing (1=mainnet, 3=Ropsten, 4=Rinkeby, 5=Goerli)",
+		Usage: "Chain id to use for signing (1=foundation, 61=classic, 3=Ropsten, 4=Rinkeby, 5=Goerli, 6=Kotti, 63=Mordor, 133519467574834=Yolo)",
 	}
 	rpcPortFlag = cli.IntFlag{
 		Name:  "http.port",
@@ -747,10 +748,12 @@ func DefaultConfigDir() string {
 			appdata := os.Getenv("APPDATA")
 			if appdata != "" {
 				return filepath.Join(appdata, "Signer")
+			} else {
+				return filepath.Join(home, "AppData", "Roaming", "Signer")
 			}
-			return filepath.Join(home, "AppData", "Roaming", "Signer")
+		} else {
+			return filepath.Join(home, ".clef")
 		}
-		return filepath.Join(home, ".clef")
 	}
 	// As we cannot guess a stable location, return empty and handle later
 	return ""

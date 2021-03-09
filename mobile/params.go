@@ -21,7 +21,6 @@ package geth
 import (
 	"encoding/json"
 
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -34,7 +33,7 @@ func MainnetGenesis() string {
 
 // RopstenGenesis returns the JSON spec to use for the Ropsten test network.
 func RopstenGenesis() string {
-	enc, err := json.Marshal(core.DefaultRopstenGenesisBlock())
+	enc, err := json.Marshal(params.DefaultRopstenGenesisBlock())
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +42,7 @@ func RopstenGenesis() string {
 
 // RinkebyGenesis returns the JSON spec to use for the Rinkeby test network
 func RinkebyGenesis() string {
-	enc, err := json.Marshal(core.DefaultRinkebyGenesisBlock())
+	enc, err := json.Marshal(params.DefaultRinkebyGenesisBlock())
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +51,16 @@ func RinkebyGenesis() string {
 
 // GoerliGenesis returns the JSON spec to use for the Goerli test network
 func GoerliGenesis() string {
-	enc, err := json.Marshal(core.DefaultGoerliGenesisBlock())
+	enc, err := json.Marshal(params.DefaultGoerliGenesisBlock())
+	if err != nil {
+		panic(err)
+	}
+	return string(enc)
+}
+
+// MordorGenesis returns the JSON spec to use for the Kotti test network
+func MordorGenesis() string {
+	enc, err := json.Marshal(params.DefaultMordorGenesisBlock())
 	if err != nil {
 		panic(err)
 	}

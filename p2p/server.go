@@ -854,18 +854,13 @@ func (srv *Server) listenLoop() {
 		<-slots
 
 		var (
-			fd      net.Conn
-			err     error
-			lastLog time.Time
+			fd  net.Conn
+			err error
 		)
 		for {
 			fd, err = srv.listener.Accept()
 			if netutil.IsTemporaryError(err) {
-				if time.Since(lastLog) > 1*time.Second {
-					srv.log.Debug("Temporary read error", "err", err)
-					lastLog = time.Now()
-				}
-				time.Sleep(time.Millisecond * 200)
+				srv.log.Debug("Temporary read error", "err", err)
 				continue
 			} else if err != nil {
 				srv.log.Debug("Read error", "err", err)

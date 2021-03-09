@@ -26,7 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 )
 
 // Test light syncing which will download all headers from genesis.
@@ -53,7 +53,7 @@ func testCheckpointSyncing(t *testing.T, protocol int, syncMode int) {
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
-	// Generate 128+1 blocks (totally 1 CHT sections)
+	// Generate 512+4 blocks (totally 1 CHT sections)
 	server, client, tearDown := newClientServerEnv(t, int(config.ChtSize+config.ChtConfirms), protocol, waitIndexers, nil, 0, false, false, true)
 	defer tearDown()
 
@@ -63,7 +63,7 @@ func testCheckpointSyncing(t *testing.T, protocol int, syncMode int) {
 	if syncMode == 1 || syncMode == 2 {
 		// Assemble checkpoint 0
 		s, _, head := server.chtIndexer.Sections()
-		cp := &params.TrustedCheckpoint{
+		cp := &ctypes.TrustedCheckpoint{
 			SectionIndex: 0,
 			SectionHead:  head,
 			CHTRoot:      light.GetChtRoot(server.db, s-1, head),
@@ -80,8 +80,7 @@ func testCheckpointSyncing(t *testing.T, protocol int, syncMode int) {
 			data := append([]byte{0x19, 0x00}, append(registrarAddr.Bytes(), append([]byte{0, 0, 0, 0, 0, 0, 0, 0}, cp.Hash().Bytes()...)...)...)
 			sig, _ := crypto.Sign(crypto.Keccak256(data), signerKey)
 			sig[64] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
-			auth, _ := bind.NewKeyedTransactorWithChainID(signerKey, big.NewInt(1337))
-			if _, err := server.handler.server.oracle.Contract().RegisterCheckpoint(auth, cp.SectionIndex, cp.Hash().Bytes(), new(big.Int).Sub(header.Number, big.NewInt(1)), header.ParentHash, [][]byte{sig}); err != nil {
+			if _, err := server.handler.server.oracle.Contract().RegisterCheckpoint(bind.NewKeyedTransactor(signerKey), cp.SectionIndex, cp.Hash().Bytes(), new(big.Int).Sub(header.Number, big.NewInt(1)), header.ParentHash, [][]byte{sig}); err != nil {
 				t.Error("register checkpoint failed", err)
 			}
 			server.backend.Commit()
@@ -151,7 +150,7 @@ func testMissOracleBackend(t *testing.T, hasCheckpoint bool) {
 	expected := config.ChtSize + config.ChtConfirms
 
 	s, _, head := server.chtIndexer.Sections()
-	cp := &params.TrustedCheckpoint{
+	cp := &ctypes.TrustedCheckpoint{
 		SectionIndex: 0,
 		SectionHead:  head,
 		CHTRoot:      light.GetChtRoot(server.db, s-1, head),
@@ -163,8 +162,7 @@ func testMissOracleBackend(t *testing.T, hasCheckpoint bool) {
 	data := append([]byte{0x19, 0x00}, append(registrarAddr.Bytes(), append([]byte{0, 0, 0, 0, 0, 0, 0, 0}, cp.Hash().Bytes()...)...)...)
 	sig, _ := crypto.Sign(crypto.Keccak256(data), signerKey)
 	sig[64] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
-	auth, _ := bind.NewKeyedTransactorWithChainID(signerKey, big.NewInt(1337))
-	if _, err := server.handler.server.oracle.Contract().RegisterCheckpoint(auth, cp.SectionIndex, cp.Hash().Bytes(), new(big.Int).Sub(header.Number, big.NewInt(1)), header.ParentHash, [][]byte{sig}); err != nil {
+	if _, err := server.handler.server.oracle.Contract().RegisterCheckpoint(bind.NewKeyedTransactor(signerKey), cp.SectionIndex, cp.Hash().Bytes(), new(big.Int).Sub(header.Number, big.NewInt(1)), header.ParentHash, [][]byte{sig}); err != nil {
 		t.Error("register checkpoint failed", err)
 	}
 	server.backend.Commit()

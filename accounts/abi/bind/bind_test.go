@@ -290,15 +290,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy an interaction tester contract and call a transaction on it
@@ -345,15 +345,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy a tuple tester contract and execute a structured call on it
@@ -391,15 +391,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy a tuple tester contract and execute a structured call on it
@@ -449,15 +449,15 @@ var bindTests = []struct {
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 			"github.com/ethereum/go-ethereum/common"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy a slice tester contract and execute a n array call on it
@@ -497,15 +497,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy a default method invoker contract and execute its default method
@@ -545,12 +545,12 @@ var bindTests = []struct {
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 			"github.com/ethereum/go-ethereum/common"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 		`,
 		`
 			// Create a simulator and wrap a non-deployed contract
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{}, uint64(10000000000))
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{}, uint64(10000000000))
 			defer sim.Close()
 
 			nonexistent, err := NewNonExistent(common.Address{}, sim)
@@ -592,15 +592,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy a funky gas pattern contract
@@ -642,15 +642,15 @@ var bindTests = []struct {
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 			"github.com/ethereum/go-ethereum/common"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy a sender tester contract and execute a structured call on it
@@ -717,15 +717,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy a underscorer tester contract and execute a structured call on it
@@ -811,15 +811,15 @@ var bindTests = []struct {
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 			"github.com/ethereum/go-ethereum/common"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy an eventer contract
@@ -1001,15 +1001,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			//deploy the test contract
@@ -1136,15 +1136,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 
 		`
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			_, _, contract, err := DeployTuple(auth, sim)
@@ -1278,15 +1278,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			//deploy the test contract
@@ -1344,14 +1344,14 @@ var bindTests = []struct {
 
 		"github.com/ethereum/go-ethereum/accounts/abi/bind"
 		"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-		"github.com/ethereum/go-ethereum/core"
+		"github.com/ethereum/go-ethereum/params/types/genesisT"
 		"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 		// Initialize test accounts
 		key, _ := crypto.GenerateKey()
-		auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
-		sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+		auth := bind.NewKeyedTransactor(key)
+		sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 		defer sim.Close()
 
 		// deploy the test contract
@@ -1433,7 +1433,7 @@ var bindTests = []struct {
 		"github.com/ethereum/go-ethereum/accounts/abi/bind"
 		"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 		"github.com/ethereum/go-ethereum/crypto"
-		"github.com/ethereum/go-ethereum/core"
+		"github.com/ethereum/go-ethereum/params/types/genesisT"
 		`,
 		`
 		// Initialize test accounts
@@ -1441,10 +1441,10 @@ var bindTests = []struct {
 		addr := crypto.PubkeyToAddress(key.PublicKey)
 
 		// Deploy registrar contract
-		sim := backends.NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(1000000000)}}, 10000000)
+		sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{addr: {Balance: big.NewInt(1000000000)}}, 10000000)
 		defer sim.Close()
 
-		transactOpts, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+		transactOpts := bind.NewKeyedTransactor(key)
 		_, _, _, err := DeployIdentifierCollision(transactOpts, sim)
 		if err != nil {
 			t.Fatalf("failed to deploy contract: %v", err)
@@ -1496,17 +1496,17 @@ var bindTests = []struct {
 		"github.com/ethereum/go-ethereum/accounts/abi/bind"
 		"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
 		"github.com/ethereum/go-ethereum/crypto"
-		"github.com/ethereum/go-ethereum/core"
+		"github.com/ethereum/go-ethereum/params/types/genesisT"
         `,
 		`
 		key, _ := crypto.GenerateKey()
 		addr := crypto.PubkeyToAddress(key.PublicKey)
 
 		// Deploy registrar contract
-		sim := backends.NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(1000000000)}}, 10000000)
+		sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{addr: {Balance: big.NewInt(1000000000)}}, 10000000)
 		defer sim.Close()
 
-		transactOpts, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+		transactOpts := bind.NewKeyedTransactor(key)
 		_, _, c1, err := DeployContractOne(transactOpts, sim)
 		if err != nil {
 			t.Fatal("Failed to deploy contract")
@@ -1557,15 +1557,15 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
 			// Generate a new random account and a funded simulator
 			key, _ := crypto.GenerateKey()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			auth := bind.NewKeyedTransactor(key)
 
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000)}}, 10000000)
 			defer sim.Close()
 
 			// Deploy a tester contract and execute a structured call on it
@@ -1622,17 +1622,17 @@ var bindTests = []struct {
 	
 			"github.com/ethereum/go-ethereum/accounts/abi/bind"
 			"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-			"github.com/ethereum/go-ethereum/core"
+			"github.com/ethereum/go-ethereum/params/types/genesisT"
 			"github.com/ethereum/go-ethereum/crypto"
 	   `,
 		`
 			key, _ := crypto.GenerateKey()
 			addr := crypto.PubkeyToAddress(key.PublicKey)
 	
-			sim := backends.NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(1000000000)}}, 1000000)
+			sim := backends.NewSimulatedBackend(genesisT.GenesisAlloc{addr: {Balance: big.NewInt(1000000000)}}, 1000000)
 			defer sim.Close()
 	
-			opts, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			opts := bind.NewKeyedTransactor(key)
 			_, _, c, err := DeployNewFallbacks(opts, sim)
 			if err != nil {
 				t.Fatalf("Failed to deploy contract: %v", err)

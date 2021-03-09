@@ -36,7 +36,7 @@ type CheckpointOracle struct {
 }
 
 // NewCheckpointOracle binds checkpoint contract and returns a registrar instance.
-func NewCheckpointOracle(contractAddr common.Address, backend bind.ContractBackend) (*CheckpointOracle, error) {
+func NewCheckPointOracle(contractAddr common.Address, backend bind.ContractBackend) (*CheckpointOracle, error) {
 	c, err := contract.NewCheckpointOracle(contractAddr, backend)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (oracle *CheckpointOracle) LookupCheckpointEvents(blockLogs [][]*types.Log,
 			if err != nil {
 				continue
 			}
-			if event.Index == section && event.CheckpointHash == hash {
+			if event.Index == section && common.Hash(event.CheckpointHash) == hash {
 				votes = append(votes, event)
 			}
 		}

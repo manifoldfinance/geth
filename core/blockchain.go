@@ -41,7 +41,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
@@ -129,7 +129,6 @@ type CacheConfig struct {
 	TrieDirtyDisabled   bool          // Whether to disable trie write caching and GC altogether (archive node)
 	TrieTimeLimit       time.Duration // Time limit after which to flush the current in-memory trie to disk
 	SnapshotLimit       int           // Memory allowance (MB) to use for caching snapshot entries in memory
-	Preimages           bool          // Whether to store preimage of trie key to the disk
 
 	SnapshotWait bool // Wait for snapshot construction on startup. TODO(karalabe): This is a dirty hack for testing, nuke it
 }
@@ -159,8 +158,8 @@ var defaultCacheConfig = &CacheConfig{
 // included in the canonical one where as GetBlockByNumber always represents the
 // canonical chain.
 type BlockChain struct {
-	chainConfig *params.ChainConfig // Chain & network configuration
-	cacheConfig *CacheConfig        // Cache configuration for pruning
+	chainConfig ctypes.ChainConfigurator // Chain & network configuration
+	cacheConfig *CacheConfig             // Cache configuration for pruning
 
 	db     ethdb.Database // Low level persistent database to store final content in
 	snaps  *snapshot.Tree // Snapshot tree for fast trie leaf access
@@ -212,12 +211,15 @@ type BlockChain struct {
 	shouldPreserve     func(*types.Block) bool        // Function used to determine whether should preserve the given block.
 	terminateInsert    func(common.Hash, uint64) bool // Testing hook used to terminate ancient receipt chain insertion.
 	writeLegacyJournal bool                           // Testing flag used to flush the snapshot journal in legacy format.
+
+	artificialFinalityNoDisable     *int32 // manual override prevents disabling artificial finality feature activation
+	artificialFinalityEnabledStatus int32  // toggles artificial finality features; will be always 1 if artificialFinalityForce=1
 }
 
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialises the default Ethereum Validator and
 // Processor.
-func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64) (*BlockChain, error) {
+func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig ctypes.ChainConfigurator, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64) (*BlockChain, error) {
 	if cacheConfig == nil {
 		cacheConfig = defaultCacheConfig
 	}
@@ -230,15 +232,11 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	badBlocks, _ := lru.New(badBlockLimit)
 
 	bc := &BlockChain{
-		chainConfig: chainConfig,
-		cacheConfig: cacheConfig,
-		db:          db,
-		triegc:      prque.New(nil),
-		stateCache: state.NewDatabaseWithConfig(db, &trie.Config{
-			Cache:     cacheConfig.TrieCleanLimit,
-			Journal:   cacheConfig.TrieCleanJournal,
-			Preimages: cacheConfig.Preimages,
-		}),
+		chainConfig:    chainConfig,
+		cacheConfig:    cacheConfig,
+		db:             db,
+		triegc:         prque.New(nil),
+		stateCache:     state.NewDatabaseWithCache(db, cacheConfig.TrieCleanLimit, cacheConfig.TrieCleanJournal),
 		quit:           make(chan struct{}),
 		shouldPreserve: shouldPreserve,
 		bodyCache:      bodyCache,
@@ -279,6 +277,10 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		frozen, _ := bc.db.Ancients()
 		if frozen > 0 {
 			txIndexBlock = frozen
+		}
+		// loadLastState and other steps below assume that CurrentBlock is not nil.
+		if bc.CurrentBlock() == nil {
+			bc.writeHeadBlock(bc.genesisBlock)
 		}
 	}
 	if err := bc.loadLastState(); err != nil {
@@ -413,8 +415,11 @@ func (bc *BlockChain) GetVMConfig() *vm.Config {
 // into node seamlessly.
 func (bc *BlockChain) empty() bool {
 	genesis := bc.genesisBlock.Hash()
-	for _, hash := range []common.Hash{rawdb.ReadHeadBlockHash(bc.db), rawdb.ReadHeadHeaderHash(bc.db), rawdb.ReadHeadFastBlockHash(bc.db)} {
-		if hash != genesis {
+	for _, hash := range []common.Hash{
+		rawdb.ReadHeadBlockHash(bc.db),
+		rawdb.ReadHeadHeaderHash(bc.db),
+		rawdb.ReadHeadFastBlockHash(bc.db)} {
+		if hash != (common.Hash{}) && hash != genesis {
 			return false
 		}
 	}
@@ -1203,6 +1208,15 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 				}
 			}
 		}()
+		// Get the initial ancients level.
+		// If the condition is met of the inserting block number being below
+		// the ancient level, it will happen immediately since the blockChain slice
+		// is ordered and linked.
+		// This is why we only need to get this value once, and don't have to update it.
+		ancientsN, err := bc.db.Ancients()
+		if err != nil {
+			return 0, err
+		}
 		var deleted []*numberHash
 		for i, block := range blockChain {
 			// Short circuit insertion if shutting down or processing failed
@@ -1216,6 +1230,14 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 			// Short circuit if the owner header is unknown
 			if !bc.HasHeader(block.Hash(), block.NumberU64()) {
 				return i, fmt.Errorf("containing header #%d [%x…] unknown", block.Number(), block.Hash().Bytes()[:4])
+			}
+			// Check the current ancient level against the attempted import.
+			// Short circuit if the ancient level is at or above this block.
+			// Note that instead of using a 'continue', the returning short circuit is expected to call the deferred
+			// function truncating the ancient store to the appropriate level. This ensures no gaping or corrupted
+			// ancient data is allowed.
+			if block.NumberU64() < ancientsN {
+				return i, fmt.Errorf("block below ancient level: block=%d ancients=%d", block.NumberU64(), ancientsN)
 			}
 			var (
 				start  = time.Now()
@@ -1477,15 +1499,17 @@ func (bc *BlockChain) writeBlockWithoutState(block *types.Block, td *big.Int) (e
 	return nil
 }
 
-// writeKnownBlock updates the head block flag with a known block
+// writeKnownBlockAsHead updates the head block flag with a known block
 // and introduces chain reorg if necessary.
-func (bc *BlockChain) writeKnownBlock(block *types.Block) error {
+// In ethereum/go-ethereum this is called writeKnownBlock. Same logic, better name.
+func (bc *BlockChain) writeKnownBlockAsHead(block *types.Block) error {
 	bc.wg.Add(1)
 	defer bc.wg.Done()
 
 	current := bc.CurrentBlock()
 	if block.ParentHash() != current.Hash() {
-		if err := bc.reorg(current, block); err != nil {
+		d := bc.getReorgData(current, block)
+		if err := bc.reorg(d); err != nil {
 			return err
 		}
 	}
@@ -1530,7 +1554,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		log.Crit("Failed to write block into disk", "err", err)
 	}
 	// Commit all cached state changes into underlying memory database.
-	root, err := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
+	root, err := state.Commit(bc.chainConfig.IsEnabled(bc.chainConfig.GetEIP161dTransition, block.Number()))
 	if err != nil {
 		return NonStatTy, err
 	}
@@ -1606,17 +1630,58 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 			reorg = !currentPreserve && (blockPreserve || mrand.Float64() < 0.5)
 		}
 	}
+
 	if reorg {
-		// Reorganise the chain if the parent is not the head block
+		// If code reaches AF check, and it does not error, canonical status will be allowed (not disallowed).
+		canonicalDisallowed := false
+
 		if block.ParentHash() != currentBlock.Hash() {
-			if err := bc.reorg(currentBlock, block); err != nil {
-				return NonStatTy, err
+			// Reorganise the chain if the parent is not the head block
+			d := bc.getReorgData(currentBlock, block)
+			if d.err == nil {
+				// Reorg data error was nil.
+				// Proceed with further reorg arbitration.
+				// If the node is mining and trying to insert their own block, we want to allow that (do not override miners).
+				if bc.IsArtificialFinalityEnabled() &&
+					bc.chainConfig.IsEnabled(bc.chainConfig.GetECBP1100Transition, currentBlock.Number()) {
+
+					if err := bc.ecbp1100(d.commonBlock.Header(), currentBlock.Header(), block.Header()); err != nil {
+
+						canonicalDisallowed = true
+						log.Warn("Reorg disallowed", "error", err)
+
+					} else if len(d.oldChain) > 2 {
+
+						// Reorg is allowed, only log the MESS line if old chain is longer than normal.
+						log.Info("ECBP1100-MESS 🔓",
+							"status", "accepted",
+							"age", common.PrettyAge(time.Unix(int64(d.commonBlock.Time()), 0)),
+							"current.span", common.PrettyDuration(time.Duration(currentBlock.Time()-d.commonBlock.Time())*time.Second),
+							"proposed.span", common.PrettyDuration(time.Duration(block.Time()-d.commonBlock.Time())*time.Second),
+							"common.bno", d.commonBlock.Number().Uint64(), "common.hash", d.commonBlock.Hash(),
+							"current.bno", currentBlock.Number().Uint64(), "current.hash", currentBlock.Hash(),
+							"proposed.bno", block.Number().Uint64(), "proposed.hash", block.Hash(),
+						)
+					}
+				}
+			}
+			// If there was a reorg(data) error, we leave it to the reorg method to handle, if it wants to wrap it or log it or whatever.
+			if !canonicalDisallowed {
+				if err := bc.reorg(d); err != nil {
+					return NonStatTy, err
+				}
 			}
 		}
-		status = CanonStatTy
+		// Status is canon; reorg succeeded.
+		if !canonicalDisallowed {
+			status = CanonStatTy
+		} else {
+			status = SideStatTy
+		}
 	} else {
 		status = SideStatTy
 	}
+
 	// Set new head.
 	if status == CanonStatTy {
 		bc.writeHeadBlock(block)
@@ -1630,7 +1695,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		}
 		// In theory we should fire a ChainHeadEvent when we inject
 		// a canonical block, but sometimes we can insert a batch of
-		// canonicial blocks. Avoid firing too much ChainHeadEvents,
+		// canonical blocks. Avoid firing too much ChainHeadEvents,
 		// we will fire an accumulated ChainHeadEvent and disable fire
 		// event here.
 		if emitHeadEvent {
@@ -1713,7 +1778,11 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, er
 	senderCacher.recoverFromBlocks(types.MakeSigner(bc.chainConfig, chain[0].Number()), chain)
 
 	var (
-		stats     = insertStats{startTime: mclock.Now()}
+		stats = insertStats{
+			startTime: mclock.Now(),
+			artificialFinality: bc.IsArtificialFinalityEnabled() &&
+				bc.chainConfig.IsEnabled(bc.chainConfig.GetECBP1100Transition, bc.CurrentBlock().Number()),
+		}
 		lastCanon *types.Block
 	)
 	// Fire a single chain head event if we've progressed the chain
@@ -1751,15 +1820,59 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, er
 			externTd = bc.GetTd(block.ParentHash(), block.NumberU64()-1) // The first block can't be nil
 		)
 		for block != nil && err == ErrKnownBlock {
+
+			// canonicalDisallowed is set to true if the total difficulty is greater than
+			// our local head, but the segment fails to meet the criteria required by any artificial finality features,
+			// namely that it requires a reorg (parent != current) and does not meet an inflated difficulty ratio.
+			canonicalDisallowed := false
+
 			externTd = new(big.Int).Add(externTd, block.Difficulty())
 			if localTd.Cmp(externTd) < 0 {
-				break
+				// Have found a known block with GREATER THAN local total difficulty.
+				// Do not ignore this block, and as such, do not continue inserter iteration.
+
+				// Check if known block write will cause a reorg.
+				if block.ParentHash() != current.Hash() {
+					reorgData := bc.getReorgData(current, block)
+					if reorgData.err == nil {
+						// If the reorgData is NOT nil, we know that the writeKnownBlockAsHead -> reorg
+						// logic will return the error.
+						// We let that part of the flow handle that error.
+						// We're only concerned with the non-error case, where the reorg
+						// will be permitted.
+
+						// It will. That means we are on a different chain currently.
+						// Check if artificial finality forbids the reorganization,
+						// effectively overriding the simple (original) TD comparison check.
+
+						if bc.IsArtificialFinalityEnabled() &&
+							bc.chainConfig.IsEnabled(bc.chainConfig.GetECBP1100Transition, current.Number()) {
+
+							if err := bc.ecbp1100(reorgData.commonBlock.Header(), current.Header(), block.Header()); err != nil {
+
+								canonicalDisallowed = true
+								log.Trace("Reorg disallowed", "error", err)
+
+							}
+						}
+					}
+				}
+				if !canonicalDisallowed {
+					break
+				}
+				// canonicalDisallowed == true
+				// Total difficulty was greater, but that condition has been overridden by the artificial
+				// finality check. Continue like nothing happened.
 			}
+
+			// Local vs. External total difficulty was less than or equal.
+			// This block is deep in our chain and is not a head contender.
 			log.Debug("Ignoring already known block", "number", block.Number(), "hash", block.Hash())
 			stats.ignored++
 
 			block, err = it.next()
 		}
+
 		// The remaining blocks are still known blocks, the only scenario here is:
 		// During the fast sync, the pivot point is already submitted but rollback
 		// happens. Then node resets the head full block to a lower height via `rollback`
@@ -1769,8 +1882,9 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, er
 		// `insertChain` while a part of them have higher total difficulty than current
 		// head full block(new pivot point).
 		for block != nil && err == ErrKnownBlock {
+
 			log.Debug("Writing previously known block", "number", block.Number(), "hash", block.Hash())
-			if err := bc.writeKnownBlock(block); err != nil {
+			if err := bc.writeKnownBlockAsHead(block); err != nil {
 				return it.index, err
 			}
 			lastCanon = block
@@ -1826,7 +1940,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, er
 		// its header and body was already in the database).
 		if err == ErrKnownBlock {
 			logger := log.Debug
-			if bc.chainConfig.Clique == nil {
+			if !bc.chainConfig.GetConsensusEngineType().IsClique() {
 				logger = log.Warn
 			}
 			logger("Inserted known block", "number", block.Number(), "hash", block.Hash(),
@@ -1847,7 +1961,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, er
 				log.Error("Please file an issue, skip known block execution without receipt",
 					"hash", block.Hash(), "number", block.NumberU64())
 			}
-			if err := bc.writeKnownBlock(block); err != nil {
+			if err := bc.writeKnownBlockAsHead(block); err != nil {
 				return it.index, err
 			}
 			stats.processed++
@@ -2111,17 +2225,44 @@ func (bc *BlockChain) insertSideChain(block *types.Block, it *insertIterator) (i
 	return 0, nil
 }
 
-// reorg takes two blocks, an old chain and a new chain and will reconstruct the
-// blocks and inserts them to be part of the new canonical chain and accumulates
-// potential missing transactions and post an event about them.
-func (bc *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
+// errReorgImpossible denotes impossible reorgs.
+// And yet, there is an error for if, and when they occur.
+// Ah, sweet mystery of life.
+var errReorgImpossible = errors.New("impossible reorg")
+
+// errReorgNewChain denotes an attempted reorg to an invalid incoming chain.
+var errReorgNewChain = errors.New("invalid new chain")
+
+// errReorgNewChain denotes an attempted reorg to an invalid existing chain.
+var errReorgOldChain = errors.New("invalid old chain")
+
+// reorgData is consumed by the reorg method.
+type reorgData struct {
+	oldBlock *types.Block
+	newBlock *types.Block
+
+	newChain    types.Blocks
+	oldChain    types.Blocks
+	commonBlock *types.Block
+
+	deletedTxs types.Transactions
+
+	deletedLogs [][]*types.Log
+	rebirthLogs [][]*types.Log
+
+	err error
+}
+
+// getReorgData gets the data required by the chain reorg method.
+// This data is aggregated separately to facilitate the modularization of reorg acceptance
+// arbitration logic.
+func (bc *BlockChain) getReorgData(oldBlock, newBlock *types.Block) *reorgData {
 	var (
 		newChain    types.Blocks
 		oldChain    types.Blocks
 		commonBlock *types.Block
 
 		deletedTxs types.Transactions
-		addedTxs   types.Transactions
 
 		deletedLogs [][]*types.Log
 		rebirthLogs [][]*types.Log
@@ -2155,20 +2296,6 @@ func (bc *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 				}
 			}
 		}
-		// mergeLogs returns a merged log slice with specified sort order.
-		mergeLogs = func(logs [][]*types.Log, reverse bool) []*types.Log {
-			var ret []*types.Log
-			if reverse {
-				for i := len(logs) - 1; i >= 0; i-- {
-					ret = append(ret, logs[i]...)
-				}
-			} else {
-				for i := 0; i < len(logs); i++ {
-					ret = append(ret, logs[i]...)
-				}
-			}
-			return ret
-		}
 	)
 	// Reduce the longer chain to the same number as the shorter one
 	if oldBlock.NumberU64() > newBlock.NumberU64() {
@@ -2185,10 +2312,10 @@ func (bc *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 		}
 	}
 	if oldBlock == nil {
-		return fmt.Errorf("invalid old chain")
+		return &reorgData{err: errReorgOldChain}
 	}
 	if newBlock == nil {
-		return fmt.Errorf("invalid new chain")
+		return &reorgData{err: errReorgNewChain}
 	}
 	// Both sides of the reorg are at the same number, reduce both until the common
 	// ancestor is found
@@ -2208,45 +2335,120 @@ func (bc *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 		// Step back with both chains
 		oldBlock = bc.GetBlock(oldBlock.ParentHash(), oldBlock.NumberU64()-1)
 		if oldBlock == nil {
-			return fmt.Errorf("invalid old chain")
+			return &reorgData{err: errReorgOldChain}
 		}
 		newBlock = bc.GetBlock(newBlock.ParentHash(), newBlock.NumberU64()-1)
 		if newBlock == nil {
-			return fmt.Errorf("invalid new chain")
+			return &reorgData{err: errReorgNewChain}
 		}
 	}
+
+	if len(oldChain) == 0 || len(newChain) == 0 {
+		return &reorgData{err: errReorgImpossible}
+	}
+	return &reorgData{
+		oldBlock:    oldBlock,
+		newBlock:    newBlock,
+		newChain:    newChain,
+		oldChain:    oldChain,
+		commonBlock: commonBlock,
+		deletedTxs:  deletedTxs,
+		deletedLogs: deletedLogs,
+		rebirthLogs: rebirthLogs,
+	}
+}
+
+// reorg takes two blocks, an old chain and a new chain and will reconstruct the
+// blocks and inserts them to be part of the new canonical chain and accumulates
+// potential missing transactions and post an event about them.
+// If reorgData passed contains an a non-nil error, the method is expect to return it immediately.
+// reorgData is NOT expected to ever return an error of its own, since reorg arbitration
+// should happen externally.
+// This kind-of-strange pattern is in place to allow the function to issue "special case" warning logs
+// consistent with its behavior prior to refactoring.
+func (bc *BlockChain) reorg(data *reorgData) error {
+	if data.err != nil {
+		if data.err == errReorgImpossible {
+			log.Error("Impossible reorg, please file an issue", "oldnum", data.oldBlock.Number(), "oldhash", data.oldBlock.Hash(), "newnum", data.newBlock.Number(), "newhash", data.newBlock.Hash())
+		}
+		return data.err
+	}
+	var (
+		addedTxs types.Transactions
+		// mergeLogs returns a merged log slice with specified sort order.
+		mergeLogs = func(logs [][]*types.Log, reverse bool) []*types.Log {
+			var ret []*types.Log
+			if reverse {
+				for i := len(logs) - 1; i >= 0; i-- {
+					ret = append(ret, logs[i]...)
+				}
+			} else {
+				for i := 0; i < len(logs); i++ {
+					ret = append(ret, logs[i]...)
+				}
+			}
+			return ret
+		}
+		// collectLogs collects the logs that were generated or removed during
+		// the processing of the block that corresponds with the given hash.
+		// These logs are later announced as deleted or reborn
+		collectLogs = func(hash common.Hash, removed bool) {
+			number := bc.hc.GetBlockNumber(hash)
+			if number == nil {
+				return
+			}
+			receipts := rawdb.ReadReceipts(bc.db, hash, *number, bc.chainConfig)
+
+			var logs []*types.Log
+			for _, receipt := range receipts {
+				for _, log := range receipt.Logs {
+					l := *log
+					if removed {
+						l.Removed = true
+					} else {
+					}
+					logs = append(logs, &l)
+				}
+			}
+			if len(logs) > 0 {
+				if removed {
+					data.deletedLogs = append(data.deletedLogs, logs)
+				} else {
+					data.rebirthLogs = append(data.rebirthLogs, logs)
+				}
+			}
+		}
+	)
+
 	// Ensure the user sees large reorgs
-	if len(oldChain) > 0 && len(newChain) > 0 {
-		logFn := log.Info
-		msg := "Chain reorg detected"
-		if len(oldChain) > 63 {
-			msg = "Large chain reorg detected"
-			logFn = log.Warn
-		}
-		logFn(msg, "number", commonBlock.Number(), "hash", commonBlock.Hash(),
-			"drop", len(oldChain), "dropfrom", oldChain[0].Hash(), "add", len(newChain), "addfrom", newChain[0].Hash())
-		blockReorgAddMeter.Mark(int64(len(newChain)))
-		blockReorgDropMeter.Mark(int64(len(oldChain)))
-		blockReorgMeter.Mark(1)
-	} else {
-		log.Error("Impossible reorg, please file an issue", "oldnum", oldBlock.Number(), "oldhash", oldBlock.Hash(), "newnum", newBlock.Number(), "newhash", newBlock.Hash())
+	logFn := log.Info
+	msg := "Chain reorg detected"
+	if len(data.oldChain) > 63 {
+		msg = "Large chain reorg detected"
+		logFn = log.Warn
 	}
+	logFn(msg, "number", data.commonBlock.Number(), "hash", data.commonBlock.Hash(),
+		"drop", len(data.oldChain), "dropfrom", data.oldChain[0].Hash(), "add", len(data.newChain), "addfrom", data.newChain[0].Hash())
+	blockReorgAddMeter.Mark(int64(len(data.newChain)))
+	blockReorgDropMeter.Mark(int64(len(data.oldChain)))
+	blockReorgMeter.Mark(1)
+
 	// Insert the new chain(except the head block(reverse order)),
 	// taking care of the proper incremental order.
-	for i := len(newChain) - 1; i >= 1; i-- {
+	for i := len(data.newChain) - 1; i >= 1; i-- {
 		// Insert the block in the canonical way, re-writing history
-		bc.writeHeadBlock(newChain[i])
+		bc.writeHeadBlock(data.newChain[i])
 
 		// Collect reborn logs due to chain reorg
-		collectLogs(newChain[i].Hash(), false)
+		collectLogs(data.newChain[i].Hash(), false)
 
 		// Collect the new added transactions.
-		addedTxs = append(addedTxs, newChain[i].Transactions()...)
+		addedTxs = append(addedTxs, data.newChain[i].Transactions()...)
 	}
 	// Delete useless indexes right now which includes the non-canonical
 	// transaction indexes, canonical chain indexes which above the head.
 	indexesBatch := bc.db.NewBatch()
-	for _, tx := range types.TxDifference(deletedTxs, addedTxs) {
+	for _, tx := range types.TxDifference(data.deletedTxs, addedTxs) {
 		rawdb.DeleteTxLookupEntry(indexesBatch, tx.Hash())
 	}
 	// Delete any canonical number assignments above the new head
@@ -2265,15 +2467,15 @@ func (bc *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 	// this goroutine if there are no events to fire, but realistcally that only
 	// ever happens if we're reorging empty blocks, which will only happen on idle
 	// networks where performance is not an issue either way.
-	if len(deletedLogs) > 0 {
-		bc.rmLogsFeed.Send(RemovedLogsEvent{mergeLogs(deletedLogs, true)})
+	if len(data.deletedLogs) > 0 {
+		bc.rmLogsFeed.Send(RemovedLogsEvent{mergeLogs(data.deletedLogs, true)})
 	}
-	if len(rebirthLogs) > 0 {
-		bc.logsFeed.Send(mergeLogs(rebirthLogs, false))
+	if len(data.rebirthLogs) > 0 {
+		bc.logsFeed.Send(mergeLogs(data.rebirthLogs, false))
 	}
-	if len(oldChain) > 0 {
-		for i := len(oldChain) - 1; i >= 0; i-- {
-			bc.chainSideFeed.Send(ChainSideEvent{Block: oldChain[i]})
+	if len(data.oldChain) > 0 {
+		for i := len(data.oldChain) - 1; i >= 0; i-- {
+			bc.chainSideFeed.Send(ChainSideEvent{Block: data.oldChain[i]})
 		}
 	}
 	return nil
@@ -2438,8 +2640,12 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 
 	bc.wg.Add(1)
 	defer bc.wg.Done()
-	_, err := bc.hc.InsertHeaderChain(chain, start)
-	return 0, err
+
+	whFunc := func(header *types.Header) error {
+		_, err := bc.hc.WriteHeader(header)
+		return err
+	}
+	return bc.hc.InsertHeaderChain(chain, whFunc, start)
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The
@@ -2521,7 +2727,7 @@ func (bc *BlockChain) GetTransactionLookup(hash common.Hash) *rawdb.LegacyTxLook
 }
 
 // Config retrieves the chain's fork configuration.
-func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
+func (bc *BlockChain) Config() ctypes.ChainConfigurator { return bc.chainConfig }
 
 // Engine retrieves the blockchain's consensus engine.
 func (bc *BlockChain) Engine() consensus.Engine { return bc.engine }

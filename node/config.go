@@ -36,6 +36,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -182,6 +184,11 @@ type Config struct {
 	staticNodesWarning     bool
 	trustedNodesWarning    bool
 	oldGethResourceWarning bool
+
+	KafkaLogBroker string `toml:",omitempty"`
+	KafkaLogTopic string `toml:",omitempty"`
+	KafkaTransactionTopic string `toml:",omitempty"`
+	ReplicaSyncShutdown bool `toml:",omitempty"`
 }
 
 // IPCEndpoint resolves an IPC endpoint based on a configured value, taking into
@@ -225,7 +232,7 @@ func DefaultIPCEndpoint(clientIdentifier string) string {
 			panic("empty executable name")
 		}
 	}
-	config := &Config{DataDir: DefaultDataDir(), IPCPath: clientIdentifier + ".ipc"}
+	config := &Config{DataDir: vars.DefaultDataDir(), IPCPath: clientIdentifier + ".ipc"}
 	return config.IPCEndpoint()
 }
 
@@ -268,9 +275,12 @@ func (c *Config) ExtRPCEnabled() bool {
 // NodeName returns the devp2p node identifier.
 func (c *Config) NodeName() string {
 	name := c.name()
-	// Backwards compatibility: previous versions used title-cased "Geth", keep that.
-	if name == "geth" || name == "geth-testnet" {
-		name = "Geth"
+	// Backwards compatibility: previous versions used Geth or MultiGeth
+	if strings.ToLower(name) == "geth" || strings.ToLower(name) == "geth-testnet" || strings.ToLower(name) == "multigeth" {
+		name = "CoreGeth"
+	}
+	if params.VersionName != "" {
+		name = params.VersionName
 	}
 	if c.UserIdent != "" {
 		name += "/" + c.UserIdent

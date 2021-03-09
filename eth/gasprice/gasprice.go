@@ -25,13 +25,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 const sampleNumber = 3 // Number of transactions sampled in a block
 
-var DefaultMaxPrice = big.NewInt(500 * params.GWei)
+var DefaultMaxPrice = big.NewInt(500 * vars.GWei)
 
 type Config struct {
 	Blocks     int
@@ -44,7 +45,7 @@ type Config struct {
 type OracleBackend interface {
 	HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error)
 	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
-	ChainConfig() *params.ChainConfig
+	ChainConfig() ctypes.ChainConfigurator
 }
 
 // Oracle recommends gas prices based on the content of recent

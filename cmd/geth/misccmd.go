@@ -31,24 +31,15 @@ import (
 )
 
 var (
-	VersionCheckUrlFlag = cli.StringFlag{
-		Name:  "check.url",
-		Usage: "URL to use when checking vulnerabilities",
-		Value: "https://geth.ethereum.org/docs/vulnerabilities/vulnerabilities.json",
-	}
-	VersionCheckVersionFlag = cli.StringFlag{
-		Name:  "check.version",
-		Usage: "Version to check",
-		Value: fmt.Sprintf("Geth/v%v/%v-%v/%v",
-			params.VersionWithCommit(gitCommit, gitDate),
-			runtime.GOOS, runtime.GOARCH, runtime.Version()),
-	}
 	makecacheCommand = cli.Command{
 		Action:    utils.MigrateFlags(makecache),
 		Name:      "makecache",
 		Usage:     "Generate ethash verification cache (for testing)",
 		ArgsUsage: "<blockNum> <outputDir>",
-		Category:  "MISCELLANEOUS COMMANDS",
+		Flags: []cli.Flag{
+			utils.EthashEpochLengthFlag,
+		},
+		Category: "MISCELLANEOUS COMMANDS",
 		Description: `
 The makecache command generates an ethash cache in <outputDir>.
 
@@ -61,7 +52,10 @@ Regular users do not need to execute it.
 		Name:      "makedag",
 		Usage:     "Generate ethash mining DAG (for testing)",
 		ArgsUsage: "<blockNum> <outputDir>",
-		Category:  "MISCELLANEOUS COMMANDS",
+		Flags: []cli.Flag{
+			utils.EthashEpochLengthFlag,
+		},
+		Category: "MISCELLANEOUS COMMANDS",
 		Description: `
 The makedag command generates an ethash DAG in <outputDir>.
 
@@ -79,21 +73,6 @@ Regular users do not need to execute it.
 The output of this command is supposed to be machine-readable.
 `,
 	}
-	versionCheckCommand = cli.Command{
-		Action: utils.MigrateFlags(versionCheck),
-		Flags: []cli.Flag{
-			VersionCheckUrlFlag,
-			VersionCheckVersionFlag,
-		},
-		Name:      "version-check",
-		Usage:     "Checks (online) whether the current version suffers from any known security vulnerabilities",
-		ArgsUsage: "<versionstring (optional)>",
-		Category:  "MISCELLANEOUS COMMANDS",
-		Description: `
-The version-check command fetches vulnerability-information from https://geth.ethereum.org/docs/vulnerabilities/vulnerabilities.json, 
-and displays information about any security vulnerabilities that affect the currently executing version.
-`,
-	}
 	licenseCommand = cli.Command{
 		Action:    utils.MigrateFlags(license),
 		Name:      "license",
@@ -101,6 +80,22 @@ and displays information about any security vulnerabilities that affect the curr
 		ArgsUsage: " ",
 		Category:  "MISCELLANEOUS COMMANDS",
 	}
+	// kafkaEventsCommand = cli.Command{
+	// 	Action:    utils.MigrateFlags(kafkaEvents),
+	// 	Name:      "kafkaEvents",
+	// 	Usage:     "Walk through Kafka events",
+	// 	ArgsUsage: " ",
+	// 	Category:  "MISCELLANEOUS COMMANDS",
+	// 	Flags: []cli.Flag{
+	// 		utils.KafkaLogBrokerFlag,
+	// 		utils.KafkaEventTopicFlag,
+	// 		cli.IntFlag{
+	// 			Name:  "verbosity",
+	// 			Usage: "Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail",
+	// 			Value: 3,
+	// 		},
+	// 	},
+	// }
 )
 
 // makecache generates an ethash verification cache into the provided folder.
@@ -113,7 +108,10 @@ func makecache(ctx *cli.Context) error {
 	if err != nil {
 		utils.Fatalf("Invalid block number: %v", err)
 	}
-	ethash.MakeCache(block, args[1])
+
+	epochLength := ctx.Uint64(utils.EthashEpochLengthFlag.Name)
+
+	ethash.MakeCache(block, epochLength, args[1])
 
 	return nil
 }
@@ -128,13 +126,20 @@ func makedag(ctx *cli.Context) error {
 	if err != nil {
 		utils.Fatalf("Invalid block number: %v", err)
 	}
-	ethash.MakeDataset(block, args[1])
+
+	epochLength := ctx.Uint64(utils.EthashEpochLengthFlag.Name)
+
+	ethash.MakeDataset(block, epochLength, args[1])
 
 	return nil
 }
 
 func version(ctx *cli.Context) error {
-	fmt.Println(strings.Title(clientIdentifier))
+	versionClientIdentifier := clientIdentifier
+	if params.VersionName != "" {
+		versionClientIdentifier = params.VersionName
+	}
+	fmt.Println(strings.Title(versionClientIdentifier))
 	fmt.Println("Version:", params.VersionWithMeta)
 	if gitCommit != "" {
 		fmt.Println("Git Commit:", gitCommit)
@@ -143,13 +148,59 @@ func version(ctx *cli.Context) error {
 		fmt.Println("Git Commit Date:", gitDate)
 	}
 	fmt.Println("Architecture:", runtime.GOARCH)
-	fmt.Println("Protocol Versions:", eth.ProtocolVersions)
+	fmt.Println("Protocol Versions:", eth.DefaultProtocolVersions)
 	fmt.Println("Go Version:", runtime.Version())
 	fmt.Println("Operating System:", runtime.GOOS)
 	fmt.Printf("GOPATH=%s\n", os.Getenv("GOPATH"))
 	fmt.Printf("GOROOT=%s\n", runtime.GOROOT())
 	return nil
 }
+
+// func kafkaEvents(ctx *cli.Context) error {
+// 	offset := sarama.OffsetOldest
+// 	if len(ctx.Args()) >= 1 {
+// 		num, _ := strconv.Atoi(ctx.Args()[0])
+// 		offset = int64(num)
+// 	}
+// 	consumer, err := replicaModule.NewKafkaEventConsumerFromURLs(ctx.GlobalString(utils.KafkaLogBrokerFlag.Name), ctx.GlobalString(utils.KafkaEventTopicFlag.Name), common.Hash{}, offset)
+// 	if err != nil { return err }
+// 	logsEventCh := make(chan []*types.Log)
+//   logsEventSub := consumer.SubscribeLogsEvent(logsEventCh)
+//   removedLogsEventCh := make(chan core.RemovedLogsEvent)
+//   removedLogsEventSub := consumer.SubscribeRemovedLogsEvent(removedLogsEventCh)
+//   chainHeadEventCh := make(chan core.ChainHeadEvent)
+//   chainHeadEventSub := consumer.SubscribeChainHeadEvent(chainHeadEventCh)
+// 	chainSideEventCh := make(chan core.ChainSideEvent)
+// 	chainSideEventSub := consumer.SubscribeChainSideEvent(chainSideEventCh)
+//   offsetCh := make(chan replicaModule.OffsetHash)
+//   offsetSub := consumer.SubscribeOffsets(offsetCh)
+//   defer logsEventSub.Unsubscribe()
+//   defer removedLogsEventSub.Unsubscribe()
+//   defer chainHeadEventSub.Unsubscribe()
+// 	defer chainSideEventSub.Unsubscribe()
+//   defer offsetSub.Unsubscribe()
+// 	logCounter := 0
+// 	removedLogs := 0
+// 	consumer.Start()
+// 	for {
+// 		select {
+// 		case logs := <-logsEventCh:
+// 			logCounter += len(logs)
+// 		case rlogs := <-removedLogsEventCh:
+// 			removedLogs += len(rlogs.Logs)
+// 		case head := <-chainHeadEventCh:
+// 			log.Info("New Head", "hash", head.Block.Hash(), "no", head.Block.Number(), "logs", logCounter, "rlogs", removedLogs)
+// 			logCounter = 0
+// 			removedLogs = 0
+// 		case head := <-chainSideEventCh:
+// 			log.Info("Side Head", "hash", head.Block.Hash(), "no", head.Block.Number(), "logs", logCounter, "rlogs", removedLogs)
+// 			logCounter = 0
+// 			removedLogs = 0
+// 		case offset := <-offsetCh:
+// 			log.Info("Offset", "offset", offset)
+// 		}
+// 	}
+// }
 
 func license(_ *cli.Context) error {
 	fmt.Println(`Geth is free software: you can redistribute it and/or modify

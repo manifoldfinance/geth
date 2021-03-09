@@ -112,8 +112,9 @@ var (
 				}
 				enc, err := rlp.EncodeToBytes(&ne)
 				return enc, err
+			} else {
+				return nil, errors.New("invalid field type")
 			}
-			return nil, errors.New("invalid field type")
 		},
 		func(enc []byte) (interface{}, error) {
 			var ne nodeHistoryEnc

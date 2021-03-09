@@ -21,8 +21,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"math/big"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -41,30 +46,6 @@ type precompiledFailureTest struct {
 	Input         string
 	ExpectedError string
 	Name          string
-}
-
-// allPrecompiles does not map to the actual set of precompiles, as it also contains
-// repriced versions of precompiles at certain slots
-var allPrecompiles = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}):    &ecrecover{},
-	common.BytesToAddress([]byte{2}):    &sha256hash{},
-	common.BytesToAddress([]byte{3}):    &ripemd160hash{},
-	common.BytesToAddress([]byte{4}):    &dataCopy{},
-	common.BytesToAddress([]byte{5}):    &bigModExp{eip2565: false},
-	common.BytesToAddress([]byte{0xf5}): &bigModExp{eip2565: true},
-	common.BytesToAddress([]byte{6}):    &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{7}):    &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{8}):    &bn256PairingIstanbul{},
-	common.BytesToAddress([]byte{9}):    &blake2F{},
-	common.BytesToAddress([]byte{10}):   &bls12381G1Add{},
-	common.BytesToAddress([]byte{11}):   &bls12381G1Mul{},
-	common.BytesToAddress([]byte{12}):   &bls12381G1MultiExp{},
-	common.BytesToAddress([]byte{13}):   &bls12381G2Add{},
-	common.BytesToAddress([]byte{14}):   &bls12381G2Mul{},
-	common.BytesToAddress([]byte{15}):   &bls12381G2MultiExp{},
-	common.BytesToAddress([]byte{16}):   &bls12381Pairing{},
-	common.BytesToAddress([]byte{17}):   &bls12381MapG1{},
-	common.BytesToAddress([]byte{18}):   &bls12381MapG2{},
 }
 
 // EIP-152 test vectors
@@ -90,6 +71,21 @@ var blake2FMalformedInputTests = []precompiledFailureTest{
 		Name:          "vector 3: malformed final block indicator flag",
 	},
 }
+
+// allPrecompileds overrides the AllEthashProtocolChanges config.
+// YoloV2 includes EIP2537.
+// This config is Clique-based, for one.
+// For two, the chain feature isn't installed in all CliqueChainConfigs either.
+// So we override to ALL of the precompileds gathered, however hacky it may be.
+var allPrecompiles = func() map[common.Address]PrecompiledContract {
+	conf := params.AllEthashProtocolChanges
+	zero := uint64(0)
+	err := conf.SetEIP2537Transition(&zero)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return PrecompiledContractsForConfig(conf, big.NewInt(0))
+}()
 
 func testPrecompiled(addr string, test precompiledTest, t *testing.T) {
 	p := allPrecompiles[common.HexToAddress(addr)]
@@ -145,6 +141,95 @@ func testPrecompiledFailure(addr string, test precompiledFailureTest, t *testing
 			t.Errorf("Precompiled %v modified input data", addr)
 		}
 	})
+}
+
+func TestIsPrecompiledContractEnabled(t *testing.T) {
+	var homeCts = []common.Address{
+		common.BytesToAddress([]byte{1}),
+		common.BytesToAddress([]byte{2}),
+		common.BytesToAddress([]byte{3}),
+		common.BytesToAddress([]byte{4}),
+	}
+	var byzUniqCts = []common.Address{
+		common.BytesToAddress([]byte{5}),
+		common.BytesToAddress([]byte{6}),
+		common.BytesToAddress([]byte{7}),
+		common.BytesToAddress([]byte{8}),
+	}
+	var byzCts = append(homeCts, byzUniqCts...)
+	var nonCts = []common.Address{
+		{},
+		common.BytesToAddress([]byte{42}),
+		common.HexToAddress("0xdeadbeef"),
+	}
+	type c struct {
+		addr     common.Address
+		config   ctypes.ChainConfigurator
+		blockNum *big.Int
+		want     bool
+	}
+	cases := []c{}
+	addCaseWhere := func(config ctypes.ChainConfigurator, addr common.Address, bn *big.Int, want bool) {
+		cases = append(cases, c{
+			addr:     addr,
+			config:   config,
+			blockNum: bn,
+			want:     want,
+		})
+	}
+	for _, a := range homeCts {
+		addCaseWhere(params.AllEthashProtocolChanges, a, big.NewInt(0), true)
+		addCaseWhere(params.MainnetChainConfig, a, big.NewInt(0), true)
+		addCaseWhere(params.MainnetChainConfig, a, new(big.Int).Sub(params.MainnetChainConfig.ByzantiumBlock, common.Big1), true)
+		addCaseWhere(params.MainnetChainConfig, a, params.MainnetChainConfig.ByzantiumBlock, true)
+		addCaseWhere(params.MainnetChainConfig, a, new(big.Int).Add(params.MainnetChainConfig.ByzantiumBlock, common.Big1), true)
+	}
+	for _, a := range byzUniqCts {
+		addCaseWhere(params.MainnetChainConfig, a, new(big.Int).Sub(params.MainnetChainConfig.ByzantiumBlock, common.Big1), false)
+		addCaseWhere(params.MainnetChainConfig, a, params.MainnetChainConfig.ByzantiumBlock, true)
+		addCaseWhere(params.MainnetChainConfig, a, new(big.Int).Add(params.MainnetChainConfig.ByzantiumBlock, common.Big1), true)
+	}
+	for _, a := range byzCts {
+		addCaseWhere(params.AllEthashProtocolChanges, a, big.NewInt(0), true)
+		addCaseWhere(params.MainnetChainConfig, a, new(big.Int).Add(params.MainnetChainConfig.ByzantiumBlock, common.Big1), true)
+	}
+	for _, a := range nonCts {
+		addCaseWhere(params.AllEthashProtocolChanges, a, big.NewInt(0), false)
+		addCaseWhere(params.MainnetChainConfig, a, new(big.Int).Sub(params.MainnetChainConfig.ByzantiumBlock, common.Big1), false)
+		addCaseWhere(params.MainnetChainConfig, a, new(big.Int).Add(params.MainnetChainConfig.ByzantiumBlock, common.Big1), false)
+	}
+
+	for i, c := range cases {
+		got := PrecompiledContractsForConfig(c.config, c.blockNum)[c.addr] != nil
+		if c.want != got {
+			t.Errorf("test: %d, address: %x, want: %v, got: %v", i, c.addr, c.want, got)
+		}
+
+		// test 1:1 with pre-existing hard-fork implementation style in *evm#Call
+		precomps := map[common.Address]PrecompiledContract{
+			common.BytesToAddress([]byte{1}): &ecrecover{},
+			common.BytesToAddress([]byte{2}): &sha256hash{},
+			common.BytesToAddress([]byte{3}): &ripemd160hash{},
+			common.BytesToAddress([]byte{4}): &dataCopy{},
+		}
+		if c.config.IsEnabled(c.config.GetEIP198Transition, c.blockNum) && c.config.IsEnabled(c.config.GetEIP212Transition, c.blockNum) && c.config.IsEnabled(c.config.GetEIP213Transition, c.blockNum) {
+			precomps = map[common.Address]PrecompiledContract{
+				common.BytesToAddress([]byte{1}): &ecrecover{},
+				common.BytesToAddress([]byte{2}): &sha256hash{},
+				common.BytesToAddress([]byte{3}): &ripemd160hash{},
+				common.BytesToAddress([]byte{4}): &dataCopy{},
+				common.BytesToAddress([]byte{5}): &bigModExp{},
+				common.BytesToAddress([]byte{6}): &bn256AddByzantium{},
+				common.BytesToAddress([]byte{7}): &bn256ScalarMulByzantium{},
+				common.BytesToAddress([]byte{8}): &bn256PairingByzantium{},
+			}
+		}
+		expect := precomps[c.addr] == nil
+		got = PrecompiledContractsForConfig(c.config, c.blockNum)[c.addr] == nil
+		if got != expect {
+			t.Errorf("addr: %x, bn: %v, want: %v, got: %v", c.addr, c.blockNum, c.want, expect)
+		}
+	}
 }
 
 func benchmarkPrecompiled(addr string, test precompiledTest, bench *testing.B) {
@@ -234,9 +319,6 @@ func BenchmarkPrecompiledIdentity(bench *testing.B) {
 // Tests the sample inputs from the ModExp EIP 198.
 func TestPrecompiledModExp(t *testing.T)      { testJson("modexp", "05", t) }
 func BenchmarkPrecompiledModExp(b *testing.B) { benchJson("modexp", "05", b) }
-
-func TestPrecompiledModExpEip2565(t *testing.T)      { testJson("modexp_eip2565", "f5", t) }
-func BenchmarkPrecompiledModExpEip2565(b *testing.B) { benchJson("modexp_eip2565", "f5", b) }
 
 // Tests the sample inputs from the elliptic curve addition EIP 213.
 func TestPrecompiledBn256Add(t *testing.T)      { testJson("bn256Add", "06", t) }

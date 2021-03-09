@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/holiman/uint256"
 )
 
@@ -44,6 +44,15 @@ func EnableEIP(eipNum int, jt *JumpTable) error {
 	return nil
 }
 
+func enableSelfBalance(jt *JumpTable) {
+	jt[SELFBALANCE] = &operation{
+		execute:     opSelfBalance,
+		constantGas: GasFastStep,
+		minStack:    minStack(0, 1),
+		maxStack:    maxStack(0, 1),
+	}
+}
+
 func ValidEip(eipNum int) bool {
 	_, ok := activators[eipNum]
 	return ok
@@ -64,17 +73,12 @@ func ActivateableEips() []string {
 // - Define SELFBALANCE, with cost GasFastStep (5)
 func enable1884(jt *JumpTable) {
 	// Gas cost changes
-	jt[SLOAD].constantGas = params.SloadGasEIP1884
-	jt[BALANCE].constantGas = params.BalanceGasEIP1884
-	jt[EXTCODEHASH].constantGas = params.ExtcodeHashGasEIP1884
+	jt[BALANCE].constantGas = vars.BalanceGasEIP1884
+	jt[EXTCODEHASH].constantGas = vars.ExtcodeHashGasEIP1884
+	jt[SLOAD].constantGas = vars.SloadGasEIP1884
 
 	// New opcode
-	jt[SELFBALANCE] = &operation{
-		execute:     opSelfBalance,
-		constantGas: GasFastStep,
-		minStack:    minStack(0, 1),
-		maxStack:    maxStack(0, 1),
-	}
+	enableSelfBalance(jt)
 }
 
 func opSelfBalance(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
@@ -97,14 +101,14 @@ func enable1344(jt *JumpTable) {
 
 // opChainID implements CHAINID opcode
 func opChainID(pc *uint64, interpreter *EVMInterpreter, callContext *callCtx) ([]byte, error) {
-	chainId, _ := uint256.FromBig(interpreter.evm.chainConfig.ChainID)
+	chainId, _ := uint256.FromBig(interpreter.evm.chainConfig.GetChainID())
 	callContext.stack.push(chainId)
 	return nil, nil
 }
 
 // enable2200 applies EIP-2200 (Rebalance net-metered SSTORE)
 func enable2200(jt *JumpTable) {
-	jt[SLOAD].constantGas = params.SloadGasEIP2200
+	jt[SLOAD].constantGas = vars.SloadGasEIP2200
 	jt[SSTORE].dynamicGas = gasSStoreEIP2200
 }
 
@@ -170,6 +174,6 @@ func enable2929(jt *JumpTable) {
 
 	// This was previously part of the dynamic cost, but we're using it as a constantGas
 	// factor here
-	jt[SELFDESTRUCT].constantGas = params.SelfdestructGasEIP150
+	jt[SELFDESTRUCT].constantGas = vars.SelfdestructGasEIP150
 	jt[SELFDESTRUCT].dynamicGas = gasSelfdestructEIP2929
 }

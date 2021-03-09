@@ -33,7 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/vars"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 )
@@ -63,21 +63,21 @@ type IndexerConfig struct {
 var (
 	// DefaultServerIndexerConfig wraps a set of configs as a default indexer config for server side.
 	DefaultServerIndexerConfig = &IndexerConfig{
-		ChtSize:           params.CHTFrequency,
-		ChtConfirms:       params.HelperTrieProcessConfirmations,
-		BloomSize:         params.BloomBitsBlocks,
-		BloomConfirms:     params.BloomConfirms,
-		BloomTrieSize:     params.BloomTrieFrequency,
-		BloomTrieConfirms: params.HelperTrieProcessConfirmations,
+		ChtSize:           vars.CHTFrequency,
+		ChtConfirms:       vars.HelperTrieProcessConfirmations,
+		BloomSize:         vars.BloomBitsBlocks,
+		BloomConfirms:     vars.BloomConfirms,
+		BloomTrieSize:     vars.BloomTrieFrequency,
+		BloomTrieConfirms: vars.HelperTrieProcessConfirmations,
 	}
 	// DefaultClientIndexerConfig wraps a set of configs as a default indexer config for client side.
 	DefaultClientIndexerConfig = &IndexerConfig{
-		ChtSize:           params.CHTFrequency,
-		ChtConfirms:       params.HelperTrieConfirmations,
-		BloomSize:         params.BloomBitsBlocksClient,
-		BloomConfirms:     params.HelperTrieConfirmations,
-		BloomTrieSize:     params.BloomTrieFrequency,
-		BloomTrieConfirms: params.HelperTrieConfirmations,
+		ChtSize:           vars.CHTFrequency,
+		ChtConfirms:       vars.HelperTrieConfirmations,
+		BloomSize:         vars.BloomBitsBlocksClient,
+		BloomConfirms:     vars.HelperTrieConfirmations,
+		BloomTrieSize:     vars.BloomTrieFrequency,
+		BloomTrieConfirms: vars.HelperTrieConfirmations,
 	}
 	// TestServerIndexerConfig wraps a set of configs as a test indexer config for server side.
 	TestServerIndexerConfig = &IndexerConfig{
@@ -147,7 +147,7 @@ func NewChtIndexer(db ethdb.Database, odr OdrBackend, size, confirms uint64, dis
 		diskdb:         db,
 		odr:            odr,
 		trieTable:      trieTable,
-		triedb:         trie.NewDatabaseWithConfig(trieTable, &trie.Config{Cache: 1}), // Use a tiny cache only to keep memory down
+		triedb:         trie.NewDatabaseWithCache(trieTable, 1, ""), // Use a tiny cache only to keep memory down
 		trieset:        mapset.NewSet(),
 		sectionSize:    size,
 		disablePruning: disablePruning,
@@ -340,7 +340,7 @@ func NewBloomTrieIndexer(db ethdb.Database, odr OdrBackend, parentSize, size uin
 		diskdb:         db,
 		odr:            odr,
 		trieTable:      trieTable,
-		triedb:         trie.NewDatabaseWithConfig(trieTable, &trie.Config{Cache: 1}), // Use a tiny cache only to keep memory down
+		triedb:         trie.NewDatabaseWithCache(trieTable, 1, ""), // Use a tiny cache only to keep memory down
 		trieset:        mapset.NewSet(),
 		parentSize:     parentSize,
 		size:           size,

@@ -69,8 +69,8 @@ func (api *PublicEthereumAPI) Hashrate() hexutil.Uint64 {
 // ChainId is the EIP-155 replay-protection chain id for the current ethereum chain config.
 func (api *PublicEthereumAPI) ChainId() hexutil.Uint64 {
 	chainID := new(big.Int)
-	if config := api.e.blockchain.Config(); config.IsEIP155(api.e.blockchain.CurrentBlock().Number()) {
-		chainID = config.ChainID
+	if config := api.e.blockchain.Config(); config.IsEnabled(config.GetEIP155Transition, api.e.blockchain.CurrentBlock().Number()) {
+		chainID = config.GetChainID()
 	}
 	return (hexutil.Uint64)(chainID.Uint64())
 }
@@ -264,6 +264,30 @@ func (api *PrivateAdminAPI) ImportChain(file string) (bool, error) {
 	return true, nil
 }
 
+func (api *PrivateAdminAPI) Ecbp1100(blockNr rpc.BlockNumber) (bool, error) {
+	i := uint64(blockNr.Int64())
+	err := api.eth.blockchain.Config().SetECBP1100Transition(&i)
+	return api.eth.blockchain.IsArtificialFinalityEnabled() &&
+		api.eth.blockchain.Config().IsEnabled(
+			api.eth.blockchain.Config().GetECBP1100Transition,
+			api.eth.blockchain.CurrentBlock().Number()), err
+}
+
+// MaxPeers sets the maximum peer limit for the protocol manager and the p2p server.
+func (api *PrivateAdminAPI) MaxPeers(n int) (bool, error) {
+	api.eth.protocolManager.maxPeers = n
+	api.eth.p2pServer.MaxPeers = n
+
+	for i := api.eth.protocolManager.peers.Len(); i > n; i = api.eth.protocolManager.peers.Len() {
+		p := api.eth.protocolManager.peers.WorstPeer()
+		if p == nil {
+			break
+		}
+		api.eth.protocolManager.removePeer(p.id)
+	}
+	return true, nil
+}
+
 // PublicDebugAPI is the collection of Ethereum full node APIs exposed
 // over the public debugging endpoint.
 type PublicDebugAPI struct {
@@ -323,9 +347,9 @@ func (api *PrivateDebugAPI) Preimage(ctx context.Context, hash common.Hash) (hex
 
 // BadBlockArgs represents the entries in the list returned when bad blocks are queried.
 type BadBlockArgs struct {
-	Hash  common.Hash            `json:"hash"`
-	Block map[string]interface{} `json:"block"`
-	RLP   string                 `json:"rlp"`
+	Hash  common.Hash              `json:"hash"`
+	Block *ethapi.RPCMarshalBlockT `json:"block"`
+	RLP   string                   `json:"rlp"`
 }
 
 // GetBadBlocks returns a list of the last 'bad blocks' that the client has seen on the network
@@ -345,7 +369,7 @@ func (api *PrivateDebugAPI) GetBadBlocks(ctx context.Context) ([]*BadBlockArgs, 
 			results[i].RLP = fmt.Sprintf("0x%x", rlpBytes)
 		}
 		if results[i].Block, err = ethapi.RPCMarshalBlock(block, true, true); err != nil {
-			results[i].Block = map[string]interface{}{"error": err.Error()}
+			results[i].Block = &ethapi.RPCMarshalBlockT{Error: err.Error()}
 		}
 	}
 	return results, nil
@@ -534,4 +558,22 @@ func (api *PrivateDebugAPI) getModifiedAccounts(startBlock, endBlock *types.Bloc
 		dirty = append(dirty, common.BytesToAddress(key))
 	}
 	return dirty, nil
+}
+
+// RemovePendingTransaction removes a transaction from the txpool.
+// It returns the transaction removed, if any.
+func (api *PrivateDebugAPI) RemovePendingTransaction(hash common.Hash) (*types.Transaction, error) {
+	return api.eth.txPool.RemoveTx(hash), nil
+}
+
+// PrivateTraceAPI is the collection of Ethereum full node APIs exposed over
+// the private debugging endpoint.
+type PrivateTraceAPI struct {
+	eth *Ethereum
+}
+
+// NewPrivateTraceAPI creates a new API definition for the full node-related
+// private debug methods of the Ethereum service.
+func NewPrivateTraceAPI(eth *Ethereum) *PrivateTraceAPI {
+	return &PrivateTraceAPI{eth: eth}
 }

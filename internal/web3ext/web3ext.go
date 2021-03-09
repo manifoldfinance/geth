@@ -31,6 +31,7 @@ var Modules = map[string]string{
 	"rpc":        RpcJs,
 	"shh":        ShhJs,
 	"swarmfs":    SwarmfsJs,
+	"trace":      TraceJs,
 	"txpool":     TxpoolJs,
 	"les":        LESJs,
 	"lespay":     LESPayJs,
@@ -179,6 +180,16 @@ web3._extend({
 		new web3._extend.Method({
 			name: 'importChain',
 			call: 'admin_importChain',
+			params: 1
+		}),
+		new web3._extend.Method({
+			name: 'maxPeers',
+			call: 'admin_maxPeers',
+			params: 1
+		}),
+		new web3._extend.Method({
+			name: 'ecbp1100',
+			call: 'admin_ecbp1100',
 			params: 1
 		}),
 		new web3._extend.Method({
@@ -470,6 +481,11 @@ web3._extend({
 			call: 'debug_freezeClient',
 			params: 1,
 		}),
+		new web3._extend.Method({
+			name: 'removePendingTransaction',
+			call: 'debug_removePendingTransaction',
+			params: 1
+		}),
 	],
 	properties: []
 });
@@ -562,11 +578,6 @@ web3._extend({
 			call: 'eth_getProof',
 			params: 3,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null, web3._extend.formatters.inputBlockNumberFormatter]
-		}),
-		new web3._extend.Method({
-			name: 'sendBundle',
-			call: 'eth_sendBundle',
-			params: 4
 		}),
 	],
 	properties: [
@@ -703,7 +714,13 @@ web3._extend({
 const RpcJs = `
 web3._extend({
 	property: 'rpc',
-	methods: [],
+	methods: [
+		new web3._extend.Method({
+			name: 'discover',
+			call: 'rpc.discover',
+			params: 0
+		}),
+	],
 	properties: [
 		new web3._extend.Property({
 			name: 'modules',
@@ -754,6 +771,33 @@ web3._extend({
 			params: 0
 		}),
 	]
+});
+`
+
+const TraceJs = `
+web3._extend({
+	property: 'trace',
+	methods: [
+		new web3._extend.Method({
+			name: 'block',
+			call: 'trace_block',
+			params: 2,
+			inputFormatter: [null, null]
+		}),
+		new web3._extend.Method({
+			name: 'transaction',
+			call: 'trace_transaction',
+			params: 2,
+			inputFormatter: [null, null]
+		}),
+		new web3._extend.Method({
+			name: 'filter',
+			call: 'trace_filter',
+			params: 2,
+			inputFormatter: [null, null]
+		}),
+	],
+	properties: []
 });
 `
 

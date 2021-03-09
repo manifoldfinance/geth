@@ -22,14 +22,12 @@ import (
 	"errors"
 	"hash/crc32"
 	"math"
-	"math/big"
-	"reflect"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/confp"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 )
 
 var (
@@ -47,7 +45,7 @@ var (
 // Blockchain defines all necessary method to build a forkID.
 type Blockchain interface {
 	// Config retrieves the chain's fork configuration.
-	Config() *params.ChainConfig
+	Config() ctypes.ChainConfigurator
 
 	// Genesis retrieves the chain's genesis block.
 	Genesis() *types.Block
@@ -66,7 +64,7 @@ type ID struct {
 type Filter func(id ID) error
 
 // NewID calculates the Ethereum fork ID from the chain config, genesis hash, and head.
-func NewID(config *params.ChainConfig, genesis common.Hash, head uint64) ID {
+func NewID(config ctypes.ChainConfigurator, genesis common.Hash, head uint64) ID {
 	// Calculate the starting checksum from the genesis hash
 	hash := crc32.ChecksumIEEE(genesis[:])
 
@@ -97,7 +95,7 @@ func NewFilter(chain Blockchain) Filter {
 }
 
 // NewStaticFilter creates a filter at block zero.
-func NewStaticFilter(config *params.ChainConfig, genesis common.Hash) Filter {
+func NewStaticFilter(config ctypes.ChainConfigurator, genesis common.Hash) Filter {
 	head := func() uint64 { return 0 }
 	return newFilter(config, genesis, head)
 }
@@ -105,7 +103,7 @@ func NewStaticFilter(config *params.ChainConfig, genesis common.Hash) Filter {
 // newFilter is the internal version of NewFilter, taking closures as its arguments
 // instead of a chain. The reason is to allow testing it without having to simulate
 // an entire blockchain.
-func newFilter(config *params.ChainConfig, genesis common.Hash, headfn func() uint64) Filter {
+func newFilter(config ctypes.ChainConfigurator, genesis common.Hash, headfn func() uint64) Filter {
 	// Calculate the all the valid fork hash and fork next combos
 	var (
 		forks = gatherForks(config)
@@ -203,45 +201,6 @@ func checksumToBytes(hash uint32) [4]byte {
 }
 
 // gatherForks gathers all the known forks and creates a sorted list out of them.
-func gatherForks(config *params.ChainConfig) []uint64 {
-	// Gather all the fork block numbers via reflection
-	kind := reflect.TypeOf(params.ChainConfig{})
-	conf := reflect.ValueOf(config).Elem()
-
-	var forks []uint64
-	for i := 0; i < kind.NumField(); i++ {
-		// Fetch the next field and skip non-fork rules
-		field := kind.Field(i)
-		if !strings.HasSuffix(field.Name, "Block") {
-			continue
-		}
-		if field.Type != reflect.TypeOf(new(big.Int)) {
-			continue
-		}
-		// Extract the fork rule block number and aggregate it
-		rule := conf.Field(i).Interface().(*big.Int)
-		if rule != nil {
-			forks = append(forks, rule.Uint64())
-		}
-	}
-	// Sort the fork block numbers to permit chronological XOR
-	for i := 0; i < len(forks); i++ {
-		for j := i + 1; j < len(forks); j++ {
-			if forks[i] > forks[j] {
-				forks[i], forks[j] = forks[j], forks[i]
-			}
-		}
-	}
-	// Deduplicate block numbers applying multiple forks
-	for i := 1; i < len(forks); i++ {
-		if forks[i] == forks[i-1] {
-			forks = append(forks[:i], forks[i+1:]...)
-			i--
-		}
-	}
-	// Skip any forks in block 0, that's the genesis ruleset
-	if len(forks) > 0 && forks[0] == 0 {
-		forks = forks[1:]
-	}
-	return forks
+func gatherForks(config ctypes.ChainConfigurator) []uint64 {
+	return confp.Forks(config)
 }

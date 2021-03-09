@@ -30,7 +30,9 @@ import (
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
 	"github.com/ethereum/go-ethereum/miner"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
+	"github.com/ethereum/go-ethereum/params/vars"
 )
 
 // DefaultFullGPOConfig contains default gasprice oracle settings for full node.
@@ -59,7 +61,7 @@ var DefaultConfig = Config{
 		DatasetsOnDisk:   2,
 		DatasetsLockMmap: false,
 	},
-	NetworkId:               1,
+	NetworkId:               vars.DefaultNetworkID,
 	LightPeers:              100,
 	UltraLightFraction:      75,
 	DatabaseCache:           512,
@@ -72,7 +74,7 @@ var DefaultConfig = Config{
 	Miner: miner.Config{
 		GasFloor: 8000000,
 		GasCeil:  8000000,
-		GasPrice: big.NewInt(params.GWei),
+		GasPrice: big.NewInt(vars.GWei),
 		Recommit: 3 * time.Second,
 	},
 	TxPool:      core.DefaultTxPoolConfig,
@@ -107,11 +109,12 @@ func init() {
 type Config struct {
 	// The genesis block, which is inserted if the database is empty.
 	// If nil, the Ethereum main net block is used.
-	Genesis *core.Genesis `toml:",omitempty"`
+	Genesis *genesisT.Genesis `toml:",omitempty"`
 
 	// Protocol options
-	NetworkId uint64 // Network ID to use for selecting peers to connect to
-	SyncMode  downloader.SyncMode
+	NetworkId        uint64 // Network ID to use for selecting peers to connect to
+	ProtocolVersions []uint // Protocol versions are the supported versions of the eth protocol (first is primary).
+	SyncMode         downloader.SyncMode
 
 	// This can be set to list of enrtree:// URLs which will be queried for
 	// for nodes to connect to.
@@ -138,10 +141,11 @@ type Config struct {
 	UltraLightOnlyAnnounce bool     `toml:",omitempty"` // Whether to only announce headers, or also serve them
 
 	// Database options
-	SkipBcVersionCheck bool `toml:"-"`
-	DatabaseHandles    int  `toml:"-"`
-	DatabaseCache      int
-	DatabaseFreezer    string
+	SkipBcVersionCheck    bool `toml:"-"`
+	DatabaseHandles       int  `toml:"-"`
+	DatabaseCache         int
+	DatabaseFreezer       string
+	DatabaseFreezerRemote string
 
 	TrieCleanCache          int
 	TrieCleanCacheJournal   string        `toml:",omitempty"` // Disk journal directory for trie cache to survive node restarts
@@ -149,7 +153,6 @@ type Config struct {
 	TrieDirtyCache          int
 	TrieTimeout             time.Duration
 	SnapshotCache           int
-	Preimages               bool
 
 	// Mining options
 	Miner miner.Config
@@ -183,8 +186,17 @@ type Config struct {
 	RPCTxFeeCap float64 `toml:",omitempty"`
 
 	// Checkpoint is a hardcoded checkpoint which can be nil.
-	Checkpoint *params.TrustedCheckpoint `toml:",omitempty"`
+	Checkpoint *ctypes.TrustedCheckpoint `toml:",omitempty"`
 
 	// CheckpointOracle is the configuration for checkpoint oracle.
-	CheckpointOracle *params.CheckpointOracleConfig `toml:",omitempty"`
+	CheckpointOracle *ctypes.CheckpointOracleConfig `toml:",omitempty"`
+
+	DatabaseOverlay string
+
+	// Manual configuration field for ECBP1100 activation number. Used for modifying genesis config via CLI flag.
+	ECBP1100 *big.Int
+
+	// ECBP1100NoDisable overrides
+	// When this value is *true, ECBP100 will not (ever) be disabled; when *false, it will never be enabled.
+	ECBP1100NoDisable *bool `toml:",omitempty"`
 }

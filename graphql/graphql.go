@@ -77,7 +77,7 @@ func (a *Account) Code(ctx context.Context) (hexutil.Bytes, error) {
 	if err != nil {
 		return hexutil.Bytes{}, err
 	}
-	return state.GetCode(a.address), nil
+	return hexutil.Bytes(state.GetCode(a.address)), nil
 }
 
 func (a *Account) Storage(ctx context.Context, args struct{ Slot common.Hash }) (common.Hash, error) {
@@ -116,7 +116,7 @@ func (l *Log) Topics(ctx context.Context) []common.Hash {
 }
 
 func (l *Log) Data(ctx context.Context) hexutil.Bytes {
-	return l.log.Data
+	return hexutil.Bytes(l.log.Data)
 }
 
 // Transaction represents an Ethereum transaction.
@@ -157,7 +157,7 @@ func (t *Transaction) InputData(ctx context.Context) (hexutil.Bytes, error) {
 	if err != nil || tx == nil {
 		return hexutil.Bytes{}, err
 	}
-	return tx.Data(), nil
+	return hexutil.Bytes(tx.Data()), nil
 }
 
 func (t *Transaction) Gas(ctx context.Context) (hexutil.Uint64, error) {
@@ -410,7 +410,7 @@ func (b *Block) resolveReceipts(ctx context.Context) ([]*types.Receipt, error) {
 		if err != nil {
 			return nil, err
 		}
-		b.receipts = receipts
+		b.receipts = []*types.Receipt(receipts)
 	}
 	return b.receipts, nil
 }
@@ -490,7 +490,7 @@ func (b *Block) Nonce(ctx context.Context) (hexutil.Bytes, error) {
 	if err != nil {
 		return hexutil.Bytes{}, err
 	}
-	return header.Nonce[:], nil
+	return hexutil.Bytes(header.Nonce[:]), nil
 }
 
 func (b *Block) MixHash(ctx context.Context) (common.Hash, error) {
@@ -564,7 +564,7 @@ func (b *Block) ExtraData(ctx context.Context) (hexutil.Bytes, error) {
 	if err != nil {
 		return hexutil.Bytes{}, err
 	}
-	return header.Extra, nil
+	return hexutil.Bytes(header.Extra), nil
 }
 
 func (b *Block) LogsBloom(ctx context.Context) (hexutil.Bytes, error) {
@@ -572,7 +572,7 @@ func (b *Block) LogsBloom(ctx context.Context) (hexutil.Bytes, error) {
 	if err != nil {
 		return hexutil.Bytes{}, err
 	}
-	return header.Bloom.Bytes(), nil
+	return hexutil.Bytes(header.Bloom.Bytes()), nil
 }
 
 func (b *Block) TotalDifficulty(ctx context.Context) (hexutil.Big, error) {
@@ -803,7 +803,7 @@ func (b *Block) Call(ctx context.Context, args struct {
 			return nil, err
 		}
 	}
-	result, err := ethapi.DoCall(ctx, b.backend, args.Data, *b.numberOrHash, nil, vm.Config{}, 5*time.Second, b.backend.RPCGasCap())
+	result, _, err := ethapi.DoCall(ctx, b.backend, args.Data, nil, *b.numberOrHash, nil, vm.Config{}, 5*time.Second, b.backend.RPCGasCap())
 	if err != nil {
 		return nil, err
 	}
@@ -828,7 +828,7 @@ func (b *Block) EstimateGas(ctx context.Context, args struct {
 			return hexutil.Uint64(0), err
 		}
 	}
-	gas, err := ethapi.DoEstimateGas(ctx, b.backend, args.Data, *b.numberOrHash, b.backend.RPCGasCap())
+	gas, _, err := ethapi.DoEstimateGas(ctx, b.backend, args.Data, nil, *b.numberOrHash, b.backend.RPCGasCap(), false)
 	return gas, err
 }
 
@@ -873,7 +873,7 @@ func (p *Pending) Call(ctx context.Context, args struct {
 	Data ethapi.CallArgs
 }) (*CallResult, error) {
 	pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-	result, err := ethapi.DoCall(ctx, p.backend, args.Data, pendingBlockNr, nil, vm.Config{}, 5*time.Second, p.backend.RPCGasCap())
+	result, _, err := ethapi.DoCall(ctx, p.backend, args.Data, nil, pendingBlockNr, nil, vm.Config{}, 5*time.Second, p.backend.RPCGasCap())
 	if err != nil {
 		return nil, err
 	}
@@ -893,7 +893,8 @@ func (p *Pending) EstimateGas(ctx context.Context, args struct {
 	Data ethapi.CallArgs
 }) (hexutil.Uint64, error) {
 	pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-	return ethapi.DoEstimateGas(ctx, p.backend, args.Data, pendingBlockNr, p.backend.RPCGasCap())
+	gas, _, err := ethapi.DoEstimateGas(ctx, p.backend, args.Data, nil, pendingBlockNr, p.backend.RPCGasCap(), false)
+	return gas, err
 }
 
 // Resolver is the top-level object in the GraphQL hierarchy.
@@ -907,7 +908,7 @@ func (r *Resolver) Block(ctx context.Context, args struct {
 }) (*Block, error) {
 	var block *Block
 	if args.Number != nil {
-		number := rpc.BlockNumber(*args.Number)
+		number := rpc.BlockNumber(uint64(*args.Number))
 		numberOrHash := rpc.BlockNumberOrHashWithNumber(number)
 		block = &Block{
 			backend:      r.backend,
@@ -1045,7 +1046,7 @@ func (r *Resolver) ProtocolVersion(ctx context.Context) (int32, error) {
 }
 
 func (r *Resolver) ChainID(ctx context.Context) (hexutil.Big, error) {
-	return hexutil.Big(*r.backend.ChainConfig().ChainID), nil
+	return hexutil.Big(*r.backend.ChainConfig().GetChainID()), nil
 }
 
 // SyncState represents the synchronisation status returned from the `syncing` accessor.

@@ -38,7 +38,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
+	cli "gopkg.in/urfave/cli.v1"
 )
 
 var runCommand = cli.Command{
@@ -51,7 +53,7 @@ var runCommand = cli.Command{
 
 // readGenesis will read the given JSON format genesis file and return
 // the initialized Genesis structure
-func readGenesis(genesisPath string) *core.Genesis {
+func readGenesis(genesisPath string) *genesisT.Genesis {
 	// Make sure we have a valid genesis JSON
 	//genesisPath := ctx.Args().First()
 	if len(genesisPath) == 0 {
@@ -63,7 +65,7 @@ func readGenesis(genesisPath string) *core.Genesis {
 	}
 	defer file.Close()
 
-	genesis := new(core.Genesis)
+	genesis := new(genesisT.Genesis)
 	if err := json.NewDecoder(file).Decode(genesis); err != nil {
 		utils.Fatalf("invalid genesis file: %v", err)
 	}
@@ -119,10 +121,10 @@ func runCmd(ctx *cli.Context) error {
 		tracer        vm.Tracer
 		debugLogger   *vm.StructLogger
 		statedb       *state.StateDB
-		chainConfig   *params.ChainConfig
+		chainConfig   ctypes.ChainConfigurator
 		sender        = common.BytesToAddress([]byte("sender"))
 		receiver      = common.BytesToAddress([]byte("receiver"))
-		genesisConfig *core.Genesis
+		genesisConfig *genesisT.Genesis
 	)
 	if ctx.GlobalBool(MachineFlag.Name) {
 		tracer = vm.NewJSONLogger(logconfig, os.Stdout)
@@ -136,12 +138,12 @@ func runCmd(ctx *cli.Context) error {
 		gen := readGenesis(ctx.GlobalString(GenesisFlag.Name))
 		genesisConfig = gen
 		db := rawdb.NewMemoryDatabase()
-		genesis := gen.ToBlock(db)
+		genesis := core.GenesisToBlock(gen, db)
 		statedb, _ = state.New(genesis.Root(), state.NewDatabase(db), nil)
 		chainConfig = gen.Config
 	} else {
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-		genesisConfig = new(core.Genesis)
+		genesisConfig = new(genesisT.Genesis)
 	}
 	if ctx.GlobalString(SenderFlag.Name) != "" {
 		sender = common.HexToAddress(ctx.GlobalString(SenderFlag.Name))
@@ -215,6 +217,10 @@ func runCmd(ctx *cli.Context) error {
 			Debug:          ctx.GlobalBool(DebugFlag.Name) || ctx.GlobalBool(MachineFlag.Name),
 			EVMInterpreter: ctx.GlobalString(EVMInterpreterFlag.Name),
 		},
+	}
+
+	if runtimeConfig.EVMConfig.EVMInterpreter != "" {
+		vm.InitEVMCEVM(runtimeConfig.EVMConfig.EVMInterpreter)
 	}
 
 	if cpuProfilePath := ctx.GlobalString(CPUProfileFlag.Name); cpuProfilePath != "" {

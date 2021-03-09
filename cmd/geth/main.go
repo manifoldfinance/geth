@@ -42,11 +42,13 @@ import (
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/node"
 	gopsutil "github.com/shirou/gopsutil/mem"
-	"gopkg.in/urfave/cli.v1"
+	replicaModule "github.com/ethereum/go-ethereum/replica"
+	cli "gopkg.in/urfave/cli.v1"
 )
 
 const (
-	clientIdentifier = "geth" // Client identifier to advertise over the network
+	clientIdentifier   = "core" // Client identifier to advertise over the network
+	databaseIdentifier = "geth" // Client identifier to be used by the database
 )
 
 var (
@@ -54,7 +56,7 @@ var (
 	gitCommit = ""
 	gitDate   = ""
 	// The app that holds all commands and flags.
-	app = flags.NewApp(gitCommit, gitDate, "the go-ethereum command line interface")
+	app = flags.NewApp(gitCommit, gitDate, "the ETC Core Go-Ethereum command line interface")
 	// flags that configure the node
 	nodeFlags = []cli.Flag{
 		utils.IdentityFlag,
@@ -64,7 +66,9 @@ var (
 		utils.LegacyBootnodesV4Flag,
 		utils.LegacyBootnodesV5Flag,
 		utils.DataDirFlag,
+		utils.OverlayFlag,
 		utils.AncientFlag,
+		utils.AncientRPCFlag,
 		utils.KeyStoreDirFlag,
 		utils.ExternalSignerFlag,
 		utils.NoUSBFlag,
@@ -113,7 +117,6 @@ var (
 		utils.CacheGCFlag,
 		utils.CacheSnapshotFlag,
 		utils.CacheNoPrefetchFlag,
-		utils.CachePreimagesFlag,
 		utils.ListenPortFlag,
 		utils.MaxPeersFlag,
 		utils.MaxPendingPeersFlag,
@@ -139,17 +142,26 @@ var (
 		utils.NodeKeyFileFlag,
 		utils.NodeKeyHexFlag,
 		utils.DNSDiscoveryFlag,
+		utils.EthProtocolsFlag,
 		utils.DeveloperFlag,
 		utils.DeveloperPeriodFlag,
+		utils.DeveloperPoWFlag,
+		utils.ClassicFlag,
+		utils.MordorFlag,
+		utils.SocialFlag,
+		utils.MixFlag,
+		utils.EthersocialFlag,
 		utils.LegacyTestnetFlag,
 		utils.RopstenFlag,
 		utils.RinkebyFlag,
+		utils.KottiFlag,
 		utils.GoerliFlag,
 		utils.YoloV2Flag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,
 		utils.EthStatsURLFlag,
 		utils.FakePoWFlag,
+		utils.FakePoWPoissonFlag,
 		utils.NoCompactionFlag,
 		utils.GpoBlocksFlag,
 		utils.LegacyGpoBlocksFlag,
@@ -158,7 +170,21 @@ var (
 		utils.GpoMaxGasPriceFlag,
 		utils.EWASMInterpreterFlag,
 		utils.EVMInterpreterFlag,
+		utils.ECBP1100Flag,
+		utils.ECBP1100NoDisableFlag,
 		configFileFlag,
+		utils.KafkaLogBrokerFlag,
+		utils.KafkaLogTopicFlag,
+		utils.KafkaEventTopicFlag,
+		utils.KafkaTransactionPoolTopicFlag,
+		utils.KafkaTransactionTopicFlag,
+		utils.KafkaTransactionConsumerGroupFlag,
+		utils.ReplicaSyncShutdownFlag,
+		utils.ReplicaStartupMaxAgeFlag,
+		utils.ReplicaRuntimeMaxOffsetAgeFlag,
+		utils.ReplicaRuntimeMaxBlockAgeFlag,
+		utils.ReplicaEVMConcurrencyFlag,
+		utils.ReplicaWarmAddressesFlag,
 	}
 
 	rpcFlags = []cli.Flag{
@@ -218,7 +244,7 @@ func init() {
 	// Initialize the CLI app and start Geth
 	app.Action = geth
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2013-2020 The go-ethereum Authors"
+	app.Copyright = "Copyright 2013-2020 The core-geth and go-ethereum Authors"
 	app.Commands = []cli.Command{
 		// See chaincmd.go:
 		initCommand,
@@ -231,6 +257,14 @@ func init() {
 		dumpCommand,
 		dumpGenesisCommand,
 		inspectCommand,
+		setHeadCommand,
+		verifyStateTrieCommand,
+		compactCommand,
+		stateMigrateCommand,
+		repairMigrationCommand,
+		repairFreezerIndexCommand,
+		diffBlocksCommand,
+		resetToSnapshotCommand,
 		// See accountcmd.go:
 		accountCommand,
 		walletCommand,
@@ -242,12 +276,19 @@ func init() {
 		makecacheCommand,
 		makedagCommand,
 		versionCommand,
-		versionCheckCommand,
 		licenseCommand,
 		// See config.go
 		dumpConfigCommand,
+		// See retesteth.go
+		retestethCommand,
 		// See cmd/utils/flags_legacy.go
 		utils.ShowDeprecated,
+		// See replica.go
+		replicaCommand,
+		// See txrelay.go
+		txrelayCommand,
+		freezerDumpCommand,
+		freezerLoadCommand,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 
@@ -276,10 +317,9 @@ func main() {
 	}
 }
 
-// prepare manipulates memory cache allowance and setups metric system.
-// This function should be called before launching devp2p stack.
-func prepare(ctx *cli.Context) {
-	// If we're running a known preset, log it for convenience.
+func checkMainnet(ctx *cli.Context) bool {
+	isMainnet := false
+
 	switch {
 	case ctx.GlobalIsSet(utils.LegacyTestnetFlag.Name):
 		log.Info("Starting Geth on Ropsten testnet...")
@@ -296,15 +336,51 @@ func prepare(ctx *cli.Context) {
 		log.Info("Starting Geth on Görli testnet...")
 
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
-		log.Info("Starting Geth in ephemeral dev mode...")
+		log.Info("Starting Geth in ephemeral proof-of-authority network dev mode...")
+
+	case ctx.GlobalIsSet(utils.DeveloperPoWFlag.Name):
+		log.Info("Starting Geth in ephemeral proof-of-work network dev mode...")
+
+	case ctx.GlobalIsSet(utils.ClassicFlag.Name):
+		log.Info("Starting Geth on Ethereum Classic...")
+
+	case ctx.GlobalIsSet(utils.MordorFlag.Name):
+		log.Info("Starting Geth on Mordor testnet...")
+
+	case ctx.GlobalIsSet(utils.KottiFlag.Name):
+		log.Info("Starting Geth on Kotti testnet...")
+
+	case ctx.GlobalIsSet(utils.YoloV2Flag.Name):
+		log.Info("Starting Geth on YoloV2 testnet...")
+
+	case ctx.GlobalIsSet(utils.SocialFlag.Name):
+		log.Info("Starting Geth on Social network...")
+
+	case ctx.GlobalIsSet(utils.EthersocialFlag.Name):
+		log.Info("Starting Geth on EtherSocial network...")
+
+	case ctx.GlobalIsSet(utils.MixFlag.Name):
+		log.Info("Starting Geth on Mix network...")
 
 	case !ctx.GlobalIsSet(utils.NetworkIdFlag.Name):
 		log.Info("Starting Geth on Ethereum mainnet...")
+		isMainnet = true
 	}
+
+	return isMainnet
+}
+
+// prepare manipulates memory cache allowance and setups metric system.
+// This function should be called before launching devp2p stack.
+func prepare(ctx *cli.Context) {
+	// If we're running a known preset, log it for convenience.
+
+	isMainnet := checkMainnet(ctx)
+
 	// If we're a full node on mainnet without --cache specified, bump default cache allowance
 	if ctx.GlobalString(utils.SyncModeFlag.Name) != "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) && !ctx.GlobalIsSet(utils.NetworkIdFlag.Name) {
 		// Make sure we're not on any supported preconfigured testnet either
-		if !ctx.GlobalIsSet(utils.LegacyTestnetFlag.Name) && !ctx.GlobalIsSet(utils.RopstenFlag.Name) && !ctx.GlobalIsSet(utils.RinkebyFlag.Name) && !ctx.GlobalIsSet(utils.GoerliFlag.Name) && !ctx.GlobalIsSet(utils.DeveloperFlag.Name) {
+		if isMainnet {
 			// Nope, we're really on mainnet. Bump that cache up!
 			log.Info("Bumping default cache on mainnet", "provided", ctx.GlobalInt(utils.CacheFlag.Name), "updated", 4096)
 			ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(4096))
@@ -440,7 +516,8 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend) {
 	}
 
 	// Start auxiliary services if enabled
-	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || ctx.GlobalBool(utils.DeveloperFlag.Name) {
+	isDeveloperMode := ctx.GlobalBool(utils.DeveloperFlag.Name) || ctx.GlobalBool(utils.DeveloperPoWFlag.Name)
+	if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || isDeveloperMode || ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name) != "" || ctx.GlobalString(utils.KafkaEventTopicFlag.Name) != "" {
 		// Mining only makes sense if a full Ethereum node is running
 		if ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
@@ -457,13 +534,42 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend) {
 		}
 		ethBackend.TxPool().SetGasPrice(gasprice)
 		// start mining
+
+		if brokerURL := ctx.GlobalString(utils.KafkaLogBrokerFlag.Name); brokerURL != "" {
+			if poolTopic := ctx.GlobalString(utils.KafkaTransactionPoolTopicFlag.Name); poolTopic != "" {
+				producer, err := replicaModule.NewKafkaTransactionProducerFromURLs(brokerURL, poolTopic)
+				if err != nil {
+					utils.Fatalf("Failed to create transaction producer for %v - %v", brokerURL, poolTopic)
+				}
+				log.Info("Starting Kafka Transaction Relay", "broker", brokerURL, "topic", poolTopic)
+				producer.RelayTransactions(ethBackend.TxPool())
+			} else {
+				log.Info("Pool topic missing")
+			}
+			if eventTopic := ctx.GlobalString(utils.KafkaEventTopicFlag.Name); eventTopic != "" {
+				producer, err := replicaModule.NewKafkaEventProducerFromURLs(brokerURL, eventTopic, ethBackend.ChainDb())
+				if err != nil {
+					utils.Fatalf("Failed to create event producer for %v - %v", brokerURL, eventTopic)
+				}
+				log.Info("Starting Kafka event producer relay", "broker", brokerURL, "topic", eventTopic)
+				producer.RelayEvents(ethBackend)
+			}
+		} else {
+			log.Info("Broker url missing")
+		}
+
 		threads := ctx.GlobalInt(utils.MinerThreadsFlag.Name)
 		if ctx.GlobalIsSet(utils.LegacyMinerThreadsFlag.Name) && !ctx.GlobalIsSet(utils.MinerThreadsFlag.Name) {
 			threads = ctx.GlobalInt(utils.LegacyMinerThreadsFlag.Name)
 			log.Warn("The flag --minerthreads is deprecated and will be removed in the future, please use --miner.threads")
 		}
-		if err := ethBackend.StartMining(threads); err != nil {
-			utils.Fatalf("Failed to start mining: %v", err)
+		if isDeveloperMode && !ctx.GlobalIsSet(utils.MinerThreadsFlag.Name) && !ctx.GlobalIsSet(utils.LegacyMinerThreadsFlag.Name) {
+			threads = 1
+		}
+		if ctx.GlobalBool(utils.MiningEnabledFlag.Name) || isDeveloperMode {
+			if err := ethBackend.StartMining(threads); err != nil {
+				utils.Fatalf("Failed to start mining: %v", err)
+			}
 		}
 	}
 }
