@@ -1,4 +1,7 @@
-# MEV-geth
+
+# GethEV
+
+> MEV-Geth or `Geth-ExtractedValue`
 
 This is a fork of go-ethereum, [the original README is here](README.original.md).
 
@@ -6,9 +9,7 @@ Flashbots is a research and development organization formed to mitigate the nega
 
 ## Quick start
 
-```
-git clone https://github.com/flashbots/mev-geth
-cd mev-geth
+```bash
 make geth
 ```
 
@@ -146,3 +147,12 @@ If you are a user of MEV-Geth and have suggestions on how to make integration wi
 
 We provide the MEV-Geth proof of concept as a first milestone on the path to mitigating the negative externalities caused by MEV. We hope to discuss with the community the merits of adopting MEV-Geth in its current form. Our preliminary research indicates it could free at least 2.5% of the current chain congestion by eliminating the use of frontrunning and backrunning and provide uplift of up to 18% on miner rewards from Ethereum. That being said, we believe a sustainable solution to MEV existential risks requires complete privacy and finality, which the proof of concept does not address. We hope to engage community feedback throughout the development of this complete version of MEV-Geth.
 
+## Additional Changes
+
+GethEV contains additional patchfile fixes for optional tweaks / mission directives
+
+such as:
+
+- kafka 
+- mempool observer mode
+- Stream Analytics
