@@ -28,4 +28,4 @@ jobs:
     - name: Install Ginkgo
       run: go get -u github.com/onsi/ginkgo/ginkgo
     - name: Test
-      run: ginkgo -cover ./...
+      run: go run ./ginkgo -r --randomizeAllSpecs --randomizeSuites --race --trace
