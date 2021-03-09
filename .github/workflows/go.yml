@@ -25,7 +25,12 @@ jobs:
     - name: Build
       run: make geth
 
-    - name: Install Ginkgo
-      run: go get -u github.com/onsi/ginkgo/ginkgo
-    - name: Test
-      run: ginkgo -cover ./...
+    - name: gobenchdata publish
+      uses: bobheadxi/gobenchdata@v1
+      with:
+        PRUNE_COUNT: 30
+        GO_TEST_FLAGS: -cpu 1,2
+        PUBLISH: true
+        PUBLISH_BRANCH: gh-pages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
