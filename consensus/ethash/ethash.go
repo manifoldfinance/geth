@@ -35,6 +35,7 @@ import (
 
 	"github.com/edsrzf/mmap-go"
 	"github.com/ethereum/go-ethereum/consensus"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -228,7 +229,7 @@ func (c *cache) generate(dir string, limit int, lock bool, test bool) {
 			size = 1024
 		}
 		// If we don't store anything on disk, generate and return.
-		if dir == "" {
+		if dir == "" || limit <= 0 {
 			c.cache = make([]uint32, size/4)
 			generateCache(c.cache, c.epoch, seed)
 			return
@@ -310,7 +311,7 @@ func (d *dataset) generate(dir string, limit int, lock bool, test bool) {
 			dsize = 32 * 1024
 		}
 		// If we don't store anything on disk, generate and return
-		if dir == "" {
+		if dir == "" || limit <= 0 {
 			cache := make([]uint32, csize/4)
 			generateCache(cache, d.epoch, seed)
 
@@ -436,6 +437,9 @@ type Ethash struct {
 
 	lock      sync.Mutex // Ensures thread safety for the in-memory caches and mining fields
 	closeOnce sync.Once  // Ensures exit channel will not be closed twice.
+
+	workFeed event.Feed
+	scope    event.SubscriptionScope
 }
 
 // New creates a full sized ethash PoW scheme and starts a background thread for
@@ -668,6 +672,12 @@ func (ethash *Ethash) APIs(chain consensus.ChainHeaderReader) []rpc.API {
 		},
 		{
 			Namespace: "ethash",
+			Version:   "1.0",
+			Service:   &API{ethash},
+			Public:    true,
+		},
+		{
+			Namespace: "parity",
 			Version:   "1.0",
 			Service:   &API{ethash},
 			Public:    true,
