@@ -15,17 +15,19 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.13
-      id: go
+        go-version: ^1.15
+      id: go1.15
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
-
-    - name: Test
-      run: go test ./core ./miner/... ./internal/ethapi/... ./les/...
-
+      
     - name: Build
       run: make geth
+      
+    - name: Test
+      shell: bash {0}
+      run: |
+       go test ./core ./miner/... ./internal/ethapi/... ./les/...
 
   e2e:
     name: End to End
@@ -35,11 +37,11 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.13
+        go-version: ^1.15
       id: go
 
     - name: Use Node.js 12.x
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v2
       with:
         node-version: 12.x
 
@@ -56,6 +58,7 @@ jobs:
         path: e2e
 
     - run: cd e2e && yarn install
+      shell: bash {0}
     - run: |
         cd e2e
         GETH=`pwd`/../build/bin/geth ./run.sh &
