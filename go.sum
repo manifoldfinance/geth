@@ -391,6 +391,8 @@ github.com/open-rpc/meta-schema v0.0.0-20201029221707-1b72ef2ea333 h1:CznVS40zms
 github.com/open-rpc/meta-schema v0.0.0-20201029221707-1b72ef2ea333/go.mod h1:Ag6rSXkHIckQmjFBCweJEEt1mrTPBv8b9W4aU/NQWfI=
 github.com/openrelayxyz/drumline v0.1.0 h1:w7kd2VDDXkwU22DaBpdV1HpRt6xwkcUftGp/TaSBDqU=
 github.com/openrelayxyz/drumline v0.1.0/go.mod h1:tuP4gn2CYgrEIpVJSfwePU1mVBJfppApZZUU731OOkk=
+github.com/openrelayxyz/drumline v0.3.0 h1:EkEWuKDDsAE6ceXOMcHDYMqZsNqOBcNprxljNhHSMIE=
+github.com/openrelayxyz/drumline v0.3.0/go.mod h1:tuP4gn2CYgrEIpVJSfwePU1mVBJfppApZZUU731OOkk=
 github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=

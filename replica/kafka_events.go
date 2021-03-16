@@ -230,6 +230,7 @@ type chainEventTracker struct {
   // if the most recent changes pan out.
   chainEventPartitions map[int32]int64
   blockTime map[common.Hash]time.Time
+  startingBlockNumber uint64
 }
 
 func (cet *chainEventTracker) report() {
@@ -246,6 +247,13 @@ func (cet *chainEventTracker) report() {
     "pendingEmits", len(cet.pendingEmits),
     "pendingHashes", len(cet.pendingHashes),
   )
+}
+
+func (cet *chainEventTracker) currentBlockNumber() uint64 {
+  if ce, ok := cet.chainEvents[cet.lastEmittedBlock]; ok {
+    return ce.Block.NumberU64()
+  }
+  return cet.startingBlockNumber
 }
 
 func (cet *chainEventTracker) setBlockTime(h common.Hash) {
@@ -267,16 +275,14 @@ func (cet *chainEventTracker) HandleMessage(key, value []byte, partition int32, 
     }
     if _, ok := cet.chainEvents[blockhash]; ok || cet.finished[blockhash] || cet.oldFinished[blockhash]  { return nil, nil } // We've already seen this block. Ignore
     cet.setBlockTime(blockhash)
-    if ce, ok := cet.chainEvents[cet.lastEmittedBlock]; ok {
-      if block.NumberU64() + uint64(cet.finishedLimit) < ce.Block.NumberU64() {
-        log.Warn("Old block detected. Ignoring.", "number", block.NumberU64(), "hash", block.Hash())
-        cet.skipped[blockhash] = true
-        delete(cet.receiptCounter, blockhash)
-        delete(cet.logCounter, blockhash)
-        delete(cet.earlyReceipts, blockhash)
-        delete(cet.earlyLogs, blockhash)
-        delete(cet.earlyTd, blockhash)
-      }
+    if block.NumberU64() + uint64(cet.finishedLimit) < cet.currentBlockNumber() {
+      log.Warn("Old block detected. Ignoring.", "number", block.NumberU64(), "hash", block.Hash())
+      cet.skipped[blockhash] = true
+      delete(cet.receiptCounter, blockhash)
+      delete(cet.logCounter, blockhash)
+      delete(cet.earlyReceipts, blockhash)
+      delete(cet.earlyLogs, blockhash)
+      delete(cet.earlyTd, blockhash)
     }
     // cet.finished[block.Hash()] = false // Explicitly setting to false ensures it will be garbage collected if we never see the whole block
     cet.chainEvents[blockhash] = &ChainEvent{
@@ -417,7 +423,7 @@ func (cet *chainEventTracker) HandleReadyCE(blockhash common.Hash) (*ChainEvents
   if bh := ce.Block.ParentHash(); !(cet.finished[bh] || cet.oldFinished[bh]) {
     // The parent has not been emitted, save for later.
 
-    log.Debug("Holding until parent is emitted", "finished", cet.finished[bh], "oldFinished", cet.oldFinished[bh], "block", blockhash, "parent", bh, "lastEmitted", cet.lastEmittedBlock)
+    log.Debug("Holding until parent is emitted", "finished", cet.finished[bh], "oldFinished", cet.oldFinished[bh], "block", blockhash, "number", ce.Block.NumberU64(), "parent", bh, "lastEmitted", cet.lastEmittedBlock)
     ph := ce.Block.ParentHash()
     if _, ok := cet.pendingEmits[ph]; !ok {
       cet.pendingEmits[ph] = make(map[common.Hash]struct{})
@@ -797,6 +803,7 @@ func (consumer *KafkaEventConsumer) Start() {
     warmupWg.Add(1)
     dl.Add(i)
     go func(readyWg, warmupWg *sync.WaitGroup, partitionConsumer sarama.PartitionConsumer, i int) {
+      var once sync.Once
       warm := false
       for input := range partitionConsumer.Messages() {
         if !warm && input.Offset >= consumer.startingOffsets[input.Partition] {
@@ -810,7 +817,7 @@ func (consumer *KafkaEventConsumer) Start() {
           if partitionConsumer.HighWaterMarkOffset() - input.Offset <= 1 {
             // Once we're caught up with the high watermark, let the ready
             // channel know
-            readyWg.Done()
+            once.Do(readyWg.Done)
           }
           dl.Step(i)
         }
@@ -819,38 +826,79 @@ func (consumer *KafkaEventConsumer) Start() {
       }
     }(&readyWg, &warmupWg, partitionConsumer, i)
   }
+  var readych chan time.Time
+  readyWaiter := func() <-chan time.Time  {
+    // If readych isn't ready to receive, use it as the sender, eliminating any
+    // possibility that this case will trigger, and avoiding the creation of
+    // any timer objects that will have to get cleaned up when we don't need
+    // them.
+    if readych == nil { return readych }
+    // Only if the readych is ready to receive should this return a timer, as
+    // the timer will have to be created, run its course, and get cleaned up,
+    // which adds overhead
+    return time.After(time.Second)
+  }
+
   go func(wg *sync.WaitGroup) {
     // Wait until all partition consumers are up to the high water mark and alert the ready channel
     wg.Wait()
+    readych = make(chan time.Time)
+    <-readych
+    readych = nil
     consumer.ready <- struct{}{}
     consumer.ready = nil
     dl.Close()
   }(&readyWg)
   go func() {
     initialLEB := consumer.cet.lastEmittedBlock
-    for input := range messages {
-      // log.Debug("Handling message", "offset", input.Offset, "partition", input.Partition, "starting", consumer.startingOffsets[input.Partition])
-      chainEvents, err := consumer.cet.HandleMessage(input.Key, input.Value, input.Partition, input.Offset)
-      if input.Offset < consumer.startingOffsets[input.Partition] {
-        log.Debug("Offset < starting offset", "offset", input.Offset, "starting", consumer.startingOffsets[input.Partition])
-        // If input.Offset < partition.StartingOffset, we're just populating
-        // the CET, so we don't need to emit this or worry about errors
-        consumer.cet.lastEmittedBlock = initialLEB // Set lastEmittedBlock back so it won't get hung up if it doesn't have the whole next block
-        continue
-      }
-      if err != nil {
-        log.Error("Error processing input:", "err", err, "key", input.Key, "msg", input.Value, "part", input.Partition, "offset", input.Offset)
-        continue
-      }
-      if chainEvents != nil {
-        consumer.feed.Send(chainEvents)
+    for {
+      select {
+      case input, ok := <-messages:
+        if !ok { return }
+        // log.Debug("Handling message", "offset", input.Offset, "partition", input.Partition, "starting", consumer.startingOffsets[input.Partition])
+        chainEvents, err := consumer.cet.HandleMessage(input.Key, input.Value, input.Partition, input.Offset)
+        if input.Offset < consumer.startingOffsets[input.Partition] {
+          log.Debug("Offset < starting offset", "offset", input.Offset, "starting", consumer.startingOffsets[input.Partition])
+          // If input.Offset < partition.StartingOffset, we're just populating
+          // the CET, so we don't need to emit this or worry about errors
+          consumer.cet.lastEmittedBlock = initialLEB // Set lastEmittedBlock back so it won't get hung up if it doesn't have the whole next block
+          continue
+        }
+        if err != nil {
+          log.Error("Error processing input:", "err", err, "key", input.Key, "msg", input.Value, "part", input.Partition, "offset", input.Offset)
+          continue
+        }
+        if chainEvents != nil {
+          consumer.feed.Send(chainEvents)
+        }
+      case <-dl.Reset(5 * time.Second):
+        // Reset the drumline if we got no messages at all in a 5 second
+        // period. This will be a no-op if the drumline is closed. Resetting if
+        // we don't get any messages for five second should be safe, as the
+        // purpose of the drumline here is to ensure no single partition gets
+        // too far ahead of the others; if there are no messages being produced
+        // by any of them, either there are no messages at all, or there are no
+        // messages because the drumline has gotten streteched too far apart in
+        // the course of normal operation, and it should be reset.
+        log.Debug("Drumline reset")
+      case v := <- readyWaiter():
+        // readyWaiter() will wait 1 second if readych is ready to receive ,
+        // which will trigger a message to get sent on consumer.ready. This
+        // should only trigger when we are totally caught up processing all the
+        // messages currently available from Kafka. Before we reach the high
+        // watermark and after this has triggered once, readyWaiter() will be a
+        // nil channel with no significant resource consumption.
+        select {
+        case readych <- v:
+        default:
+        }
       }
     }
   }()
 }
 
 
-func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock common.Hash, offsets map[int32]int64) (EventConsumer, error) {
+func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock common.Hash, offsets map[int32]int64, rollback int64, startingBlockNumber uint64) (EventConsumer, error) {
   brokers, config := cdc.ParseKafkaURL(brokerURL)
   if err := cdc.CreateTopicIfDoesNotExist(brokerURL, topic, -1, nil); err != nil {
     return nil, err
@@ -873,13 +921,13 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
       offset = sarama.OffsetOldest
       startOffset = offset
     } else {
-      startOffset = offset - 5000
+      startOffset = offset - rollback
     }
     startingOffsets[part] = startOffset
     pc, err := consumer.ConsumePartition(topic, part, startOffset)
     if err != nil {
-      // We may not have been able to roll back 5000 messages, so just try with
-      // the provided offset
+      // We may not have been able to roll back `rollback` messages, so just
+      // try with the provided offset
       startingOffsets[part] = offset
       pc, err = consumer.ConsumePartition(topic, part, offset)
       if err != nil { return nil, err }
@@ -906,6 +954,7 @@ func NewKafkaEventConsumerFromURLs(brokerURL, topic string, lastEmittedBlock com
       pendingHashes: make(map[common.Hash]struct{}),
       chainEventPartitions: offsets,
       blockTime: make(map[common.Hash]time.Time),
+      startingBlockNumber: startingBlockNumber,
     },
 
     startingOffsets: startingOffsets,

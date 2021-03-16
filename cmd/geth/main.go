@@ -217,6 +217,7 @@ var (
 		utils.InsecureUnlockAllowedFlag,
 		utils.RPCGlobalGasCapFlag,
 		utils.RPCGlobalTxFeeCapFlag,
+		utils.RPCAllowUnprotectedTxs,
 	}
 
 	whisperFlags = []cli.Flag{
