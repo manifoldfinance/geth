@@ -55,7 +55,7 @@ type testBlockChain struct {
 func (bc *testBlockChain) CurrentBlock() *types.Block {
 	return types.NewBlock(&types.Header{
 		GasLimit: bc.gasLimit,
-	}, nil, nil, nil, new(trie.Trie))
+	}, nil, nil, nil, trie.NewStackTrie(nil))
 }
 
 func (bc *testBlockChain) GetBlock(hash common.Hash, number uint64) *types.Block {
@@ -2050,5 +2050,15 @@ func BenchmarkInsertRemoteWithAllLocals(b *testing.B) {
 			pool.AddRemotes([]*types.Transaction{remotes[i]})
 		}
 		pool.Stop()
+	}
+}
+
+func checkBundles(t *testing.T, pool *TxPool, block int64, timestamp uint64, expectedRes int, expectedRemaining int) {
+	res, _ := pool.MevBundles(big.NewInt(block), timestamp)
+	if len(res) != expectedRes {
+		t.Fatalf("expected returned bundles did not match got %d, expected %d", len(res), expectedRes)
+	}
+	if len(pool.mevBundles) != expectedRemaining {
+		t.Fatalf("expected remaining bundles did not match got %d, expected %d", len(pool.mevBundles), expectedRemaining)
 	}
 }
