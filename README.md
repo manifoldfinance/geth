@@ -1,10 +1,10 @@
-# MEV-geth
+# Geth-MEV 
 
-This is a fork of go-ethereum, [the original README is here](README.original.md).
+[![Go](https://github.com/manifoldfinance/geth/actions/workflows/go.yml/badge.svg)](https://github.com/manifoldfinance/geth/actions/workflows/go.yml) [![e2e](https://github.com/manifoldfinance/geth/actions/workflows/e2e.yml/badge.svg)](https://github.com/manifoldfinance/geth/actions/workflows/e2e.yml) [![CodeQL](https://github.com/manifoldfinance/geth/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/manifoldfinance/geth/actions/workflows/codeql-analysis.yml)
 
-Flashbots is a research and development organization formed to mitigate the negative externalities and existential risks posed by miner-extractable value (MEV) to smart-contract blockchains. We propose a permissionless, transparent, and fair ecosystem for MEV extraction that reinforce the Ethereum ideals.
+> This is a fork of go-ethereum and mev-geth, with specific feature branches
 
-## Quick start
+## MEV-Geth Quick start
 
 ```
 git clone https://github.com/flashbots/mev-geth
@@ -145,4 +145,3 @@ If you are a user of MEV-Geth and have suggestions on how to make integration wi
 ### Moving beyond proof of concept
 
 We provide the MEV-Geth proof of concept as a first milestone on the path to mitigating the negative externalities caused by MEV. We hope to discuss with the community the merits of adopting MEV-Geth in its current form. Our preliminary research indicates it could free at least 2.5% of the current chain congestion by eliminating the use of frontrunning and backrunning and provide uplift of up to 18% on miner rewards from Ethereum. That being said, we believe a sustainable solution to MEV existential risks requires complete privacy and finality, which the proof of concept does not address. We hope to engage community feedback throughout the development of this complete version of MEV-Geth.
-

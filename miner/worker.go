@@ -101,8 +101,7 @@ type task struct {
 	block     *types.Block
 	createdAt time.Time
 
-	profit      *big.Int
-	isFlashbots bool
+	profit *big.Int
 }
 
 const (
@@ -570,8 +569,8 @@ func (w *worker) taskLoop() {
 		stopCh chan struct{}
 		prev   common.Hash
 
-		prevParentHash common.Hash
-		prevProfit     *big.Int
+		prevNumber *big.Int
+		prevProfit *big.Int
 	)
 
 	// interrupt aborts the in-flight sealing task.
@@ -593,19 +592,17 @@ func (w *worker) taskLoop() {
 				continue
 			}
 
-			taskParentHash := task.block.Header().ParentHash
 			// reject new tasks which don't profit
-			if taskParentHash == prevParentHash &&
-				prevProfit != nil && task.profit.Cmp(prevProfit) < 0 {
+			if prevNumber != nil && prevProfit != nil &&
+				task.block.Number().Cmp(prevNumber) == 0 && task.profit.Cmp(prevProfit) < 0 {
 				continue
 			}
-			prevParentHash = taskParentHash
-			prevProfit = task.profit
+			prevNumber, prevProfit = task.block.Number(), task.profit
 
 			// Interrupt previous sealing operation
 			interrupt()
 			stopCh, prev = make(chan struct{}), sealHash
-			log.Info("Proposed miner block", "blockNumber", task.block.Number(), "profit", prevProfit, "isFlashbots", task.isFlashbots, "sealhash", sealHash, "parentHash", prevParentHash)
+			log.Info("Proposed miner block", "blockNumber", prevNumber, "profit", prevProfit, "sealhash", sealHash)
 			if w.skipSealHook != nil && w.skipSealHook(task) {
 				continue
 			}
@@ -721,15 +718,8 @@ func (w *worker) generateEnv(parent *types.Block, header *types.Header) (*enviro
 // makeCurrent creates a new environment for the current cycle.
 func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
 	env, err := w.generateEnv(parent, header)
-	env.state.StartPrefetcher("miner")
 	if err != nil {
 		return err
-	}
-
-	// Swap out the old work with the new one, terminating any leftover prefetcher
-	// processes in the mean time and starting a new one.
-	if w.current != nil && w.current.state != nil {
-		w.current.state.StopPrefetcher()
 	}
 	w.current = env
 	return nil
@@ -1125,11 +1115,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	// Short circuit if there is no available pending transactions or bundles.
 	// But if we disable empty precommit already, ignore it. Since
 	// empty block is necessary to keep the liveness of the network.
-	noBundles := true
-	if w.flashbots.isFlashbots && len(w.eth.TxPool().AllMevBundles()) > 0 {
-		noBundles = false
-	}
-	if len(pending) == 0 && atomic.LoadUint32(&w.noempty) == 0 && noBundles {
+	if len(pending) == 0 && atomic.LoadUint32(&w.noempty) == 0 && len(w.eth.TxPool().AllMevBundles()) == 0 {
 		w.updateSnapshot()
 		return
 	}
@@ -1141,17 +1127,15 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 			localTxs[account] = txs
 		}
 	}
-	if w.flashbots.isFlashbots {
-		bundles, err := w.eth.TxPool().MevBundles(header.Number, header.Time)
-		if err != nil {
-			log.Error("Failed to fetch pending transactions", "err", err)
-			return
-		}
-		maxBundle, bundlePrice, ethToCoinbase, gasUsed := w.findMostProfitableBundle(bundles, w.coinbase, parent, header)
-		log.Info("Flashbots bundle", "ethToCoinbase", ethToCoinbase, "gasUsed", gasUsed, "bundlePrice", bundlePrice, "bundleLength", len(maxBundle))
-		if w.commitBundle(maxBundle, w.coinbase, interrupt) {
-			return
-		}
+	bundles, err := w.eth.TxPool().MevBundles(header.Number, header.Time)
+	if err != nil {
+		log.Error("Failed to fetch pending transactions", "err", err)
+		return
+	}
+	maxBundle, bundlePrice, ethToCoinbase, gasUsed := w.findMostProfitableBundle(bundles, w.coinbase, parent, header)
+	log.Info("Flashbots bundle", "ethToCoinbase", ethToCoinbase, "gasUsed", gasUsed, "bundlePrice", bundlePrice, "bundleLength", len(maxBundle))
+	if w.commitBundle(maxBundle, w.coinbase, interrupt) {
+		return
 	}
 	if len(localTxs) > 0 {
 		txs := types.NewTransactionsByPriceAndNonce(w.current.signer, localTxs)
@@ -1183,7 +1167,7 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 			interval()
 		}
 		select {
-		case w.taskCh <- &task{receipts: receipts, state: s, block: block, createdAt: time.Now(), profit: w.current.profit, isFlashbots: w.flashbots.isFlashbots}:
+		case w.taskCh <- &task{receipts: receipts, state: s, block: block, createdAt: time.Now(), profit: w.current.profit}:
 			w.unconfirmed.Shift(block.NumberU64() - 1)
 			log.Info("Commit new mining work", "number", block.Number(), "sealhash", w.engine.SealHash(block.Header()),
 				"uncles", len(uncles), "txs", w.current.tcount,
@@ -1213,7 +1197,7 @@ func (w *worker) findMostProfitableBundle(bundles []types.Transactions, coinbase
 		totalEth, totalGasUsed, err := w.computeBundleGas(bundle, parent, header)
 
 		if err != nil {
-			log.Debug("Error computing gas for a bundle", "error", err)
+			log.Warn("Error computing gas for a bundle", "error", err)
 			continue
 		}
 
