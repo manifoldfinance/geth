@@ -18,8 +18,8 @@ start_node() {
         --port $netport \
         --syncmode $syncmode \
         --cache 4096 \
-        --maxpeers $connections \
-        --goerli &
+        --gcmode archive \
+        --maxpeers $connections &
         if [ $? -ne 0 ]
         then
             echo "Node failed to start; exiting."
@@ -30,6 +30,7 @@ start_node() {
         --port $netport \
         --syncmode $syncmode \
         --cache 4096 \
+        --gcmode archive \
         --maxpeers $connections &
         if [ $? -ne 0 ]
         then
@@ -72,7 +73,6 @@ kill_node() {
     tries=0
     while [ ! -z `ps -ef |grep geth|grep -v geth-updater|grep -v grep|awk '{print $1}'` ]
     do
-        ps -ef |grep geth|grep -v geth-updater|grep -v grep
         pid=`ps -ef |grep geth|grep -v geth-updater|grep -v grep|awk '{print $1}'`
         kill $pid
         sleep 30
@@ -82,8 +82,6 @@ kill_node() {
         then
             echo "Node has not stopped cleanly after $tries, forcibly killing."
             ps -ef |grep geth|grep -v geth-updater|grep -v grep
-            pid=`ps -ef |grep geth|grep -v geth-updater|grep -v grep|awk '{print $1}'`
-            kill -9 $pid
         fi
         if [ $tries -gt 30 ]
         then

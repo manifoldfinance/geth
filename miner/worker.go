@@ -569,9 +569,8 @@ func (w *worker) taskLoop() {
 	var (
 		stopCh chan struct{}
 		prev   common.Hash
-
-		prevParentHash common.Hash
-		prevProfit     *big.Int
+		prevNumber *big.Int
+		prevProfit *big.Int
 	)
 
 	// interrupt aborts the in-flight sealing task.
@@ -592,20 +591,17 @@ func (w *worker) taskLoop() {
 			if sealHash == prev {
 				continue
 			}
-
-			taskParentHash := task.block.Header().ParentHash
 			// reject new tasks which don't profit
-			if taskParentHash == prevParentHash &&
-				prevProfit != nil && task.profit.Cmp(prevProfit) < 0 {
+			if prevNumber != nil && prevProfit != nil &&
+				task.block.Number().Cmp(prevNumber) == 0 && task.profit.Cmp(prevProfit) < 0 {
 				continue
 			}
-			prevParentHash = taskParentHash
-			prevProfit = task.profit
+			prevNumber, prevProfit = task.block.Number(), task.profit
 
 			// Interrupt previous sealing operation
 			interrupt()
 			stopCh, prev = make(chan struct{}), sealHash
-			log.Info("Proposed miner block", "blockNumber", task.block.Number(), "profit", prevProfit, "isFlashbots", task.isFlashbots, "sealhash", sealHash, "parentHash", prevParentHash)
+			log.Info("Proposed miner block", "blockNumber", prevNumber, "profit", prevProfit, "isFlashbots", task.isFlashbots, "sealhash", sealHash)
 			if w.skipSealHook != nil && w.skipSealHook(task) {
 				continue
 			}
@@ -1213,7 +1209,7 @@ func (w *worker) findMostProfitableBundle(bundles []types.Transactions, coinbase
 		totalEth, totalGasUsed, err := w.computeBundleGas(bundle, parent, header)
 
 		if err != nil {
-			log.Debug("Error computing gas for a bundle", "error", err)
+			log.Warn("Error computing gas for a bundle", "error", err)
 			continue
 		}
 
