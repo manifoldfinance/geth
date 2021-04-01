@@ -19,8 +19,7 @@ start_node() {
         --syncmode $syncmode \
         --cache 4096 \
         --gcmode archive \
-        --maxpeers $connections \
-        --goerli &
+        --maxpeers $connections &
         if [ $? -ne 0 ]
         then
             echo "Node failed to start; exiting."
@@ -82,8 +81,7 @@ kill_node() {
         if [ $tries -gt 29 ]
         then
             echo "Node has not stopped cleanly after $tries, forcibly killing."
-            pid=`ps -ef |grep geth|grep -v geth-updater|grep -v grep|awk '{print $1}'`
-            kill -9 $pid
+            ps -ef |grep geth|grep -v geth-updater|grep -v grep
         fi
         if [ $tries -gt 30 ]
         then

@@ -569,7 +569,6 @@ func (w *worker) taskLoop() {
 	var (
 		stopCh chan struct{}
 		prev   common.Hash
-
 		prevNumber *big.Int
 		prevProfit *big.Int
 	)
@@ -592,7 +591,6 @@ func (w *worker) taskLoop() {
 			if sealHash == prev {
 				continue
 			}
-
 			// reject new tasks which don't profit
 			if prevNumber != nil && prevProfit != nil &&
 				task.block.Number().Cmp(prevNumber) == 0 && task.profit.Cmp(prevProfit) < 0 {

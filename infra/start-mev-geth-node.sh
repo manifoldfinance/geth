@@ -35,8 +35,7 @@ start_node() {
           --syncmode $syncmode \
           --gcmode archive \
           --cache 4096 \
-          --maxpeers $connections \
-          --goerli
+          --maxpeers $connections 
         if [ $? -ne 0 ]
         then
             echo "Node failed to start; exiting."

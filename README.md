@@ -101,16 +101,6 @@ In order to see the diff of the recommended patch, run:
 ```
  git diff master~4..master~1
 ```
-
-Alternatively, the `master-barebones` branch includes only modules (1) and (4), leaving the profit switching logic to miners. While this usage is discouraged, it entails a much smaller change in the code. 
-
-We invite you to try the [Flashbots Alpha](https://github.com/flashbots/pm#flashbots-alpha) and start receiving MEV revenue by following these steps:
-
-1. Fill out this [form](https://forms.gle/78JS52d22dwrgabi6) to indicate your interest in participating in the Alpha and be added to the MEV-Relay miner whitelist.
-2. You will receive an onboarding email from Flashbots to help [set up](https://github.com/flashbots/mev-geth/blob/master/README.md#quick-start) your MEV-Geth node and protect it with a [reverse proxy](https://github.com/flashbots/mev-relay-js/blob/master/miner/proxy.js) to open the `eth_sendBundle` RPC.
-3. Respond to Flashbots' email with your MEV-Geth node endpoint to be added to the Flashbots hosted [MEV-relay](https://github.com/flashbots/mev-relay-js) gateway. MEV-Relay is needed during the alpha to aggregate bundle requests from all users, prevent spam and DOS attacks on participating miner(s)/mining pool(s), and collect system health metrics.
-4. After receiving a confirmation email that your MEV-Geth node's endpoint has been added to the relay, you will immediately start receiving Flashbots transaction bundles with associated MEV revenue paid to you.
-
 ### MEV-Geth for searchers
 
 You do _not_ need to run MEV-Geth as a searcher, but, instead, to monitor the Ethereum state and transaction pool for MEV opportunities and produce transaction bundles that extract that MEV. Anyone can become a searcher. In fact, the bundles produced by searchers don't need to extract MEV at all, but we expect the most valuable bundles will. 
