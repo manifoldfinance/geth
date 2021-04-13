@@ -33,7 +33,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/filters"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -152,6 +151,20 @@ func (l *Log) Data(ctx context.Context) hexutil.Bytes {
 	return l.log.Data
 }
 
+// AccessTuple represents EIP-2930
+type AccessTuple struct {
+	address     common.Address
+	storageKeys *[]common.Hash
+}
+
+func (at *AccessTuple) Address(ctx context.Context) common.Address {
+	return at.address
+}
+
+func (at *AccessTuple) StorageKeys(ctx context.Context) *[]common.Hash {
+	return at.storageKeys
+}
+
 // Transaction represents an Ethereum transaction.
 // backend and hash are mandatory; all others will be fetched when required.
 type Transaction struct {
@@ -246,12 +259,8 @@ func (t *Transaction) From(ctx context.Context, args BlockNumberArgs) (*Account,
 	if err != nil || tx == nil {
 		return nil, err
 	}
-	var signer types.Signer = types.HomesteadSigner{}
-	if tx.Protected() {
-		signer = types.NewEIP155Signer(tx.ChainId())
-	}
+	signer := types.LatestSigner(t.backend.ChainConfig())
 	from, _ := types.Sender(signer, tx)
-
 	return &Account{
 		backend:       t.backend,
 		address:       from,
@@ -292,12 +301,12 @@ func (t *Transaction) getReceipt(ctx context.Context) (*types.Receipt, error) {
 	return receipts[t.index], nil
 }
 
-func (t *Transaction) Status(ctx context.Context) (*hexutil.Uint64, error) {
+func (t *Transaction) Status(ctx context.Context) (*Long, error) {
 	receipt, err := t.getReceipt(ctx)
 	if err != nil || receipt == nil {
 		return nil, err
 	}
-	ret := hexutil.Uint64(receipt.Status)
+	ret := Long(receipt.Status)
 	return &ret, nil
 }
 
@@ -342,6 +351,31 @@ func (t *Transaction) Logs(ctx context.Context) (*[]*Log, error) {
 			backend:     t.backend,
 			transaction: t,
 			log:         log,
+		})
+	}
+	return &ret, nil
+}
+
+func (t *Transaction) Type(ctx context.Context) (*int32, error) {
+	tx, err := t.resolve(ctx)
+	if err != nil {
+		return nil, err
+	}
+	txType := int32(tx.Type())
+	return &txType, nil
+}
+
+func (t *Transaction) AccessList(ctx context.Context) (*[]*AccessTuple, error) {
+	tx, err := t.resolve(ctx)
+	if err != nil || tx == nil {
+		return nil, err
+	}
+	accessList := tx.AccessList()
+	ret := make([]*AccessTuple, 0, len(accessList))
+	for _, al := range accessList {
+		ret = append(ret, &AccessTuple{
+			address:     al.Address,
+			storageKeys: &al.StorageKeys,
 		})
 	}
 	return &ret, nil
@@ -810,9 +844,9 @@ type CallData struct {
 
 // CallResult encapsulates the result of an invocation of the `call` accessor.
 type CallResult struct {
-	data    hexutil.Bytes  // The return data from the call
-	gasUsed Long           // The amount of gas used
-	status  hexutil.Uint64 // The return status of the call - 0 for failure or 1 for success.
+	data    hexutil.Bytes // The return data from the call
+	gasUsed Long          // The amount of gas used
+	status  Long          // The return status of the call - 0 for failure or 1 for success.
 }
 
 func (c *CallResult) Data() hexutil.Bytes {
@@ -823,7 +857,7 @@ func (c *CallResult) GasUsed() Long {
 	return c.gasUsed
 }
 
-func (c *CallResult) Status() hexutil.Uint64 {
+func (c *CallResult) Status() Long {
 	return c.status
 }
 
@@ -840,7 +874,7 @@ func (b *Block) Call(ctx context.Context, args struct {
 	if err != nil {
 		return nil, err
 	}
-	status := hexutil.Uint64(1)
+	status := Long(1)
 	if result.Failed() {
 		status = 0
 	}
@@ -910,7 +944,7 @@ func (p *Pending) Call(ctx context.Context, args struct {
 	if err != nil {
 		return nil, err
 	}
-	status := hexutil.Uint64(1)
+	status := Long(1)
 	if result.Failed() {
 		status = 0
 	}
@@ -1022,7 +1056,7 @@ func (r *Resolver) Transaction(ctx context.Context, args struct{ Hash common.Has
 
 func (r *Resolver) SendRawTransaction(ctx context.Context, args struct{ Data hexutil.Bytes }) (common.Hash, error) {
 	tx := new(types.Transaction)
-	if err := rlp.DecodeBytes(args.Data, tx); err != nil {
+	if err := tx.UnmarshalBinary(args.Data); err != nil {
 		return common.Hash{}, err
 	}
 	hash, err := ethapi.SubmitTransaction(ctx, r.backend, tx)
