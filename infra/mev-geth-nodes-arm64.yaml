@@ -48,6 +48,11 @@ Parameters:
     Type: String
     Default: m6gd.large
 
+
+  MemoryLimit:
+    Type: Number
+    Default: 6144
+
   KeyPair:
     Type: AWS::EC2::KeyPair::KeyName
 
@@ -152,6 +157,9 @@ Metadata:
         default: "VPC CIDR Block"
       InstanceType:
         default: "Which instance type should we use to build the ECS cluster?"
+      MemoryLimit:
+        default: "How much memory should be reserved for each task. Set to greater than 50% of instance memory capacity."
+
       KeyPair:
         default: "Which keypair should be used to allow SSH to the nodes?"
       ClusterSize:
@@ -198,6 +206,7 @@ Metadata:
           default: ECS Configuration
         Parameters:
           - InstanceType
+          - MemoryLimit
           - KeyPair
           - SpotPrice
           - ClusterSize

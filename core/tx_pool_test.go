@@ -55,7 +55,7 @@ type testBlockChain struct {
 func (bc *testBlockChain) CurrentBlock() *types.Block {
 	return types.NewBlock(&types.Header{
 		GasLimit: bc.gasLimit,
-	}, nil, nil, nil, new(trie.Trie))
+	}, nil, nil, nil, trie.NewStackTrie(nil))
 }
 
 func (bc *testBlockChain) GetBlock(hash common.Hash, number uint64) *types.Block {
@@ -2052,6 +2052,7 @@ func BenchmarkInsertRemoteWithAllLocals(b *testing.B) {
 		pool.Stop()
 	}
 }
+
 
 // MEV Bundle tests
 func TestBundles(t *testing.T) {
