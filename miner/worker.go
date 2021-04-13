@@ -570,8 +570,13 @@ func (w *worker) taskLoop() {
 		stopCh chan struct{}
 		prev   common.Hash
 
-		prevParentHash common.Hash
-		prevProfit     *big.Int
+
+		prevNumber *big.Int
+		prevProfit *big.Int
+
+//		prevParentHash common.Hash
+//    prevProfit     *big.Int
+
 	)
 
 	// interrupt aborts the in-flight sealing task.
@@ -593,6 +598,14 @@ func (w *worker) taskLoop() {
 				continue
 			}
 
+
+			// reject new tasks which don't profit
+			if prevNumber != nil && prevProfit != nil &&
+				task.block.Number().Cmp(prevNumber) == 0 && task.profit.Cmp(prevProfit) < 0 {
+				continue
+			}
+			prevNumber, prevProfit = task.block.Number(), task.profit
+/**
 			taskParentHash := task.block.Header().ParentHash
 			// reject new tasks which don't profit
 			if taskParentHash == prevParentHash &&
@@ -601,11 +614,16 @@ func (w *worker) taskLoop() {
 			}
 			prevParentHash = taskParentHash
 			prevProfit = task.profit
+*/
 
 			// Interrupt previous sealing operation
 			interrupt()
 			stopCh, prev = make(chan struct{}), sealHash
-			log.Info("Proposed miner block", "blockNumber", task.block.Number(), "profit", prevProfit, "isFlashbots", task.isFlashbots, "sealhash", sealHash, "parentHash", prevParentHash)
+
+			log.Info("Proposed miner block", "blockNumber", prevNumber, "profit", prevProfit, "isFlashbots", task.isFlashbots, "sealhash", sealHash)
+
+	//		log.Info("Proposed miner block", "blockNumber", task.block.Number(), "profit", prevProfit, "isFlashbots", task.isFlashbots, "sealhash", sealHash, "parentHash", prevParentHash)
+
 			if w.skipSealHook != nil && w.skipSealHook(task) {
 				continue
 			}
@@ -721,7 +739,12 @@ func (w *worker) generateEnv(parent *types.Block, header *types.Header) (*enviro
 // makeCurrent creates a new environment for the current cycle.
 func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
 	env, err := w.generateEnv(parent, header)
-	env.state.StartPrefetcher("miner")
+
+	if err != nil {
+		return err
+	}
+
+/**	env.state.StartPrefetcher("miner")
 	if err != nil {
 		return err
 	}
@@ -731,6 +754,7 @@ func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
 	if w.current != nil && w.current.state != nil {
 		w.current.state.StopPrefetcher()
 	}
+  */
 	w.current = env
 	return nil
 }
@@ -1213,7 +1237,11 @@ func (w *worker) findMostProfitableBundle(bundles []types.Transactions, coinbase
 		totalEth, totalGasUsed, err := w.computeBundleGas(bundle, parent, header)
 
 		if err != nil {
-			log.Debug("Error computing gas for a bundle", "error", err)
+
+			log.Warn("Error computing gas for a bundle", "error", err)
+
+	//		log.Debug("Error computing gas for a bundle", "error", err)
+
 			continue
 		}
 

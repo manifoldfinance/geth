@@ -48,6 +48,7 @@ Parameters:
     Type: String
     Default: m6gd.large
 
+
   MemoryLimit:
     Type: Number
     Default: 6144
@@ -158,6 +159,7 @@ Metadata:
         default: "Which instance type should we use to build the ECS cluster?"
       MemoryLimit:
         default: "How much memory should be reserved for each task. Set to greater than 50% of instance memory capacity."
+
       KeyPair:
         default: "Which keypair should be used to allow SSH to the nodes?"
       ClusterSize:
@@ -306,7 +308,7 @@ Resources:
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        MinInstancesInService: 2
+        MinInstancesInService: 4
         MaxBatchSize: 1
         PauseTime: PT15M
         SuspendProcesses:
@@ -661,7 +663,7 @@ Resources:
         - Name: !Ref NodeTaskName
           Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${NodeRepository}
           Essential: true
-          MemoryReservation: !Ref MemoryLimit
+          MemoryReservation: 6144
           Environment:
             - Name: "region"
               Value: !Ref AWS::Region
