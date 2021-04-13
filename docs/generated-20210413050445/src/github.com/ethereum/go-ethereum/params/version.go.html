@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source: version.go in package github.com/ethereum/go-ethereum/params</title>
+<link href="../../../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="header"><code><span class="title">Source File</span>
+	version.go
+
+<span class="title">Belonging Package</span>
+	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html">github.com/ethereum/go-ethereum/params</a>
+</code></pre>
+<style>input[type=radio] {display: none;}
+input[id=r0]:checked ~pre label[for=r0],
+input[id=r1]:checked ~pre label[for=r1],
+input[id=r2]:checked ~pre label[for=r2],
+input[id=r3]:checked ~pre label[for=r3],
+input[id=r4]:checked ~pre label[for=r4],
+input[id=r5]:checked ~pre label[for=r5],
+input[id=r6]:checked ~pre label[for=r6],
+input[id=r7]:checked ~pre label[for=r7]
+{background: #226; color: #ff8;}
+input[id=i0]:checked ~pre .i0
+{background: brown; color: #eed;}
+</style><input id="r0" type="radio" name="g"/>
+<input id="r1" type="radio" name="g"/>
+<input id="r2" type="radio" name="g"/>
+<input id="r3" type="radio" name="g"/>
+<input id="r4" type="radio" name="g"/>
+<input id="r5" type="radio" name="g"/>
+<input id="r6" type="radio" name="g"/>
+<input id="r7" type="radio" name="g"/>
+<input id="i0" type="radio" name="i"/>
+
+<pre class="line-numbers">
+<span class="codeline" id="line-1"><code><span class="comment">// Copyright 2016 The go-ethereum Authors</span></code></span>
+<span class="codeline" id="line-2"><code><span class="comment">// This file is part of the go-ethereum library.</span></code></span>
+<span class="codeline" id="line-3"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-4"><code><span class="comment">// The go-ethereum library is free software: you can redistribute it and/or modify</span></code></span>
+<span class="codeline" id="line-5"><code><span class="comment">// it under the terms of the GNU Lesser General Public License as published by</span></code></span>
+<span class="codeline" id="line-6"><code><span class="comment">// the Free Software Foundation, either version 3 of the License, or</span></code></span>
+<span class="codeline" id="line-7"><code><span class="comment">// (at your option) any later version.</span></code></span>
+<span class="codeline" id="line-8"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-9"><code><span class="comment">// The go-ethereum library is distributed in the hope that it will be useful,</span></code></span>
+<span class="codeline" id="line-10"><code><span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span></code></span>
+<span class="codeline" id="line-11"><code><span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span></code></span>
+<span class="codeline" id="line-12"><code><span class="comment">// GNU Lesser General Public License for more details.</span></code></span>
+<span class="codeline" id="line-13"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-14"><code><span class="comment">// You should have received a copy of the GNU Lesser General Public License</span></code></span>
+<span class="codeline" id="line-15"><code><span class="comment">// along with the go-ethereum library. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span></code></span>
+<span class="codeline" id="line-16"><code></code></span>
+<span class="codeline" id="line-17"><code><span class="keyword">package</span> params</code></span>
+<span class="codeline" id="line-18"><code></code></span>
+<span class="codeline" id="line-19"><code><span class="keyword">import</span> (</code></span>
+<span class="codeline" id="line-20"><code>	<label for="i0"><span class="lit-string i0">"fmt"</span></label></code></span>
+<span class="codeline" id="line-21"><code>)</code></span>
+<span class="codeline" id="line-22"><code></code></span>
+<span class="codeline" id="line-23"><code><span class="keyword">const</span> (</code></span>
+<span class="codeline" id="line-24"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-VersionMajor" class="ident">VersionMajor</a> = <span class="lit-number">1</span>          <span class="comment">// Major version component of the current release</span></code></span>
+<span class="codeline" id="line-25"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-VersionMinor" class="ident">VersionMinor</a> = <span class="lit-number">9</span>          <span class="comment">// Minor version component of the current release</span></code></span>
+<span class="codeline" id="line-26"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-VersionPatch" class="ident">VersionPatch</a> = <span class="lit-number">26</span>         <span class="comment">// Patch version component of the current release</span></code></span>
+<span class="codeline" id="line-27"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-VersionMeta" class="ident">VersionMeta</a>  = <span class="lit-string">"unstable"</span> <span class="comment">// Version metadata to append to the version string</span></code></span>
+<span class="codeline" id="line-28"><code>)</code></span>
+<span class="codeline" id="line-29"><code></code></span>
+<span class="codeline" id="line-30"><code><span class="comment">// Version holds the textual version string.</span></code></span>
+<span class="codeline" id="line-31"><code><span class="keyword">var</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-Version" class="ident">Version</a> = <span class="keyword">func</span>() <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a> {</code></span>
+<span class="codeline" id="line-32"><code>	<span class="keyword">return</span> <a href="../../../../../pkg/fmt.html" class="ident i0">fmt</a>.<a href="../../../../fmt/print.go.html#line-217" class="ident">Sprintf</a>(<span class="lit-string">"%d.%d.%d"</span>, <a href="#line-24" class="ident">VersionMajor</a>, <a href="#line-25" class="ident">VersionMinor</a>, <a href="#line-26" class="ident">VersionPatch</a>)</code></span>
+<span class="codeline" id="line-33"><code>}()</code></span>
+<span class="codeline" id="line-34"><code></code></span>
+<span class="codeline" id="line-35"><code><span class="comment">// VersionWithMeta holds the textual version string including the metadata.</span></code></span>
+<span class="codeline" id="line-36"><code><span class="keyword">var</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-VersionWithMeta" class="ident">VersionWithMeta</a> = <span class="keyword">func</span>() <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a> {</code></span>
+<span class="codeline" id="line-37"><code>	<label for="r0" class="ident">v</label> := <a href="#line-31" class="ident">Version</a></code></span>
+<span class="codeline" id="line-38"><code>	<span class="keyword">if</span> <a href="#line-27" class="ident">VersionMeta</a> != <span class="lit-string">""</span> {</code></span>
+<span class="codeline" id="line-39"><code>		<label for="r0" class="ident">v</label> += <span class="lit-string">"-"</span> + <a href="#line-27" class="ident">VersionMeta</a></code></span>
+<span class="codeline" id="line-40"><code>	}</code></span>
+<span class="codeline" id="line-41"><code>	<span class="keyword">return</span> <label for="r0" class="ident">v</label></code></span>
+<span class="codeline" id="line-42"><code>}()</code></span>
+<span class="codeline" id="line-43"><code></code></span>
+<span class="codeline" id="line-44"><code><span class="comment">// ArchiveVersion holds the textual version string used for Geth archives.</span></code></span>
+<span class="codeline" id="line-45"><code><span class="comment">// e.g. "1.8.11-dea1ce05" for stable releases, or</span></code></span>
+<span class="codeline" id="line-46"><code><span class="comment">//      "1.8.13-unstable-21c059b6" for unstable releases</span></code></span>
+<span class="codeline" id="line-47"><code><span class="keyword">func</span> <label for="r1" class="ident"><a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-ArchiveVersion" class="ident">ArchiveVersion</a></label>(<label for="r2" class="ident">gitCommit</label> <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a>) <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a> {</code></span>
+<span class="codeline" id="line-48"><code>	<label for="r3" class="ident">vsn</label> := <a href="#line-31" class="ident">Version</a></code></span>
+<span class="codeline" id="line-49"><code>	<span class="keyword">if</span> <a href="#line-27" class="ident">VersionMeta</a> != <span class="lit-string">"stable"</span> {</code></span>
+<span class="codeline" id="line-50"><code>		<label for="r3" class="ident">vsn</label> += <span class="lit-string">"-"</span> + <a href="#line-27" class="ident">VersionMeta</a></code></span>
+<span class="codeline" id="line-51"><code>	}</code></span>
+<span class="codeline" id="line-52"><code>	<span class="keyword">if</span> <a href="../../../../../pkg/builtin.html#name-len" class="ident">len</a>(<label for="r2" class="ident">gitCommit</label>) &gt;= <span class="lit-number">8</span> {</code></span>
+<span class="codeline" id="line-53"><code>		<label for="r3" class="ident">vsn</label> += <span class="lit-string">"-"</span> + <label for="r2" class="ident">gitCommit</label>[:<span class="lit-number">8</span>]</code></span>
+<span class="codeline" id="line-54"><code>	}</code></span>
+<span class="codeline" id="line-55"><code>	<span class="keyword">return</span> <label for="r3" class="ident">vsn</label></code></span>
+<span class="codeline" id="line-56"><code>}</code></span>
+<span class="codeline" id="line-57"><code></code></span>
+<span class="codeline" id="line-58"><code><span class="keyword">func</span> <label for="r4" class="ident"><a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-VersionWithCommit" class="ident">VersionWithCommit</a></label>(<label for="r5" class="ident">gitCommit</label>, <label for="r6" class="ident">gitDate</label> <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a>) <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a> {</code></span>
+<span class="codeline" id="line-59"><code>	<label for="r7" class="ident">vsn</label> := <a href="#line-36" class="ident">VersionWithMeta</a></code></span>
+<span class="codeline" id="line-60"><code>	<span class="keyword">if</span> <a href="../../../../../pkg/builtin.html#name-len" class="ident">len</a>(<label for="r5" class="ident">gitCommit</label>) &gt;= <span class="lit-number">8</span> {</code></span>
+<span class="codeline" id="line-61"><code>		<label for="r7" class="ident">vsn</label> += <span class="lit-string">"-"</span> + <label for="r5" class="ident">gitCommit</label>[:<span class="lit-number">8</span>]</code></span>
+<span class="codeline" id="line-62"><code>	}</code></span>
+<span class="codeline" id="line-63"><code>	<span class="keyword">if</span> (<a href="#line-27" class="ident">VersionMeta</a> != <span class="lit-string">"stable"</span>) &amp;&amp; (<label for="r6" class="ident">gitDate</label> != <span class="lit-string">""</span>) {</code></span>
+<span class="codeline" id="line-64"><code>		<label for="r7" class="ident">vsn</label> += <span class="lit-string">"-"</span> + <label for="r6" class="ident">gitDate</label></code></span>
+<span class="codeline" id="line-65"><code>	}</code></span>
+<span class="codeline" id="line-66"><code>	<span class="keyword">return</span> <label for="r7" class="ident">vsn</label></code></span>
+<span class="codeline" id="line-67"><code>}</code></span>
+</pre><pre id="footer">
+<table><tr><td><img src="../../../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

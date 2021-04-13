@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source: interfaces.go in package github.com/ethereum/go-ethereum</title>
+<link href="../../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="header"><code><span class="title">Source File</span>
+	interfaces.go
+
+<span class="title">Belonging Package</span>
+	<a href="../../../../pkg/github.com/ethereum/go-ethereum.html">github.com/ethereum/go-ethereum</a>
+</code></pre>
+<style>input[type=radio] {display: none;}
+{background: #226; color: #ff8;}
+input[id=i0]:checked ~pre .i0,
+input[id=i1]:checked ~pre .i1,
+input[id=i2]:checked ~pre .i2,
+input[id=i3]:checked ~pre .i3,
+input[id=i4]:checked ~pre .i4
+{background: brown; color: #eed;}
+</style><input id="i0" type="radio" name="i"/>
+<input id="i1" type="radio" name="i"/>
+<input id="i2" type="radio" name="i"/>
+<input id="i3" type="radio" name="i"/>
+<input id="i4" type="radio" name="i"/>
+
+<pre class="line-numbers">
+<span class="codeline" id="line-1"><code><span class="comment">// Copyright 2016 The go-ethereum Authors</span></code></span>
+<span class="codeline" id="line-2"><code><span class="comment">// This file is part of the go-ethereum library.</span></code></span>
+<span class="codeline" id="line-3"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-4"><code><span class="comment">// The go-ethereum library is free software: you can redistribute it and/or modify</span></code></span>
+<span class="codeline" id="line-5"><code><span class="comment">// it under the terms of the GNU Lesser General Public License as published by</span></code></span>
+<span class="codeline" id="line-6"><code><span class="comment">// the Free Software Foundation, either version 3 of the License, or</span></code></span>
+<span class="codeline" id="line-7"><code><span class="comment">// (at your option) any later version.</span></code></span>
+<span class="codeline" id="line-8"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-9"><code><span class="comment">// The go-ethereum library is distributed in the hope that it will be useful,</span></code></span>
+<span class="codeline" id="line-10"><code><span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span></code></span>
+<span class="codeline" id="line-11"><code><span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span></code></span>
+<span class="codeline" id="line-12"><code><span class="comment">// GNU Lesser General Public License for more details.</span></code></span>
+<span class="codeline" id="line-13"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-14"><code><span class="comment">// You should have received a copy of the GNU Lesser General Public License</span></code></span>
+<span class="codeline" id="line-15"><code><span class="comment">// along with the go-ethereum library. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span></code></span>
+<span class="codeline" id="line-16"><code></code></span>
+<div class="anchor" id="doc"><span class="codeline" id="line-17"><code><span class="comment">// Package ethereum defines interfaces for interacting with Ethereum.</span></code></span></div><span class="codeline" id="line-18"><code><span class="keyword">package</span> ethereum</code></span>
+<span class="codeline" id="line-19"><code></code></span>
+<span class="codeline" id="line-20"><code><span class="keyword">import</span> (</code></span>
+<span class="codeline" id="line-21"><code>	<label for="i0"><span class="lit-string i0">"context"</span></label></code></span>
+<span class="codeline" id="line-22"><code>	<label for="i1"><span class="lit-string i1">"errors"</span></label></code></span>
+<span class="codeline" id="line-23"><code>	<label for="i2"><span class="lit-string i2">"math/big"</span></label></code></span>
+<span class="codeline" id="line-24"><code></code></span>
+<span class="codeline" id="line-25"><code>	<label for="i3"><span class="lit-string i3">"github.com/ethereum/go-ethereum/common"</span></label></code></span>
+<span class="codeline" id="line-26"><code>	<label for="i4"><span class="lit-string i4">"github.com/ethereum/go-ethereum/core/types"</span></label></code></span>
+<span class="codeline" id="line-27"><code>)</code></span>
+<span class="codeline" id="line-28"><code></code></span>
+<span class="codeline" id="line-29"><code><span class="comment">// NotFound is returned by API methods if the requested item does not exist.</span></code></span>
+<span class="codeline" id="line-30"><code><span class="keyword">var</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-NotFound" class="ident">NotFound</a> = <a href="../../../../pkg/errors.html" class="ident i1">errors</a>.<a href="../../../errors/errors.go.html#line-58" class="ident">New</a>(<span class="lit-string">"not found"</span>)</code></span>
+<span class="codeline" id="line-31"><code></code></span>
+<span class="codeline" id="line-32"><code><span class="comment">// TODO: move subscription to package event</span></code></span>
+<span class="codeline" id="line-33"><code></code></span>
+<span class="codeline" id="line-34"><code><span class="comment">// Subscription represents an event subscription where events are</span></code></span>
+<span class="codeline" id="line-35"><code><span class="comment">// delivered on a data channel.</span></code></span>
+<span class="codeline" id="line-36"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-Subscription" class="ident">Subscription</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-37"><code>	<span class="comment">// Unsubscribe cancels the sending of events to the data channel</span></code></span>
+<span class="codeline" id="line-38"><code><span class="comment">	// and closes the error channel.</span></code></span>
+<span class="codeline" id="line-39"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.Subscription.html#name-Unsubscribe" class="ident">Unsubscribe</a>()</code></span>
+<span class="codeline" id="line-40"><code>	<span class="comment">// Err returns the subscription error channel. The error channel receives</span></code></span>
+<span class="codeline" id="line-41"><code><span class="comment">	// a value if there is an issue with the subscription (e.g. the network connection</span></code></span>
+<span class="codeline" id="line-42"><code><span class="comment">	// delivering the events has been closed). Only one value will ever be sent.</span></code></span>
+<span class="codeline" id="line-43"><code><span class="comment">	// The error channel is closed by Unsubscribe.</span></code></span>
+<span class="codeline" id="line-44"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.Subscription.html#name-Err" class="ident">Err</a>() &lt;-<span class="keyword">chan</span> <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a></code></span>
+<span class="codeline" id="line-45"><code>}</code></span>
+<span class="codeline" id="line-46"><code></code></span>
+<span class="codeline" id="line-47"><code><span class="comment">// ChainReader provides access to the blockchain. The methods in this interface access raw</span></code></span>
+<span class="codeline" id="line-48"><code><span class="comment">// data from either the canonical chain (when requesting by block number) or any</span></code></span>
+<span class="codeline" id="line-49"><code><span class="comment">// blockchain fork that was previously downloaded and processed by the node. The block</span></code></span>
+<span class="codeline" id="line-50"><code><span class="comment">// number argument can be nil to select the latest canonical block. Reading block headers</span></code></span>
+<span class="codeline" id="line-51"><code><span class="comment">// should be preferred over full blocks whenever possible.</span></code></span>
+<span class="codeline" id="line-52"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-53"><code><span class="comment">// The returned error is NotFound if the requested item does not exist.</span></code></span>
+<span class="codeline" id="line-54"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-ChainReader" class="ident">ChainReader</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-55"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainReader.html#name-BlockByHash" class="ident">BlockByHash</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, hash <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a>) (*<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/block.go.html#line-169" class="ident">Block</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-56"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainReader.html#name-BlockByNumber" class="ident">BlockByNumber</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, number *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>) (*<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/block.go.html#line-169" class="ident">Block</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-57"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainReader.html#name-HeaderByHash" class="ident">HeaderByHash</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, hash <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a>) (*<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/block.go.html#line-72" class="ident">Header</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-58"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainReader.html#name-HeaderByNumber" class="ident">HeaderByNumber</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, number *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>) (*<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/block.go.html#line-72" class="ident">Header</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-59"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainReader.html#name-TransactionCount" class="ident">TransactionCount</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, blockHash <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a>) (<a href="../../../../pkg/builtin.html#name-uint" class="ident">uint</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-60"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainReader.html#name-TransactionInBlock" class="ident">TransactionInBlock</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, blockHash <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a>, index <a href="../../../../pkg/builtin.html#name-uint" class="ident">uint</a>) (*<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/transaction.go.html#line-39" class="ident">Transaction</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-61"><code></code></span>
+<span class="codeline" id="line-62"><code>	<span class="comment">// This method subscribes to notifications about changes of the head block of</span></code></span>
+<span class="codeline" id="line-63"><code><span class="comment">	// the canonical chain.</span></code></span>
+<span class="codeline" id="line-64"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainReader.html#name-SubscribeNewHead" class="ident">SubscribeNewHead</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, ch <span class="keyword">chan</span>&lt;- *<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/block.go.html#line-72" class="ident">Header</a>) (<a href="#line-36" class="ident">Subscription</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-65"><code>}</code></span>
+<span class="codeline" id="line-66"><code></code></span>
+<span class="codeline" id="line-67"><code><span class="comment">// TransactionReader provides access to past transactions and their receipts.</span></code></span>
+<span class="codeline" id="line-68"><code><span class="comment">// Implementations may impose arbitrary restrictions on the transactions and receipts that</span></code></span>
+<span class="codeline" id="line-69"><code><span class="comment">// can be retrieved. Historic transactions may not be available.</span></code></span>
+<span class="codeline" id="line-70"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-71"><code><span class="comment">// Avoid relying on this interface if possible. Contract logs (through the LogFilterer</span></code></span>
+<span class="codeline" id="line-72"><code><span class="comment">// interface) are more reliable and usually safer in the presence of chain</span></code></span>
+<span class="codeline" id="line-73"><code><span class="comment">// reorganisations.</span></code></span>
+<span class="codeline" id="line-74"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-75"><code><span class="comment">// The returned error is NotFound if the requested item does not exist.</span></code></span>
+<span class="codeline" id="line-76"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-TransactionReader" class="ident">TransactionReader</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-77"><code>	<span class="comment">// TransactionByHash checks the pool of pending transactions in addition to the</span></code></span>
+<span class="codeline" id="line-78"><code><span class="comment">	// blockchain. The isPending return value indicates whether the transaction has been</span></code></span>
+<span class="codeline" id="line-79"><code><span class="comment">	// mined yet. Note that the transaction may not be part of the canonical chain even if</span></code></span>
+<span class="codeline" id="line-80"><code><span class="comment">	// it's not pending.</span></code></span>
+<span class="codeline" id="line-81"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.TransactionReader.html#name-TransactionByHash" class="ident">TransactionByHash</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, txHash <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a>) (tx *<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/transaction.go.html#line-39" class="ident">Transaction</a>, isPending <a href="../../../../pkg/builtin.html#name-bool" class="ident">bool</a>, err <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-82"><code>	<span class="comment">// TransactionReceipt returns the receipt of a mined transaction. Note that the</span></code></span>
+<span class="codeline" id="line-83"><code><span class="comment">	// transaction may not be included in the current canonical chain even if a receipt</span></code></span>
+<span class="codeline" id="line-84"><code><span class="comment">	// exists.</span></code></span>
+<span class="codeline" id="line-85"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.TransactionReader.html#name-TransactionReceipt" class="ident">TransactionReceipt</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, txHash <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a>) (*<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/receipt.go.html#line-50" class="ident">Receipt</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-86"><code>}</code></span>
+<span class="codeline" id="line-87"><code></code></span>
+<span class="codeline" id="line-88"><code><span class="comment">// ChainStateReader wraps access to the state trie of the canonical blockchain. Note that</span></code></span>
+<span class="codeline" id="line-89"><code><span class="comment">// implementations of the interface may be unable to return state values for old blocks.</span></code></span>
+<span class="codeline" id="line-90"><code><span class="comment">// In many cases, using CallContract can be preferable to reading raw contract storage.</span></code></span>
+<span class="codeline" id="line-91"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-ChainStateReader" class="ident">ChainStateReader</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-92"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainStateReader.html#name-BalanceAt" class="ident">BalanceAt</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, account <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a>, blockNumber *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>) (*<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-93"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainStateReader.html#name-StorageAt" class="ident">StorageAt</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, account <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a>, key <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a>, blockNumber *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>) ([]<a href="../../../../pkg/builtin.html#name-byte" class="ident">byte</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-94"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainStateReader.html#name-CodeAt" class="ident">CodeAt</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, account <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a>, blockNumber *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>) ([]<a href="../../../../pkg/builtin.html#name-byte" class="ident">byte</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-95"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainStateReader.html#name-NonceAt" class="ident">NonceAt</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, account <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a>, blockNumber *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>) (<a href="../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-96"><code>}</code></span>
+<span class="codeline" id="line-97"><code></code></span>
+<span class="codeline" id="line-98"><code><span class="comment">// SyncProgress gives progress indications when the node is synchronising with</span></code></span>
+<span class="codeline" id="line-99"><code><span class="comment">// the Ethereum network.</span></code></span>
+<span class="codeline" id="line-100"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-SyncProgress" class="ident">SyncProgress</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-101"><code>	StartingBlock <a href="../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> <span class="comment">// Block number where sync began</span></code></span>
+<span class="codeline" id="line-102"><code>	CurrentBlock  <a href="../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> <span class="comment">// Current block number where sync is at</span></code></span>
+<span class="codeline" id="line-103"><code>	HighestBlock  <a href="../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> <span class="comment">// Highest alleged block number in the chain</span></code></span>
+<span class="codeline" id="line-104"><code>	PulledStates  <a href="../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> <span class="comment">// Number of state trie entries already downloaded</span></code></span>
+<span class="codeline" id="line-105"><code>	KnownStates   <a href="../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> <span class="comment">// Total number of state trie entries known about</span></code></span>
+<span class="codeline" id="line-106"><code>}</code></span>
+<span class="codeline" id="line-107"><code></code></span>
+<span class="codeline" id="line-108"><code><span class="comment">// ChainSyncReader wraps access to the node's current sync status. If there's no</span></code></span>
+<span class="codeline" id="line-109"><code><span class="comment">// sync currently running, it returns nil.</span></code></span>
+<span class="codeline" id="line-110"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-ChainSyncReader" class="ident">ChainSyncReader</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-111"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ChainSyncReader.html#name-SyncProgress" class="ident">SyncProgress</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>) (*<a href="#line-100" class="ident">SyncProgress</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-112"><code>}</code></span>
+<span class="codeline" id="line-113"><code></code></span>
+<span class="codeline" id="line-114"><code><span class="comment">// CallMsg contains parameters for contract calls.</span></code></span>
+<span class="codeline" id="line-115"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-CallMsg" class="ident">CallMsg</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-116"><code>	From     <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a>  <span class="comment">// the sender of the 'transaction'</span></code></span>
+<span class="codeline" id="line-117"><code>	To       *<a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a> <span class="comment">// the destination contract (nil for contract creation)</span></code></span>
+<span class="codeline" id="line-118"><code>	Gas      <a href="../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a>          <span class="comment">// if 0, the call executes with near-infinite gas</span></code></span>
+<span class="codeline" id="line-119"><code>	GasPrice *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>        <span class="comment">// wei &lt;-&gt; gas exchange ratio</span></code></span>
+<span class="codeline" id="line-120"><code>	Value    *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>        <span class="comment">// amount of wei sent along with the call</span></code></span>
+<span class="codeline" id="line-121"><code>	Data     []<a href="../../../../pkg/builtin.html#name-byte" class="ident">byte</a>          <span class="comment">// input data, usually an ABI-encoded contract method invocation</span></code></span>
+<span class="codeline" id="line-122"><code>}</code></span>
+<span class="codeline" id="line-123"><code></code></span>
+<span class="codeline" id="line-124"><code><span class="comment">// A ContractCaller provides contract calls, essentially transactions that are executed by</span></code></span>
+<span class="codeline" id="line-125"><code><span class="comment">// the EVM but not mined into the blockchain. ContractCall is a low-level method to</span></code></span>
+<span class="codeline" id="line-126"><code><span class="comment">// execute such calls. For applications which are structured around specific contracts,</span></code></span>
+<span class="codeline" id="line-127"><code><span class="comment">// the abigen tool provides a nicer, properly typed way to perform calls.</span></code></span>
+<span class="codeline" id="line-128"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-ContractCaller" class="ident">ContractCaller</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-129"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.ContractCaller.html#name-CallContract" class="ident">CallContract</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, call <a href="#line-115" class="ident">CallMsg</a>, blockNumber *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>) ([]<a href="../../../../pkg/builtin.html#name-byte" class="ident">byte</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-130"><code>}</code></span>
+<span class="codeline" id="line-131"><code></code></span>
+<span class="codeline" id="line-132"><code><span class="comment">// FilterQuery contains options for contract log filtering.</span></code></span>
+<span class="codeline" id="line-133"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-FilterQuery" class="ident">FilterQuery</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-134"><code>	BlockHash *<a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a>     <span class="comment">// used by eth_getLogs, return logs only from block with this hash</span></code></span>
+<span class="codeline" id="line-135"><code>	FromBlock *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>         <span class="comment">// beginning of the queried range, nil means genesis block</span></code></span>
+<span class="codeline" id="line-136"><code>	ToBlock   *<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>         <span class="comment">// end of the range, nil means latest block</span></code></span>
+<span class="codeline" id="line-137"><code>	Addresses []<a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a> <span class="comment">// restricts matches to events created by specific contracts</span></code></span>
+<span class="codeline" id="line-138"><code></code></span>
+<span class="codeline" id="line-139"><code>	<span class="comment">// The Topic list restricts matches to particular event topics. Each event has a list</span></code></span>
+<span class="codeline" id="line-140"><code><span class="comment">	// of topics. Topics matches a prefix of that list. An empty element slice matches any</span></code></span>
+<span class="codeline" id="line-141"><code><span class="comment">	// topic. Non-empty elements represent an alternative that matches any of the</span></code></span>
+<span class="codeline" id="line-142"><code><span class="comment">	// contained topics.</span></code></span>
+<span class="codeline" id="line-143"><code><span class="comment">	//</span></code></span>
+<span class="codeline" id="line-144"><code><span class="comment">	// Examples:</span></code></span>
+<span class="codeline" id="line-145"><code><span class="comment">	// {} or nil          matches any topic list</span></code></span>
+<span class="codeline" id="line-146"><code><span class="comment">	// {{A}}              matches topic A in first position</span></code></span>
+<span class="codeline" id="line-147"><code><span class="comment">	// {{}, {B}}          matches any topic in first position AND B in second position</span></code></span>
+<span class="codeline" id="line-148"><code><span class="comment">	// {{A}, {B}}         matches topic A in first position AND B in second position</span></code></span>
+<span class="codeline" id="line-149"><code><span class="comment">	// {{A, B}, {C, D}}   matches topic (A OR B) in first position AND (C OR D) in second position</span></code></span>
+<span class="codeline" id="line-150"><code>	Topics [][]<a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a></code></span>
+<span class="codeline" id="line-151"><code>}</code></span>
+<span class="codeline" id="line-152"><code></code></span>
+<span class="codeline" id="line-153"><code><span class="comment">// LogFilterer provides access to contract log events using a one-off query or continuous</span></code></span>
+<span class="codeline" id="line-154"><code><span class="comment">// event subscription.</span></code></span>
+<span class="codeline" id="line-155"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-156"><code><span class="comment">// Logs received through a streaming query subscription may have Removed set to true,</span></code></span>
+<span class="codeline" id="line-157"><code><span class="comment">// indicating that the log was reverted due to a chain reorganisation.</span></code></span>
+<span class="codeline" id="line-158"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-LogFilterer" class="ident">LogFilterer</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-159"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.LogFilterer.html#name-FilterLogs" class="ident">FilterLogs</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, q <a href="#line-133" class="ident">FilterQuery</a>) ([]<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/log.go.html#line-31" class="ident">Log</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-160"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.LogFilterer.html#name-SubscribeFilterLogs" class="ident">SubscribeFilterLogs</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, q <a href="#line-133" class="ident">FilterQuery</a>, ch <span class="keyword">chan</span>&lt;- <a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/log.go.html#line-31" class="ident">Log</a>) (<a href="#line-36" class="ident">Subscription</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-161"><code>}</code></span>
+<span class="codeline" id="line-162"><code></code></span>
+<span class="codeline" id="line-163"><code><span class="comment">// TransactionSender wraps transaction sending. The SendTransaction method injects a</span></code></span>
+<span class="codeline" id="line-164"><code><span class="comment">// signed transaction into the pending transaction pool for execution. If the transaction</span></code></span>
+<span class="codeline" id="line-165"><code><span class="comment">// was a contract creation, the TransactionReceipt method can be used to retrieve the</span></code></span>
+<span class="codeline" id="line-166"><code><span class="comment">// contract address after the transaction has been mined.</span></code></span>
+<span class="codeline" id="line-167"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-168"><code><span class="comment">// The transaction must be signed and have a valid nonce to be included. Consumers of the</span></code></span>
+<span class="codeline" id="line-169"><code><span class="comment">// API can use package accounts to maintain local private keys and need can retrieve the</span></code></span>
+<span class="codeline" id="line-170"><code><span class="comment">// next available nonce using PendingNonceAt.</span></code></span>
+<span class="codeline" id="line-171"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-TransactionSender" class="ident">TransactionSender</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-172"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.TransactionSender.html#name-SendTransaction" class="ident">SendTransaction</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, tx *<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/transaction.go.html#line-39" class="ident">Transaction</a>) <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a></code></span>
+<span class="codeline" id="line-173"><code>}</code></span>
+<span class="codeline" id="line-174"><code></code></span>
+<span class="codeline" id="line-175"><code><span class="comment">// GasPricer wraps the gas price oracle, which monitors the blockchain to determine the</span></code></span>
+<span class="codeline" id="line-176"><code><span class="comment">// optimal gas price given current fee market conditions.</span></code></span>
+<span class="codeline" id="line-177"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-GasPricer" class="ident">GasPricer</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-178"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.GasPricer.html#name-SuggestGasPrice" class="ident">SuggestGasPrice</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>) (*<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-179"><code>}</code></span>
+<span class="codeline" id="line-180"><code></code></span>
+<span class="codeline" id="line-181"><code><span class="comment">// A PendingStateReader provides access to the pending state, which is the result of all</span></code></span>
+<span class="codeline" id="line-182"><code><span class="comment">// known executable transactions which have not yet been included in the blockchain. It is</span></code></span>
+<span class="codeline" id="line-183"><code><span class="comment">// commonly used to display the result of ’unconfirmed’ actions (e.g. wallet value</span></code></span>
+<span class="codeline" id="line-184"><code><span class="comment">// transfers) initiated by the user. The PendingNonceAt operation is a good way to</span></code></span>
+<span class="codeline" id="line-185"><code><span class="comment">// retrieve the next available transaction nonce for a specific account.</span></code></span>
+<span class="codeline" id="line-186"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-PendingStateReader" class="ident">PendingStateReader</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-187"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.PendingStateReader.html#name-PendingBalanceAt" class="ident">PendingBalanceAt</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, account <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a>) (*<a href="../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../math/big/int.go.html#line-25" class="ident">Int</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-188"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.PendingStateReader.html#name-PendingStorageAt" class="ident">PendingStorageAt</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, account <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a>, key <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-49" class="ident">Hash</a>) ([]<a href="../../../../pkg/builtin.html#name-byte" class="ident">byte</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-189"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.PendingStateReader.html#name-PendingCodeAt" class="ident">PendingCodeAt</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, account <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a>) ([]<a href="../../../../pkg/builtin.html#name-byte" class="ident">byte</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-190"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.PendingStateReader.html#name-PendingNonceAt" class="ident">PendingNonceAt</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, account <a href="../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="common/types.go.html#line-201" class="ident">Address</a>) (<a href="../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-191"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.PendingStateReader.html#name-PendingTransactionCount" class="ident">PendingTransactionCount</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>) (<a href="../../../../pkg/builtin.html#name-uint" class="ident">uint</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-192"><code>}</code></span>
+<span class="codeline" id="line-193"><code></code></span>
+<span class="codeline" id="line-194"><code><span class="comment">// PendingContractCaller can be used to perform calls against the pending state.</span></code></span>
+<span class="codeline" id="line-195"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-PendingContractCaller" class="ident">PendingContractCaller</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-196"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.PendingContractCaller.html#name-PendingCallContract" class="ident">PendingCallContract</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, call <a href="#line-115" class="ident">CallMsg</a>) ([]<a href="../../../../pkg/builtin.html#name-byte" class="ident">byte</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-197"><code>}</code></span>
+<span class="codeline" id="line-198"><code></code></span>
+<span class="codeline" id="line-199"><code><span class="comment">// GasEstimator wraps EstimateGas, which tries to estimate the gas needed to execute a</span></code></span>
+<span class="codeline" id="line-200"><code><span class="comment">// specific transaction based on the pending state. There is no guarantee that this is the</span></code></span>
+<span class="codeline" id="line-201"><code><span class="comment">// true gas limit requirement as other transactions may be added or removed by miners, but</span></code></span>
+<span class="codeline" id="line-202"><code><span class="comment">// it should provide a basis for setting a reasonable default.</span></code></span>
+<span class="codeline" id="line-203"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-GasEstimator" class="ident">GasEstimator</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-204"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.GasEstimator.html#name-EstimateGas" class="ident">EstimateGas</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, call <a href="#line-115" class="ident">CallMsg</a>) (<a href="../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-205"><code>}</code></span>
+<span class="codeline" id="line-206"><code></code></span>
+<span class="codeline" id="line-207"><code><span class="comment">// A PendingStateEventer provides access to real time notifications about changes to the</span></code></span>
+<span class="codeline" id="line-208"><code><span class="comment">// pending state.</span></code></span>
+<span class="codeline" id="line-209"><code><span class="keyword">type</span> <a href="../../../../pkg/github.com/ethereum/go-ethereum.html#name-PendingStateEventer" class="ident">PendingStateEventer</a> <span class="keyword">interface</span> {</code></span>
+<span class="codeline" id="line-210"><code>	<a href="../../../../imp/github.com/ethereum/go-ethereum.PendingStateEventer.html#name-SubscribePendingTransactions" class="ident">SubscribePendingTransactions</a>(ctx <a href="../../../../pkg/context.html" class="ident i0">context</a>.<a href="../../../context/context.go.html#line-62" class="ident">Context</a>, ch <span class="keyword">chan</span>&lt;- *<a href="../../../../pkg/github.com/ethereum/go-ethereum/core/types.html" class="ident i4">types</a>.<a href="core/types/transaction.go.html#line-39" class="ident">Transaction</a>) (<a href="#line-36" class="ident">Subscription</a>, <a href="../../../../pkg/builtin.html#name-error" class="ident">error</a>)</code></span>
+<span class="codeline" id="line-211"><code>}</code></span>
+</pre><pre id="footer">
+<table><tr><td><img src="../../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

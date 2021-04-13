@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source: log.go in package github.com/ethereum/go-ethereum/core/types</title>
+<link href="../../../../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="header"><code><span class="title">Source File</span>
+	log.go
+
+<span class="title">Belonging Package</span>
+	<a href="../../../../../../pkg/github.com/ethereum/go-ethereum/core/types.html">github.com/ethereum/go-ethereum/core/types</a>
+</code></pre>
+<style>input[type=radio] {display: none;}
+input[id=r0]:checked ~pre label[for=r0],
+input[id=r1]:checked ~pre label[for=r1],
+input[id=r2]:checked ~pre label[for=r2],
+input[id=r3]:checked ~pre label[for=r3],
+input[id=r4]:checked ~pre label[for=r4],
+input[id=r5]:checked ~pre label[for=r5],
+input[id=r6]:checked ~pre label[for=r6],
+input[id=r7]:checked ~pre label[for=r7],
+input[id=r8]:checked ~pre label[for=r8],
+input[id=r9]:checked ~pre label[for=r9],
+input[id=r10]:checked ~pre label[for=r10],
+input[id=r11]:checked ~pre label[for=r11],
+input[id=r12]:checked ~pre label[for=r12],
+input[id=r13]:checked ~pre label[for=r13],
+input[id=r14]:checked ~pre label[for=r14],
+input[id=r15]:checked ~pre label[for=r15],
+input[id=r16]:checked ~pre label[for=r16],
+input[id=r17]:checked ~pre label[for=r17]
+{background: #226; color: #ff8;}
+input[id=i0]:checked ~pre .i0,
+input[id=i1]:checked ~pre .i1,
+input[id=i2]:checked ~pre .i2,
+input[id=i3]:checked ~pre .i3
+{background: brown; color: #eed;}
+</style><input id="r0" type="radio" name="g"/>
+<input id="r1" type="radio" name="g"/>
+<input id="r2" type="radio" name="g"/>
+<input id="r3" type="radio" name="g"/>
+<input id="r4" type="radio" name="g"/>
+<input id="r5" type="radio" name="g"/>
+<input id="r6" type="radio" name="g"/>
+<input id="r7" type="radio" name="g"/>
+<input id="r8" type="radio" name="g"/>
+<input id="r9" type="radio" name="g"/>
+<input id="r10" type="radio" name="g"/>
+<input id="r11" type="radio" name="g"/>
+<input id="r12" type="radio" name="g"/>
+<input id="r13" type="radio" name="g"/>
+<input id="r14" type="radio" name="g"/>
+<input id="r15" type="radio" name="g"/>
+<input id="r16" type="radio" name="g"/>
+<input id="r17" type="radio" name="g"/>
+<input id="i0" type="radio" name="i"/>
+<input id="i1" type="radio" name="i"/>
+<input id="i2" type="radio" name="i"/>
+<input id="i3" type="radio" name="i"/>
+
+<pre class="line-numbers">
+<span class="codeline" id="line-1"><code><span class="comment">// Copyright 2014 The go-ethereum Authors</span></code></span>
+<span class="codeline" id="line-2"><code><span class="comment">// This file is part of the go-ethereum library.</span></code></span>
+<span class="codeline" id="line-3"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-4"><code><span class="comment">// The go-ethereum library is free software: you can redistribute it and/or modify</span></code></span>
+<span class="codeline" id="line-5"><code><span class="comment">// it under the terms of the GNU Lesser General Public License as published by</span></code></span>
+<span class="codeline" id="line-6"><code><span class="comment">// the Free Software Foundation, either version 3 of the License, or</span></code></span>
+<span class="codeline" id="line-7"><code><span class="comment">// (at your option) any later version.</span></code></span>
+<span class="codeline" id="line-8"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-9"><code><span class="comment">// The go-ethereum library is distributed in the hope that it will be useful,</span></code></span>
+<span class="codeline" id="line-10"><code><span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span></code></span>
+<span class="codeline" id="line-11"><code><span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span></code></span>
+<span class="codeline" id="line-12"><code><span class="comment">// GNU Lesser General Public License for more details.</span></code></span>
+<span class="codeline" id="line-13"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-14"><code><span class="comment">// You should have received a copy of the GNU Lesser General Public License</span></code></span>
+<span class="codeline" id="line-15"><code><span class="comment">// along with the go-ethereum library. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span></code></span>
+<span class="codeline" id="line-16"><code></code></span>
+<span class="codeline" id="line-17"><code><span class="keyword">package</span> types</code></span>
+<span class="codeline" id="line-18"><code></code></span>
+<span class="codeline" id="line-19"><code><span class="keyword">import</span> (</code></span>
+<span class="codeline" id="line-20"><code>	<label for="i0"><span class="lit-string i0">"io"</span></label></code></span>
+<span class="codeline" id="line-21"><code></code></span>
+<span class="codeline" id="line-22"><code>	<label for="i1"><span class="lit-string i1">"github.com/ethereum/go-ethereum/common"</span></label></code></span>
+<span class="codeline" id="line-23"><code>	<label for="i2"><span class="lit-string i2">"github.com/ethereum/go-ethereum/common/hexutil"</span></label></code></span>
+<span class="codeline" id="line-24"><code>	<label for="i3"><span class="lit-string i3">"github.com/ethereum/go-ethereum/rlp"</span></label></code></span>
+<span class="codeline" id="line-25"><code>)</code></span>
+<span class="codeline" id="line-26"><code></code></span>
+<span class="codeline" id="line-27"><code><span class="comment">//go:generate gencodec -type Log -field-override logMarshaling -out gen_log_json.go</span></code></span>
+<span class="codeline" id="line-28"><code></code></span>
+<span class="codeline" id="line-29"><code><span class="comment">// Log represents a contract log event. These events are generated by the LOG opcode and</span></code></span>
+<span class="codeline" id="line-30"><code><span class="comment">// stored/indexed by the node.</span></code></span>
+<span class="codeline" id="line-31"><code><span class="keyword">type</span> <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/core/types.html#name-Log" class="ident">Log</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-32"><code>	<span class="comment">// Consensus fields:</span></code></span>
+<span class="codeline" id="line-33"><code><span class="comment">	// address of the contract that generated the event</span></code></span>
+<span class="codeline" id="line-34"><code>	Address <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-201" class="ident">Address</a> <span class="lit-string">`json:"address" gencodec:"required"`</span></code></span>
+<span class="codeline" id="line-35"><code>	<span class="comment">// list of topics provided by the contract.</span></code></span>
+<span class="codeline" id="line-36"><code>	Topics []<a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-49" class="ident">Hash</a> <span class="lit-string">`json:"topics" gencodec:"required"`</span></code></span>
+<span class="codeline" id="line-37"><code>	<span class="comment">// supplied by the contract, usually ABI-encoded</span></code></span>
+<span class="codeline" id="line-38"><code>	Data []<a href="../../../../../../pkg/builtin.html#name-byte" class="ident">byte</a> <span class="lit-string">`json:"data" gencodec:"required"`</span></code></span>
+<span class="codeline" id="line-39"><code></code></span>
+<span class="codeline" id="line-40"><code>	<span class="comment">// Derived fields. These fields are filled in by the node</span></code></span>
+<span class="codeline" id="line-41"><code><span class="comment">	// but not secured by consensus.</span></code></span>
+<span class="codeline" id="line-42"><code><span class="comment">	// block in which the transaction was included</span></code></span>
+<span class="codeline" id="line-43"><code>	BlockNumber <a href="../../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> <span class="lit-string">`json:"blockNumber"`</span></code></span>
+<span class="codeline" id="line-44"><code>	<span class="comment">// hash of the transaction</span></code></span>
+<span class="codeline" id="line-45"><code>	TxHash <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-49" class="ident">Hash</a> <span class="lit-string">`json:"transactionHash" gencodec:"required"`</span></code></span>
+<span class="codeline" id="line-46"><code>	<span class="comment">// index of the transaction in the block</span></code></span>
+<span class="codeline" id="line-47"><code>	TxIndex <a href="../../../../../../pkg/builtin.html#name-uint" class="ident">uint</a> <span class="lit-string">`json:"transactionIndex"`</span></code></span>
+<span class="codeline" id="line-48"><code>	<span class="comment">// hash of the block in which the transaction was included</span></code></span>
+<span class="codeline" id="line-49"><code>	BlockHash <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-49" class="ident">Hash</a> <span class="lit-string">`json:"blockHash"`</span></code></span>
+<span class="codeline" id="line-50"><code>	<span class="comment">// index of the log in the block</span></code></span>
+<span class="codeline" id="line-51"><code>	Index <a href="../../../../../../pkg/builtin.html#name-uint" class="ident">uint</a> <span class="lit-string">`json:"logIndex"`</span></code></span>
+<span class="codeline" id="line-52"><code></code></span>
+<span class="codeline" id="line-53"><code>	<span class="comment">// The Removed field is true if this log was reverted due to a chain reorganisation.</span></code></span>
+<span class="codeline" id="line-54"><code><span class="comment">	// You must pay attention to this field if you receive logs through a filter query.</span></code></span>
+<span class="codeline" id="line-55"><code>	Removed <a href="../../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> <span class="lit-string">`json:"removed"`</span></code></span>
+<span class="codeline" id="line-56"><code>}</code></span>
+<span class="codeline" id="line-57"><code></code></span>
+<span class="codeline" id="line-58"><code><span class="keyword">type</span> <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/core/types.html#name-logMarshaling" class="ident">logMarshaling</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-59"><code>	Data        <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common/hexutil.html" class="ident i2">hexutil</a>.<a href="../../common/hexutil/json.go.html#line-37" class="ident">Bytes</a></code></span>
+<span class="codeline" id="line-60"><code>	BlockNumber <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common/hexutil.html" class="ident i2">hexutil</a>.<a href="../../common/hexutil/json.go.html#line-230" class="ident">Uint64</a></code></span>
+<span class="codeline" id="line-61"><code>	TxIndex     <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common/hexutil.html" class="ident i2">hexutil</a>.<a href="../../common/hexutil/json.go.html#line-294" class="ident">Uint</a></code></span>
+<span class="codeline" id="line-62"><code>	Index       <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common/hexutil.html" class="ident i2">hexutil</a>.<a href="../../common/hexutil/json.go.html#line-294" class="ident">Uint</a></code></span>
+<span class="codeline" id="line-63"><code>}</code></span>
+<span class="codeline" id="line-64"><code></code></span>
+<span class="codeline" id="line-65"><code><span class="keyword">type</span> <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/core/types.html#name-rlpLog" class="ident">rlpLog</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-66"><code>	Address <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-201" class="ident">Address</a></code></span>
+<span class="codeline" id="line-67"><code>	Topics  []<a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-49" class="ident">Hash</a></code></span>
+<span class="codeline" id="line-68"><code>	Data    []<a href="../../../../../../pkg/builtin.html#name-byte" class="ident">byte</a></code></span>
+<span class="codeline" id="line-69"><code>}</code></span>
+<span class="codeline" id="line-70"><code></code></span>
+<span class="codeline" id="line-71"><code><span class="comment">// rlpStorageLog is the storage encoding of a log.</span></code></span>
+<span class="codeline" id="line-72"><code><span class="keyword">type</span> <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/core/types.html#name-rlpStorageLog" class="ident">rlpStorageLog</a> <a href="#line-65" class="ident">rlpLog</a></code></span>
+<span class="codeline" id="line-73"><code></code></span>
+<span class="codeline" id="line-74"><code><span class="comment">// legacyRlpStorageLog is the previous storage encoding of a log including some redundant fields.</span></code></span>
+<span class="codeline" id="line-75"><code><span class="keyword">type</span> <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/core/types.html#name-legacyRlpStorageLog" class="ident">legacyRlpStorageLog</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-76"><code>	Address     <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-201" class="ident">Address</a></code></span>
+<span class="codeline" id="line-77"><code>	Topics      []<a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-49" class="ident">Hash</a></code></span>
+<span class="codeline" id="line-78"><code>	Data        []<a href="../../../../../../pkg/builtin.html#name-byte" class="ident">byte</a></code></span>
+<span class="codeline" id="line-79"><code>	BlockNumber <a href="../../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a></code></span>
+<span class="codeline" id="line-80"><code>	TxHash      <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-49" class="ident">Hash</a></code></span>
+<span class="codeline" id="line-81"><code>	TxIndex     <a href="../../../../../../pkg/builtin.html#name-uint" class="ident">uint</a></code></span>
+<span class="codeline" id="line-82"><code>	BlockHash   <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i1">common</a>.<a href="../../common/types.go.html#line-49" class="ident">Hash</a></code></span>
+<span class="codeline" id="line-83"><code>	Index       <a href="../../../../../../pkg/builtin.html#name-uint" class="ident">uint</a></code></span>
+<span class="codeline" id="line-84"><code>}</code></span>
+<span class="codeline" id="line-85"><code></code></span>
+<span class="codeline" id="line-86"><code><span class="comment">// EncodeRLP implements rlp.Encoder.</span></code></span>
+<span class="codeline" id="line-87"><code><span class="keyword">func</span> (<label for="r0" class="ident">l</label> *<a href="#line-31" class="ident">Log</a>) <label for="r1" class="ident"><a href="../../../../../../imp/github.com/ethereum/go-ethereum/core/types.Log.html#name-EncodeRLP" class="ident">EncodeRLP</a></label>(<label for="r2" class="ident">w</label> <a href="../../../../../../pkg/io.html" class="ident i0">io</a>.<a href="../../../../../io/io.go.html#line-96" class="ident">Writer</a>) <a href="../../../../../../pkg/builtin.html#name-error" class="ident">error</a> {</code></span>
+<span class="codeline" id="line-88"><code>	<span class="keyword">return</span> <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/rlp.html" class="ident i3">rlp</a>.<a href="../../rlp/encode.go.html#line-53" class="ident">Encode</a>(<label for="r2" class="ident">w</label>, <a href="#line-65" class="ident">rlpLog</a>{<a href="#line-66" class="ident">Address</a>: <label for="r0" class="ident">l</label>.<a href="#line-34" class="ident">Address</a>, <a href="#line-67" class="ident">Topics</a>: <label for="r0" class="ident">l</label>.<a href="#line-36" class="ident">Topics</a>, <a href="#line-68" class="ident">Data</a>: <label for="r0" class="ident">l</label>.<a href="#line-38" class="ident">Data</a>})</code></span>
+<span class="codeline" id="line-89"><code>}</code></span>
+<span class="codeline" id="line-90"><code></code></span>
+<span class="codeline" id="line-91"><code><span class="comment">// DecodeRLP implements rlp.Decoder.</span></code></span>
+<span class="codeline" id="line-92"><code><span class="keyword">func</span> (<label for="r3" class="ident">l</label> *<a href="#line-31" class="ident">Log</a>) <label for="r4" class="ident"><a href="../../../../../../imp/github.com/ethereum/go-ethereum/core/types.Log.html#name-DecodeRLP" class="ident">DecodeRLP</a></label>(<label for="r5" class="ident">s</label> *<a href="../../../../../../pkg/github.com/ethereum/go-ethereum/rlp.html" class="ident i3">rlp</a>.<a href="../../rlp/decode.go.html#line-547" class="ident">Stream</a>) <a href="../../../../../../pkg/builtin.html#name-error" class="ident">error</a> {</code></span>
+<span class="codeline" id="line-93"><code>	<span class="keyword">var</span> <label for="r6" class="ident">dec</label> <a href="#line-65" class="ident">rlpLog</a></code></span>
+<span class="codeline" id="line-94"><code>	<label for="r7" class="ident">err</label> := <label for="r5" class="ident">s</label>.<a href="../../rlp/decode.go.html#line-747" class="ident">Decode</a>(&amp;<label for="r6" class="ident">dec</label>)</code></span>
+<span class="codeline" id="line-95"><code>	<span class="keyword">if</span> <label for="r7" class="ident">err</label> == <a href="../../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-96"><code>		<label for="r3" class="ident">l</label>.<a href="#line-34" class="ident">Address</a>, <label for="r3" class="ident">l</label>.<a href="#line-36" class="ident">Topics</a>, <label for="r3" class="ident">l</label>.<a href="#line-38" class="ident">Data</a> = <label for="r6" class="ident">dec</label>.<a href="#line-66" class="ident">Address</a>, <label for="r6" class="ident">dec</label>.<a href="#line-67" class="ident">Topics</a>, <label for="r6" class="ident">dec</label>.<a href="#line-68" class="ident">Data</a></code></span>
+<span class="codeline" id="line-97"><code>	}</code></span>
+<span class="codeline" id="line-98"><code>	<span class="keyword">return</span> <label for="r7" class="ident">err</label></code></span>
+<span class="codeline" id="line-99"><code>}</code></span>
+<span class="codeline" id="line-100"><code></code></span>
+<span class="codeline" id="line-101"><code><span class="comment">// LogForStorage is a wrapper around a Log that flattens and parses the entire content of</span></code></span>
+<span class="codeline" id="line-102"><code><span class="comment">// a log including non-consensus fields.</span></code></span>
+<span class="codeline" id="line-103"><code><span class="keyword">type</span> <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/core/types.html#name-LogForStorage" class="ident">LogForStorage</a> <a href="#line-31" class="ident">Log</a></code></span>
+<span class="codeline" id="line-104"><code></code></span>
+<span class="codeline" id="line-105"><code><span class="comment">// EncodeRLP implements rlp.Encoder.</span></code></span>
+<span class="codeline" id="line-106"><code><span class="keyword">func</span> (<label for="r8" class="ident">l</label> *<a href="#line-103" class="ident">LogForStorage</a>) <label for="r9" class="ident"><a href="../../../../../../imp/github.com/ethereum/go-ethereum/core/types.LogForStorage.html#name-EncodeRLP" class="ident">EncodeRLP</a></label>(<label for="r10" class="ident">w</label> <a href="../../../../../../pkg/io.html" class="ident i0">io</a>.<a href="../../../../../io/io.go.html#line-96" class="ident">Writer</a>) <a href="../../../../../../pkg/builtin.html#name-error" class="ident">error</a> {</code></span>
+<span class="codeline" id="line-107"><code>	<span class="keyword">return</span> <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/rlp.html" class="ident i3">rlp</a>.<a href="../../rlp/encode.go.html#line-53" class="ident">Encode</a>(<label for="r10" class="ident">w</label>, <a href="#line-72" class="ident">rlpStorageLog</a>{</code></span>
+<span class="codeline" id="line-108"><code>		<a href="#line-66" class="ident">Address</a>: <label for="r8" class="ident">l</label>.<a href="#line-34" class="ident">Address</a>,</code></span>
+<span class="codeline" id="line-109"><code>		<a href="#line-67" class="ident">Topics</a>:  <label for="r8" class="ident">l</label>.<a href="#line-36" class="ident">Topics</a>,</code></span>
+<span class="codeline" id="line-110"><code>		<a href="#line-68" class="ident">Data</a>:    <label for="r8" class="ident">l</label>.<a href="#line-38" class="ident">Data</a>,</code></span>
+<span class="codeline" id="line-111"><code>	})</code></span>
+<span class="codeline" id="line-112"><code>}</code></span>
+<span class="codeline" id="line-113"><code></code></span>
+<span class="codeline" id="line-114"><code><span class="comment">// DecodeRLP implements rlp.Decoder.</span></code></span>
+<span class="codeline" id="line-115"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-116"><code><span class="comment">// Note some redundant fields(e.g. block number, tx hash etc) will be assembled later.</span></code></span>
+<span class="codeline" id="line-117"><code><span class="keyword">func</span> (<label for="r11" class="ident">l</label> *<a href="#line-103" class="ident">LogForStorage</a>) <label for="r12" class="ident"><a href="../../../../../../imp/github.com/ethereum/go-ethereum/core/types.LogForStorage.html#name-DecodeRLP" class="ident">DecodeRLP</a></label>(<label for="r13" class="ident">s</label> *<a href="../../../../../../pkg/github.com/ethereum/go-ethereum/rlp.html" class="ident i3">rlp</a>.<a href="../../rlp/decode.go.html#line-547" class="ident">Stream</a>) <a href="../../../../../../pkg/builtin.html#name-error" class="ident">error</a> {</code></span>
+<span class="codeline" id="line-118"><code>	<label for="r14" class="ident">blob</label>, <label for="r15" class="ident">err</label> := <label for="r13" class="ident">s</label>.<a href="../../rlp/decode.go.html#line-626" class="ident">Raw</a>()</code></span>
+<span class="codeline" id="line-119"><code>	<span class="keyword">if</span> <label for="r15" class="ident">err</label> != <a href="../../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-120"><code>		<span class="keyword">return</span> <label for="r15" class="ident">err</label></code></span>
+<span class="codeline" id="line-121"><code>	}</code></span>
+<span class="codeline" id="line-122"><code>	<span class="keyword">var</span> <label for="r16" class="ident">dec</label> <a href="#line-72" class="ident">rlpStorageLog</a></code></span>
+<span class="codeline" id="line-123"><code>	<label for="r15" class="ident">err</label> = <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/rlp.html" class="ident i3">rlp</a>.<a href="../../rlp/decode.go.html#line-88" class="ident">DecodeBytes</a>(<label for="r14" class="ident">blob</label>, &amp;<label for="r16" class="ident">dec</label>)</code></span>
+<span class="codeline" id="line-124"><code>	<span class="keyword">if</span> <label for="r15" class="ident">err</label> == <a href="../../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-125"><code>		*<label for="r11" class="ident">l</label> = <a href="#line-103" class="ident">LogForStorage</a>{</code></span>
+<span class="codeline" id="line-126"><code>			<a href="#line-34" class="ident">Address</a>: <label for="r16" class="ident">dec</label>.<a href="#line-66" class="ident">Address</a>,</code></span>
+<span class="codeline" id="line-127"><code>			<a href="#line-36" class="ident">Topics</a>:  <label for="r16" class="ident">dec</label>.<a href="#line-67" class="ident">Topics</a>,</code></span>
+<span class="codeline" id="line-128"><code>			<a href="#line-38" class="ident">Data</a>:    <label for="r16" class="ident">dec</label>.<a href="#line-68" class="ident">Data</a>,</code></span>
+<span class="codeline" id="line-129"><code>		}</code></span>
+<span class="codeline" id="line-130"><code>	} <span class="keyword">else</span> {</code></span>
+<span class="codeline" id="line-131"><code>		<span class="comment">// Try to decode log with previous definition.</span></code></span>
+<span class="codeline" id="line-132"><code>		<span class="keyword">var</span> <label for="r17" class="ident">dec</label> <a href="#line-75" class="ident">legacyRlpStorageLog</a></code></span>
+<span class="codeline" id="line-133"><code>		<label for="r15" class="ident">err</label> = <a href="../../../../../../pkg/github.com/ethereum/go-ethereum/rlp.html" class="ident i3">rlp</a>.<a href="../../rlp/decode.go.html#line-88" class="ident">DecodeBytes</a>(<label for="r14" class="ident">blob</label>, &amp;<label for="r17" class="ident">dec</label>)</code></span>
+<span class="codeline" id="line-134"><code>		<span class="keyword">if</span> <label for="r15" class="ident">err</label> == <a href="../../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-135"><code>			*<label for="r11" class="ident">l</label> = <a href="#line-103" class="ident">LogForStorage</a>{</code></span>
+<span class="codeline" id="line-136"><code>				<a href="#line-34" class="ident">Address</a>: <label for="r17" class="ident">dec</label>.<a href="#line-76" class="ident">Address</a>,</code></span>
+<span class="codeline" id="line-137"><code>				<a href="#line-36" class="ident">Topics</a>:  <label for="r17" class="ident">dec</label>.<a href="#line-77" class="ident">Topics</a>,</code></span>
+<span class="codeline" id="line-138"><code>				<a href="#line-38" class="ident">Data</a>:    <label for="r17" class="ident">dec</label>.<a href="#line-78" class="ident">Data</a>,</code></span>
+<span class="codeline" id="line-139"><code>			}</code></span>
+<span class="codeline" id="line-140"><code>		}</code></span>
+<span class="codeline" id="line-141"><code>	}</code></span>
+<span class="codeline" id="line-142"><code>	<span class="keyword">return</span> <label for="r15" class="ident">err</label></code></span>
+<span class="codeline" id="line-143"><code>}</code></span>
+</pre><pre id="footer">
+<table><tr><td><img src="../../../../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

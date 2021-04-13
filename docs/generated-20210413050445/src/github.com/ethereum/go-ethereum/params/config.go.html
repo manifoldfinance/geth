@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source: config.go in package github.com/ethereum/go-ethereum/params</title>
+<link href="../../../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="header"><code><span class="title">Source File</span>
+	config.go
+
+<span class="title">Belonging Package</span>
+	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html">github.com/ethereum/go-ethereum/params</a>
+</code></pre>
+<style>input[type=radio] {display: none;}
+input[id=r0]:checked ~pre label[for=r0],
+input[id=r1]:checked ~pre label[for=r1],
+input[id=r2]:checked ~pre label[for=r2],
+input[id=r3]:checked ~pre label[for=r3],
+input[id=r4]:checked ~pre label[for=r4],
+input[id=r5]:checked ~pre label[for=r5],
+input[id=r6]:checked ~pre label[for=r6],
+input[id=r7]:checked ~pre label[for=r7],
+input[id=r8]:checked ~pre label[for=r8],
+input[id=r9]:checked ~pre label[for=r9],
+input[id=r10]:checked ~pre label[for=r10],
+input[id=r11]:checked ~pre label[for=r11],
+input[id=r12]:checked ~pre label[for=r12],
+input[id=r13]:checked ~pre label[for=r13],
+input[id=r14]:checked ~pre label[for=r14],
+input[id=r15]:checked ~pre label[for=r15],
+input[id=r16]:checked ~pre label[for=r16],
+input[id=r17]:checked ~pre label[for=r17],
+input[id=r18]:checked ~pre label[for=r18],
+input[id=r19]:checked ~pre label[for=r19],
+input[id=r20]:checked ~pre label[for=r20],
+input[id=r21]:checked ~pre label[for=r21],
+input[id=r22]:checked ~pre label[for=r22],
+input[id=r23]:checked ~pre label[for=r23],
+input[id=r24]:checked ~pre label[for=r24],
+input[id=r25]:checked ~pre label[for=r25],
+input[id=r26]:checked ~pre label[for=r26],
+input[id=r27]:checked ~pre label[for=r27],
+input[id=r28]:checked ~pre label[for=r28],
+input[id=r29]:checked ~pre label[for=r29],
+input[id=r30]:checked ~pre label[for=r30],
+input[id=r31]:checked ~pre label[for=r31],
+input[id=r32]:checked ~pre label[for=r32],
+input[id=r33]:checked ~pre label[for=r33],
+input[id=r34]:checked ~pre label[for=r34],
+input[id=r35]:checked ~pre label[for=r35],
+input[id=r36]:checked ~pre label[for=r36],
+input[id=r37]:checked ~pre label[for=r37],
+input[id=r38]:checked ~pre label[for=r38],
+input[id=r39]:checked ~pre label[for=r39],
+input[id=r40]:checked ~pre label[for=r40],
+input[id=r41]:checked ~pre label[for=r41],
+input[id=r42]:checked ~pre label[for=r42],
+input[id=r43]:checked ~pre label[for=r43],
+input[id=r44]:checked ~pre label[for=r44],
+input[id=r45]:checked ~pre label[for=r45],
+input[id=r46]:checked ~pre label[for=r46],
+input[id=r47]:checked ~pre label[for=r47],
+input[id=r48]:checked ~pre label[for=r48],
+input[id=r49]:checked ~pre label[for=r49],
+input[id=r50]:checked ~pre label[for=r50],
+input[id=r51]:checked ~pre label[for=r51],
+input[id=r52]:checked ~pre label[for=r52],
+input[id=r53]:checked ~pre label[for=r53],
+input[id=r54]:checked ~pre label[for=r54],
+input[id=r55]:checked ~pre label[for=r55],
+input[id=r56]:checked ~pre label[for=r56],
+input[id=r57]:checked ~pre label[for=r57],
+input[id=r58]:checked ~pre label[for=r58],
+input[id=r59]:checked ~pre label[for=r59],
+input[id=r60]:checked ~pre label[for=r60],
+input[id=r61]:checked ~pre label[for=r61],
+input[id=r62]:checked ~pre label[for=r62],
+input[id=r63]:checked ~pre label[for=r63],
+input[id=r64]:checked ~pre label[for=r64],
+input[id=r65]:checked ~pre label[for=r65],
+input[id=r66]:checked ~pre label[for=r66],
+input[id=r67]:checked ~pre label[for=r67],
+input[id=r68]:checked ~pre label[for=r68],
+input[id=r69]:checked ~pre label[for=r69],
+input[id=r70]:checked ~pre label[for=r70],
+input[id=r71]:checked ~pre label[for=r71],
+input[id=r72]:checked ~pre label[for=r72],
+input[id=r73]:checked ~pre label[for=r73],
+input[id=r74]:checked ~pre label[for=r74],
+input[id=r75]:checked ~pre label[for=r75],
+input[id=r76]:checked ~pre label[for=r76],
+input[id=r77]:checked ~pre label[for=r77],
+input[id=r78]:checked ~pre label[for=r78],
+input[id=r79]:checked ~pre label[for=r79],
+input[id=r80]:checked ~pre label[for=r80],
+input[id=r81]:checked ~pre label[for=r81],
+input[id=r82]:checked ~pre label[for=r82],
+input[id=r83]:checked ~pre label[for=r83],
+input[id=r84]:checked ~pre label[for=r84],
+input[id=r85]:checked ~pre label[for=r85],
+input[id=r86]:checked ~pre label[for=r86],
+input[id=r87]:checked ~pre label[for=r87],
+input[id=r88]:checked ~pre label[for=r88],
+input[id=r89]:checked ~pre label[for=r89],
+input[id=r90]:checked ~pre label[for=r90],
+input[id=r91]:checked ~pre label[for=r91],
+input[id=r92]:checked ~pre label[for=r92]
+{background: #226; color: #ff8;}
+input[id=i0]:checked ~pre .i0,
+input[id=i1]:checked ~pre .i1,
+input[id=i2]:checked ~pre .i2,
+input[id=i3]:checked ~pre .i3,
+input[id=i4]:checked ~pre .i4
+{background: brown; color: #eed;}
+</style><input id="r0" type="radio" name="g"/>
+<input id="r1" type="radio" name="g"/>
+<input id="r2" type="radio" name="g"/>
+<input id="r3" type="radio" name="g"/>
+<input id="r4" type="radio" name="g"/>
+<input id="r5" type="radio" name="g"/>
+<input id="r6" type="radio" name="g"/>
+<input id="r7" type="radio" name="g"/>
+<input id="r8" type="radio" name="g"/>
+<input id="r9" type="radio" name="g"/>
+<input id="r10" type="radio" name="g"/>
+<input id="r11" type="radio" name="g"/>
+<input id="r12" type="radio" name="g"/>
+<input id="r13" type="radio" name="g"/>
+<input id="r14" type="radio" name="g"/>
+<input id="r15" type="radio" name="g"/>
+<input id="r16" type="radio" name="g"/>
+<input id="r17" type="radio" name="g"/>
+<input id="r18" type="radio" name="g"/>
+<input id="r19" type="radio" name="g"/>
+<input id="r20" type="radio" name="g"/>
+<input id="r21" type="radio" name="g"/>
+<input id="r22" type="radio" name="g"/>
+<input id="r23" type="radio" name="g"/>
+<input id="r24" type="radio" name="g"/>
+<input id="r25" type="radio" name="g"/>
+<input id="r26" type="radio" name="g"/>
+<input id="r27" type="radio" name="g"/>
+<input id="r28" type="radio" name="g"/>
+<input id="r29" type="radio" name="g"/>
+<input id="r30" type="radio" name="g"/>
+<input id="r31" type="radio" name="g"/>
+<input id="r32" type="radio" name="g"/>
+<input id="r33" type="radio" name="g"/>
+<input id="r34" type="radio" name="g"/>
+<input id="r35" type="radio" name="g"/>
+<input id="r36" type="radio" name="g"/>
+<input id="r37" type="radio" name="g"/>
+<input id="r38" type="radio" name="g"/>
+<input id="r39" type="radio" name="g"/>
+<input id="r40" type="radio" name="g"/>
+<input id="r41" type="radio" name="g"/>
+<input id="r42" type="radio" name="g"/>
+<input id="r43" type="radio" name="g"/>
+<input id="r44" type="radio" name="g"/>
+<input id="r45" type="radio" name="g"/>
+<input id="r46" type="radio" name="g"/>
+<input id="r47" type="radio" name="g"/>
+<input id="r48" type="radio" name="g"/>
+<input id="r49" type="radio" name="g"/>
+<input id="r50" type="radio" name="g"/>
+<input id="r51" type="radio" name="g"/>
+<input id="r52" type="radio" name="g"/>
+<input id="r53" type="radio" name="g"/>
+<input id="r54" type="radio" name="g"/>
+<input id="r55" type="radio" name="g"/>
+<input id="r56" type="radio" name="g"/>
+<input id="r57" type="radio" name="g"/>
+<input id="r58" type="radio" name="g"/>
+<input id="r59" type="radio" name="g"/>
+<input id="r60" type="radio" name="g"/>
+<input id="r61" type="radio" name="g"/>
+<input id="r62" type="radio" name="g"/>
+<input id="r63" type="radio" name="g"/>
+<input id="r64" type="radio" name="g"/>
+<input id="r65" type="radio" name="g"/>
+<input id="r66" type="radio" name="g"/>
+<input id="r67" type="radio" name="g"/>
+<input id="r68" type="radio" name="g"/>
+<input id="r69" type="radio" name="g"/>
+<input id="r70" type="radio" name="g"/>
+<input id="r71" type="radio" name="g"/>
+<input id="r72" type="radio" name="g"/>
+<input id="r73" type="radio" name="g"/>
+<input id="r74" type="radio" name="g"/>
+<input id="r75" type="radio" name="g"/>
+<input id="r76" type="radio" name="g"/>
+<input id="r77" type="radio" name="g"/>
+<input id="r78" type="radio" name="g"/>
+<input id="r79" type="radio" name="g"/>
+<input id="r80" type="radio" name="g"/>
+<input id="r81" type="radio" name="g"/>
+<input id="r82" type="radio" name="g"/>
+<input id="r83" type="radio" name="g"/>
+<input id="r84" type="radio" name="g"/>
+<input id="r85" type="radio" name="g"/>
+<input id="r86" type="radio" name="g"/>
+<input id="r87" type="radio" name="g"/>
+<input id="r88" type="radio" name="g"/>
+<input id="r89" type="radio" name="g"/>
+<input id="r90" type="radio" name="g"/>
+<input id="r91" type="radio" name="g"/>
+<input id="r92" type="radio" name="g"/>
+<input id="i0" type="radio" name="i"/>
+<input id="i1" type="radio" name="i"/>
+<input id="i2" type="radio" name="i"/>
+<input id="i3" type="radio" name="i"/>
+<input id="i4" type="radio" name="i"/>
+
+<pre class="line-numbers">
+<span class="codeline" id="line-1"><code><span class="comment">// Copyright 2016 The go-ethereum Authors</span></code></span>
+<span class="codeline" id="line-2"><code><span class="comment">// This file is part of the go-ethereum library.</span></code></span>
+<span class="codeline" id="line-3"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-4"><code><span class="comment">// The go-ethereum library is free software: you can redistribute it and/or modify</span></code></span>
+<span class="codeline" id="line-5"><code><span class="comment">// it under the terms of the GNU Lesser General Public License as published by</span></code></span>
+<span class="codeline" id="line-6"><code><span class="comment">// the Free Software Foundation, either version 3 of the License, or</span></code></span>
+<span class="codeline" id="line-7"><code><span class="comment">// (at your option) any later version.</span></code></span>
+<span class="codeline" id="line-8"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-9"><code><span class="comment">// The go-ethereum library is distributed in the hope that it will be useful,</span></code></span>
+<span class="codeline" id="line-10"><code><span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span></code></span>
+<span class="codeline" id="line-11"><code><span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span></code></span>
+<span class="codeline" id="line-12"><code><span class="comment">// GNU Lesser General Public License for more details.</span></code></span>
+<span class="codeline" id="line-13"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-14"><code><span class="comment">// You should have received a copy of the GNU Lesser General Public License</span></code></span>
+<span class="codeline" id="line-15"><code><span class="comment">// along with the go-ethereum library. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span></code></span>
+<span class="codeline" id="line-16"><code></code></span>
+<span class="codeline" id="line-17"><code><span class="keyword">package</span> params</code></span>
+<span class="codeline" id="line-18"><code></code></span>
+<span class="codeline" id="line-19"><code><span class="keyword">import</span> (</code></span>
+<span class="codeline" id="line-20"><code>	<label for="i0"><span class="lit-string i0">"encoding/binary"</span></label></code></span>
+<span class="codeline" id="line-21"><code>	<label for="i1"><span class="lit-string i1">"fmt"</span></label></code></span>
+<span class="codeline" id="line-22"><code>	<label for="i2"><span class="lit-string i2">"math/big"</span></label></code></span>
+<span class="codeline" id="line-23"><code></code></span>
+<span class="codeline" id="line-24"><code>	<label for="i3"><span class="lit-string i3">"github.com/ethereum/go-ethereum/common"</span></label></code></span>
+<span class="codeline" id="line-25"><code>	<label for="i4"><span class="lit-string i4">"github.com/ethereum/go-ethereum/crypto"</span></label></code></span>
+<span class="codeline" id="line-26"><code>)</code></span>
+<span class="codeline" id="line-27"><code></code></span>
+<span class="codeline" id="line-28"><code><span class="comment">// Genesis hashes to enforce below configs on.</span></code></span>
+<span class="codeline" id="line-29"><code><span class="keyword">var</span> (</code></span>
+<span class="codeline" id="line-30"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-MainnetGenesisHash" class="ident">MainnetGenesisHash</a> = <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3"</span>)</code></span>
+<span class="codeline" id="line-31"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-RopstenGenesisHash" class="ident">RopstenGenesisHash</a> = <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"</span>)</code></span>
+<span class="codeline" id="line-32"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-RinkebyGenesisHash" class="ident">RinkebyGenesisHash</a> = <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177"</span>)</code></span>
+<span class="codeline" id="line-33"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-GoerliGenesisHash" class="ident">GoerliGenesisHash</a>  = <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a"</span>)</code></span>
+<span class="codeline" id="line-34"><code>	<span class="comment">// TODO: update with yolov2 values</span></code></span>
+<span class="codeline" id="line-35"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-YoloV2GenesisHash" class="ident">YoloV2GenesisHash</a> = <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x498a7239036dd2cd09e2bb8a80922b78632017958c332b42044c250d603a8a3e"</span>)</code></span>
+<span class="codeline" id="line-36"><code>)</code></span>
+<span class="codeline" id="line-37"><code></code></span>
+<span class="codeline" id="line-38"><code><span class="comment">// TrustedCheckpoints associates each known checkpoint with the genesis hash of</span></code></span>
+<span class="codeline" id="line-39"><code><span class="comment">// the chain it belongs to.</span></code></span>
+<span class="codeline" id="line-40"><code><span class="keyword">var</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-TrustedCheckpoints" class="ident">TrustedCheckpoints</a> = <span class="keyword">map</span>[<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>]*<a href="#line-260" class="ident">TrustedCheckpoint</a>{</code></span>
+<span class="codeline" id="line-41"><code>	<a href="#line-30" class="ident">MainnetGenesisHash</a>: <a href="#line-76" class="ident">MainnetTrustedCheckpoint</a>,</code></span>
+<span class="codeline" id="line-42"><code>	<a href="#line-31" class="ident">RopstenGenesisHash</a>: <a href="#line-115" class="ident">RopstenTrustedCheckpoint</a>,</code></span>
+<span class="codeline" id="line-43"><code>	<a href="#line-32" class="ident">RinkebyGenesisHash</a>: <a href="#line-157" class="ident">RinkebyTrustedCheckpoint</a>,</code></span>
+<span class="codeline" id="line-44"><code>	<a href="#line-33" class="ident">GoerliGenesisHash</a>:  <a href="#line-197" class="ident">GoerliTrustedCheckpoint</a>,</code></span>
+<span class="codeline" id="line-45"><code>}</code></span>
+<span class="codeline" id="line-46"><code></code></span>
+<span class="codeline" id="line-47"><code><span class="comment">// CheckpointOracles associates each known checkpoint oracles with the genesis hash of</span></code></span>
+<span class="codeline" id="line-48"><code><span class="comment">// the chain it belongs to.</span></code></span>
+<span class="codeline" id="line-49"><code><span class="keyword">var</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-CheckpointOracles" class="ident">CheckpointOracles</a> = <span class="keyword">map</span>[<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>]*<a href="#line-292" class="ident">CheckpointOracleConfig</a>{</code></span>
+<span class="codeline" id="line-50"><code>	<a href="#line-30" class="ident">MainnetGenesisHash</a>: <a href="#line-84" class="ident">MainnetCheckpointOracle</a>,</code></span>
+<span class="codeline" id="line-51"><code>	<a href="#line-31" class="ident">RopstenGenesisHash</a>: <a href="#line-123" class="ident">RopstenCheckpointOracle</a>,</code></span>
+<span class="codeline" id="line-52"><code>	<a href="#line-32" class="ident">RinkebyGenesisHash</a>: <a href="#line-165" class="ident">RinkebyCheckpointOracle</a>,</code></span>
+<span class="codeline" id="line-53"><code>	<a href="#line-33" class="ident">GoerliGenesisHash</a>:  <a href="#line-205" class="ident">GoerliCheckpointOracle</a>,</code></span>
+<span class="codeline" id="line-54"><code>}</code></span>
+<span class="codeline" id="line-55"><code></code></span>
+<span class="codeline" id="line-56"><code><span class="keyword">var</span> (</code></span>
+<span class="codeline" id="line-57"><code>	<span class="comment">// MainnetChainConfig is the chain parameters to run a node on the main network.</span></code></span>
+<span class="codeline" id="line-58"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-MainnetChainConfig" class="ident">MainnetChainConfig</a> = &amp;<a href="#line-303" class="ident">ChainConfig</a>{</code></span>
+<span class="codeline" id="line-59"><code>		<a href="#line-304" class="ident">ChainID</a>:             <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1</span>),</code></span>
+<span class="codeline" id="line-60"><code>		<a href="#line-306" class="ident">HomesteadBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1150000</span>),</code></span>
+<span class="codeline" id="line-61"><code>		<a href="#line-308" class="ident">DAOForkBlock</a>:        <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1920000</span>),</code></span>
+<span class="codeline" id="line-62"><code>		<a href="#line-309" class="ident">DAOForkSupport</a>:      <a href="../../../../../pkg/builtin.html#name-true" class="ident">true</a>,</code></span>
+<span class="codeline" id="line-63"><code>		<a href="#line-312" class="ident">EIP150Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">2463000</span>),</code></span>
+<span class="codeline" id="line-64"><code>		<a href="#line-313" class="ident">EIP150Hash</a>:          <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"</span>),</code></span>
+<span class="codeline" id="line-65"><code>		<a href="#line-315" class="ident">EIP155Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">2675000</span>),</code></span>
+<span class="codeline" id="line-66"><code>		<a href="#line-316" class="ident">EIP158Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">2675000</span>),</code></span>
+<span class="codeline" id="line-67"><code>		<a href="#line-318" class="ident">ByzantiumBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">4370000</span>),</code></span>
+<span class="codeline" id="line-68"><code>		<a href="#line-319" class="ident">ConstantinopleBlock</a>: <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">7280000</span>),</code></span>
+<span class="codeline" id="line-69"><code>		<a href="#line-320" class="ident">PetersburgBlock</a>:     <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">7280000</span>),</code></span>
+<span class="codeline" id="line-70"><code>		<a href="#line-321" class="ident">IstanbulBlock</a>:       <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">9069000</span>),</code></span>
+<span class="codeline" id="line-71"><code>		<a href="#line-322" class="ident">MuirGlacierBlock</a>:    <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">9200000</span>),</code></span>
+<span class="codeline" id="line-72"><code>		<a href="#line-328" class="ident">Ethash</a>:              <a href="../../../../../pkg/builtin.html#name-new" class="ident">new</a>(<a href="#line-333" class="ident">EthashConfig</a>),</code></span>
+<span class="codeline" id="line-73"><code>	}</code></span>
+<span class="codeline" id="line-74"><code></code></span>
+<span class="codeline" id="line-75"><code>	<span class="comment">// MainnetTrustedCheckpoint contains the light client trusted checkpoint for the main network.</span></code></span>
+<span class="codeline" id="line-76"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-MainnetTrustedCheckpoint" class="ident">MainnetTrustedCheckpoint</a> = &amp;<a href="#line-260" class="ident">TrustedCheckpoint</a>{</code></span>
+<span class="codeline" id="line-77"><code>		<a href="#line-261" class="ident">SectionIndex</a>: <span class="lit-number">345</span>,</code></span>
+<span class="codeline" id="line-78"><code>		<a href="#line-262" class="ident">SectionHead</a>:  <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x5453bab878704adebc934b41fd214a07ea7a72b8572ff088dca7f7956cd0ef28"</span>),</code></span>
+<span class="codeline" id="line-79"><code>		<a href="#line-263" class="ident">CHTRoot</a>:      <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x7693d432595846c094f47cb37f5c868b0b7b1968fc6b0fc411ded1345fdaffab"</span>),</code></span>
+<span class="codeline" id="line-80"><code>		<a href="#line-264" class="ident">BloomRoot</a>:    <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x8b0e7895bc39840d8dac857e26bdf3d0a07684b0b962b252546659e0337a9f70"</span>),</code></span>
+<span class="codeline" id="line-81"><code>	}</code></span>
+<span class="codeline" id="line-82"><code></code></span>
+<span class="codeline" id="line-83"><code>	<span class="comment">// MainnetCheckpointOracle contains a set of configs for the main network oracle.</span></code></span>
+<span class="codeline" id="line-84"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-MainnetCheckpointOracle" class="ident">MainnetCheckpointOracle</a> = &amp;<a href="#line-292" class="ident">CheckpointOracleConfig</a>{</code></span>
+<span class="codeline" id="line-85"><code>		<a href="#line-293" class="ident">Address</a>: <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x9a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a"</span>),</code></span>
+<span class="codeline" id="line-86"><code>		<a href="#line-294" class="ident">Signers</a>: []<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-201" class="ident">Address</a>{</code></span>
+<span class="codeline" id="line-87"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x1b2C260efc720BE89101890E4Db589b44E950527"</span>), <span class="comment">// Peter</span></code></span>
+<span class="codeline" id="line-88"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x78d1aD571A1A09D60D9BBf25894b44e4C8859595"</span>), <span class="comment">// Martin</span></code></span>
+<span class="codeline" id="line-89"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x286834935f4A8Cfb4FF4C77D5770C2775aE2b0E7"</span>), <span class="comment">// Zsolt</span></code></span>
+<span class="codeline" id="line-90"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0xb86e2B0Ab5A4B1373e40c51A7C712c70Ba2f9f8E"</span>), <span class="comment">// Gary</span></code></span>
+<span class="codeline" id="line-91"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x0DF8fa387C602AE62559cC4aFa4972A7045d6707"</span>), <span class="comment">// Guillaume</span></code></span>
+<span class="codeline" id="line-92"><code>		},</code></span>
+<span class="codeline" id="line-93"><code>		<a href="#line-295" class="ident">Threshold</a>: <span class="lit-number">2</span>,</code></span>
+<span class="codeline" id="line-94"><code>	}</code></span>
+<span class="codeline" id="line-95"><code></code></span>
+<span class="codeline" id="line-96"><code>	<span class="comment">// RopstenChainConfig contains the chain parameters to run a node on the Ropsten test network.</span></code></span>
+<span class="codeline" id="line-97"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-RopstenChainConfig" class="ident">RopstenChainConfig</a> = &amp;<a href="#line-303" class="ident">ChainConfig</a>{</code></span>
+<span class="codeline" id="line-98"><code>		<a href="#line-304" class="ident">ChainID</a>:             <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">3</span>),</code></span>
+<span class="codeline" id="line-99"><code>		<a href="#line-306" class="ident">HomesteadBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-100"><code>		<a href="#line-308" class="ident">DAOForkBlock</a>:        <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>,</code></span>
+<span class="codeline" id="line-101"><code>		<a href="#line-309" class="ident">DAOForkSupport</a>:      <a href="../../../../../pkg/builtin.html#name-true" class="ident">true</a>,</code></span>
+<span class="codeline" id="line-102"><code>		<a href="#line-312" class="ident">EIP150Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-103"><code>		<a href="#line-313" class="ident">EIP150Hash</a>:          <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"</span>),</code></span>
+<span class="codeline" id="line-104"><code>		<a href="#line-315" class="ident">EIP155Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">10</span>),</code></span>
+<span class="codeline" id="line-105"><code>		<a href="#line-316" class="ident">EIP158Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">10</span>),</code></span>
+<span class="codeline" id="line-106"><code>		<a href="#line-318" class="ident">ByzantiumBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1700000</span>),</code></span>
+<span class="codeline" id="line-107"><code>		<a href="#line-319" class="ident">ConstantinopleBlock</a>: <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">4230000</span>),</code></span>
+<span class="codeline" id="line-108"><code>		<a href="#line-320" class="ident">PetersburgBlock</a>:     <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">4939394</span>),</code></span>
+<span class="codeline" id="line-109"><code>		<a href="#line-321" class="ident">IstanbulBlock</a>:       <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">6485846</span>),</code></span>
+<span class="codeline" id="line-110"><code>		<a href="#line-322" class="ident">MuirGlacierBlock</a>:    <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">7117117</span>),</code></span>
+<span class="codeline" id="line-111"><code>		<a href="#line-328" class="ident">Ethash</a>:              <a href="../../../../../pkg/builtin.html#name-new" class="ident">new</a>(<a href="#line-333" class="ident">EthashConfig</a>),</code></span>
+<span class="codeline" id="line-112"><code>	}</code></span>
+<span class="codeline" id="line-113"><code></code></span>
+<span class="codeline" id="line-114"><code>	<span class="comment">// RopstenTrustedCheckpoint contains the light client trusted checkpoint for the Ropsten test network.</span></code></span>
+<span class="codeline" id="line-115"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-RopstenTrustedCheckpoint" class="ident">RopstenTrustedCheckpoint</a> = &amp;<a href="#line-260" class="ident">TrustedCheckpoint</a>{</code></span>
+<span class="codeline" id="line-116"><code>		<a href="#line-261" class="ident">SectionIndex</a>: <span class="lit-number">279</span>,</code></span>
+<span class="codeline" id="line-117"><code>		<a href="#line-262" class="ident">SectionHead</a>:  <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x4a4912848d4c06090097073357c10015d11c6f4544a0f93cbdd584701c3b7d58"</span>),</code></span>
+<span class="codeline" id="line-118"><code>		<a href="#line-263" class="ident">CHTRoot</a>:      <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x9053b7867ae921e80a4e2f5a4b15212e4af3d691ca712fb33dc150e9c6ea221c"</span>),</code></span>
+<span class="codeline" id="line-119"><code>		<a href="#line-264" class="ident">BloomRoot</a>:    <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x3dc04cb1be7ddc271f3f83469b47b76184a79d7209ef51d85b1539ea6d25a645"</span>),</code></span>
+<span class="codeline" id="line-120"><code>	}</code></span>
+<span class="codeline" id="line-121"><code></code></span>
+<span class="codeline" id="line-122"><code>	<span class="comment">// RopstenCheckpointOracle contains a set of configs for the Ropsten test network oracle.</span></code></span>
+<span class="codeline" id="line-123"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-RopstenCheckpointOracle" class="ident">RopstenCheckpointOracle</a> = &amp;<a href="#line-292" class="ident">CheckpointOracleConfig</a>{</code></span>
+<span class="codeline" id="line-124"><code>		<a href="#line-293" class="ident">Address</a>: <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0xEF79475013f154E6A65b54cB2742867791bf0B84"</span>),</code></span>
+<span class="codeline" id="line-125"><code>		<a href="#line-294" class="ident">Signers</a>: []<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-201" class="ident">Address</a>{</code></span>
+<span class="codeline" id="line-126"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x32162F3581E88a5f62e8A61892B42C46E2c18f7b"</span>), <span class="comment">// Peter</span></code></span>
+<span class="codeline" id="line-127"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x78d1aD571A1A09D60D9BBf25894b44e4C8859595"</span>), <span class="comment">// Martin</span></code></span>
+<span class="codeline" id="line-128"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x286834935f4A8Cfb4FF4C77D5770C2775aE2b0E7"</span>), <span class="comment">// Zsolt</span></code></span>
+<span class="codeline" id="line-129"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0xb86e2B0Ab5A4B1373e40c51A7C712c70Ba2f9f8E"</span>), <span class="comment">// Gary</span></code></span>
+<span class="codeline" id="line-130"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x0DF8fa387C602AE62559cC4aFa4972A7045d6707"</span>), <span class="comment">// Guillaume</span></code></span>
+<span class="codeline" id="line-131"><code>		},</code></span>
+<span class="codeline" id="line-132"><code>		<a href="#line-295" class="ident">Threshold</a>: <span class="lit-number">2</span>,</code></span>
+<span class="codeline" id="line-133"><code>	}</code></span>
+<span class="codeline" id="line-134"><code></code></span>
+<span class="codeline" id="line-135"><code>	<span class="comment">// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.</span></code></span>
+<span class="codeline" id="line-136"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-RinkebyChainConfig" class="ident">RinkebyChainConfig</a> = &amp;<a href="#line-303" class="ident">ChainConfig</a>{</code></span>
+<span class="codeline" id="line-137"><code>		<a href="#line-304" class="ident">ChainID</a>:             <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">4</span>),</code></span>
+<span class="codeline" id="line-138"><code>		<a href="#line-306" class="ident">HomesteadBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1</span>),</code></span>
+<span class="codeline" id="line-139"><code>		<a href="#line-308" class="ident">DAOForkBlock</a>:        <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>,</code></span>
+<span class="codeline" id="line-140"><code>		<a href="#line-309" class="ident">DAOForkSupport</a>:      <a href="../../../../../pkg/builtin.html#name-true" class="ident">true</a>,</code></span>
+<span class="codeline" id="line-141"><code>		<a href="#line-312" class="ident">EIP150Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">2</span>),</code></span>
+<span class="codeline" id="line-142"><code>		<a href="#line-313" class="ident">EIP150Hash</a>:          <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x9b095b36c15eaf13044373aef8ee0bd3a382a5abb92e402afa44b8249c3a90e9"</span>),</code></span>
+<span class="codeline" id="line-143"><code>		<a href="#line-315" class="ident">EIP155Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">3</span>),</code></span>
+<span class="codeline" id="line-144"><code>		<a href="#line-316" class="ident">EIP158Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">3</span>),</code></span>
+<span class="codeline" id="line-145"><code>		<a href="#line-318" class="ident">ByzantiumBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1035301</span>),</code></span>
+<span class="codeline" id="line-146"><code>		<a href="#line-319" class="ident">ConstantinopleBlock</a>: <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">3660663</span>),</code></span>
+<span class="codeline" id="line-147"><code>		<a href="#line-320" class="ident">PetersburgBlock</a>:     <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">4321234</span>),</code></span>
+<span class="codeline" id="line-148"><code>		<a href="#line-321" class="ident">IstanbulBlock</a>:       <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">5435345</span>),</code></span>
+<span class="codeline" id="line-149"><code>		<a href="#line-322" class="ident">MuirGlacierBlock</a>:    <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>,</code></span>
+<span class="codeline" id="line-150"><code>		<a href="#line-329" class="ident">Clique</a>: &amp;<a href="#line-341" class="ident">CliqueConfig</a>{</code></span>
+<span class="codeline" id="line-151"><code>			<a href="#line-342" class="ident">Period</a>: <span class="lit-number">15</span>,</code></span>
+<span class="codeline" id="line-152"><code>			<a href="#line-343" class="ident">Epoch</a>:  <span class="lit-number">30000</span>,</code></span>
+<span class="codeline" id="line-153"><code>		},</code></span>
+<span class="codeline" id="line-154"><code>	}</code></span>
+<span class="codeline" id="line-155"><code></code></span>
+<span class="codeline" id="line-156"><code>	<span class="comment">// RinkebyTrustedCheckpoint contains the light client trusted checkpoint for the Rinkeby test network.</span></code></span>
+<span class="codeline" id="line-157"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-RinkebyTrustedCheckpoint" class="ident">RinkebyTrustedCheckpoint</a> = &amp;<a href="#line-260" class="ident">TrustedCheckpoint</a>{</code></span>
+<span class="codeline" id="line-158"><code>		<a href="#line-261" class="ident">SectionIndex</a>: <span class="lit-number">232</span>,</code></span>
+<span class="codeline" id="line-159"><code>		<a href="#line-262" class="ident">SectionHead</a>:  <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x8170fca4039b11a008c11f9996ff112151cbb17411437bb2f86288e11158b2f0"</span>),</code></span>
+<span class="codeline" id="line-160"><code>		<a href="#line-263" class="ident">CHTRoot</a>:      <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x4526560d92ae1b3a6d3ee780c3ad289ba2bbf1b5da58d9ea107f2f26412b631f"</span>),</code></span>
+<span class="codeline" id="line-161"><code>		<a href="#line-264" class="ident">BloomRoot</a>:    <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0x82a889098a35d6a21ea8894d35a1db69b94bad61b988bbe5ae4601437320e331"</span>),</code></span>
+<span class="codeline" id="line-162"><code>	}</code></span>
+<span class="codeline" id="line-163"><code></code></span>
+<span class="codeline" id="line-164"><code>	<span class="comment">// RinkebyCheckpointOracle contains a set of configs for the Rinkeby test network oracle.</span></code></span>
+<span class="codeline" id="line-165"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-RinkebyCheckpointOracle" class="ident">RinkebyCheckpointOracle</a> = &amp;<a href="#line-292" class="ident">CheckpointOracleConfig</a>{</code></span>
+<span class="codeline" id="line-166"><code>		<a href="#line-293" class="ident">Address</a>: <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0xebe8eFA441B9302A0d7eaECc277c09d20D684540"</span>),</code></span>
+<span class="codeline" id="line-167"><code>		<a href="#line-294" class="ident">Signers</a>: []<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-201" class="ident">Address</a>{</code></span>
+<span class="codeline" id="line-168"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0xd9c9cd5f6779558b6e0ed4e6acf6b1947e7fa1f3"</span>), <span class="comment">// Peter</span></code></span>
+<span class="codeline" id="line-169"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x78d1aD571A1A09D60D9BBf25894b44e4C8859595"</span>), <span class="comment">// Martin</span></code></span>
+<span class="codeline" id="line-170"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x286834935f4A8Cfb4FF4C77D5770C2775aE2b0E7"</span>), <span class="comment">// Zsolt</span></code></span>
+<span class="codeline" id="line-171"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0xb86e2B0Ab5A4B1373e40c51A7C712c70Ba2f9f8E"</span>), <span class="comment">// Gary</span></code></span>
+<span class="codeline" id="line-172"><code>		},</code></span>
+<span class="codeline" id="line-173"><code>		<a href="#line-295" class="ident">Threshold</a>: <span class="lit-number">2</span>,</code></span>
+<span class="codeline" id="line-174"><code>	}</code></span>
+<span class="codeline" id="line-175"><code></code></span>
+<span class="codeline" id="line-176"><code>	<span class="comment">// GoerliChainConfig contains the chain parameters to run a node on the Görli test network.</span></code></span>
+<span class="codeline" id="line-177"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-GoerliChainConfig" class="ident">GoerliChainConfig</a> = &amp;<a href="#line-303" class="ident">ChainConfig</a>{</code></span>
+<span class="codeline" id="line-178"><code>		<a href="#line-304" class="ident">ChainID</a>:             <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">5</span>),</code></span>
+<span class="codeline" id="line-179"><code>		<a href="#line-306" class="ident">HomesteadBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-180"><code>		<a href="#line-308" class="ident">DAOForkBlock</a>:        <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>,</code></span>
+<span class="codeline" id="line-181"><code>		<a href="#line-309" class="ident">DAOForkSupport</a>:      <a href="../../../../../pkg/builtin.html#name-true" class="ident">true</a>,</code></span>
+<span class="codeline" id="line-182"><code>		<a href="#line-312" class="ident">EIP150Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-183"><code>		<a href="#line-315" class="ident">EIP155Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-184"><code>		<a href="#line-316" class="ident">EIP158Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-185"><code>		<a href="#line-318" class="ident">ByzantiumBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-186"><code>		<a href="#line-319" class="ident">ConstantinopleBlock</a>: <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-187"><code>		<a href="#line-320" class="ident">PetersburgBlock</a>:     <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-188"><code>		<a href="#line-321" class="ident">IstanbulBlock</a>:       <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1561651</span>),</code></span>
+<span class="codeline" id="line-189"><code>		<a href="#line-322" class="ident">MuirGlacierBlock</a>:    <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>,</code></span>
+<span class="codeline" id="line-190"><code>		<a href="#line-329" class="ident">Clique</a>: &amp;<a href="#line-341" class="ident">CliqueConfig</a>{</code></span>
+<span class="codeline" id="line-191"><code>			<a href="#line-342" class="ident">Period</a>: <span class="lit-number">15</span>,</code></span>
+<span class="codeline" id="line-192"><code>			<a href="#line-343" class="ident">Epoch</a>:  <span class="lit-number">30000</span>,</code></span>
+<span class="codeline" id="line-193"><code>		},</code></span>
+<span class="codeline" id="line-194"><code>	}</code></span>
+<span class="codeline" id="line-195"><code></code></span>
+<span class="codeline" id="line-196"><code>	<span class="comment">// GoerliTrustedCheckpoint contains the light client trusted checkpoint for the Görli test network.</span></code></span>
+<span class="codeline" id="line-197"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-GoerliTrustedCheckpoint" class="ident">GoerliTrustedCheckpoint</a> = &amp;<a href="#line-260" class="ident">TrustedCheckpoint</a>{</code></span>
+<span class="codeline" id="line-198"><code>		<a href="#line-261" class="ident">SectionIndex</a>: <span class="lit-number">116</span>,</code></span>
+<span class="codeline" id="line-199"><code>		<a href="#line-262" class="ident">SectionHead</a>:  <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0xf2d200f636f213c9c7bb4e747ff564813da7708253037103aef3d8be5203c5e1"</span>),</code></span>
+<span class="codeline" id="line-200"><code>		<a href="#line-263" class="ident">CHTRoot</a>:      <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0xb0ac83e2ccf6c2776945e099c4e3df50fe6200499c8b2045c34cafdf57d15087"</span>),</code></span>
+<span class="codeline" id="line-201"><code>		<a href="#line-264" class="ident">BloomRoot</a>:    <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-65" class="ident">HexToHash</a>(<span class="lit-string">"0xfb580ad1c611230a4bfc56534f58bcb156d028bc6ce70e35403dc019c7c02d90"</span>),</code></span>
+<span class="codeline" id="line-202"><code>	}</code></span>
+<span class="codeline" id="line-203"><code></code></span>
+<span class="codeline" id="line-204"><code>	<span class="comment">// GoerliCheckpointOracle contains a set of configs for the Goerli test network oracle.</span></code></span>
+<span class="codeline" id="line-205"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-GoerliCheckpointOracle" class="ident">GoerliCheckpointOracle</a> = &amp;<a href="#line-292" class="ident">CheckpointOracleConfig</a>{</code></span>
+<span class="codeline" id="line-206"><code>		<a href="#line-293" class="ident">Address</a>: <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x18CA0E045F0D772a851BC7e48357Bcaab0a0795D"</span>),</code></span>
+<span class="codeline" id="line-207"><code>		<a href="#line-294" class="ident">Signers</a>: []<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-201" class="ident">Address</a>{</code></span>
+<span class="codeline" id="line-208"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x4769bcaD07e3b938B7f43EB7D278Bc7Cb9efFb38"</span>), <span class="comment">// Peter</span></code></span>
+<span class="codeline" id="line-209"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x78d1aD571A1A09D60D9BBf25894b44e4C8859595"</span>), <span class="comment">// Martin</span></code></span>
+<span class="codeline" id="line-210"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x286834935f4A8Cfb4FF4C77D5770C2775aE2b0E7"</span>), <span class="comment">// Zsolt</span></code></span>
+<span class="codeline" id="line-211"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0xb86e2B0Ab5A4B1373e40c51A7C712c70Ba2f9f8E"</span>), <span class="comment">// Gary</span></code></span>
+<span class="codeline" id="line-212"><code>			<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-217" class="ident">HexToAddress</a>(<span class="lit-string">"0x0DF8fa387C602AE62559cC4aFa4972A7045d6707"</span>), <span class="comment">// Guillaume</span></code></span>
+<span class="codeline" id="line-213"><code>		},</code></span>
+<span class="codeline" id="line-214"><code>		<a href="#line-295" class="ident">Threshold</a>: <span class="lit-number">2</span>,</code></span>
+<span class="codeline" id="line-215"><code>	}</code></span>
+<span class="codeline" id="line-216"><code></code></span>
+<span class="codeline" id="line-217"><code>	<span class="comment">// YoloV2ChainConfig contains the chain parameters to run a node on the YOLOv2 test network.</span></code></span>
+<span class="codeline" id="line-218"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-YoloV2ChainConfig" class="ident">YoloV2ChainConfig</a> = &amp;<a href="#line-303" class="ident">ChainConfig</a>{</code></span>
+<span class="codeline" id="line-219"><code>		<a href="#line-304" class="ident">ChainID</a>:             <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">133519467574834</span>),</code></span>
+<span class="codeline" id="line-220"><code>		<a href="#line-306" class="ident">HomesteadBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-221"><code>		<a href="#line-308" class="ident">DAOForkBlock</a>:        <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>,</code></span>
+<span class="codeline" id="line-222"><code>		<a href="#line-309" class="ident">DAOForkSupport</a>:      <a href="../../../../../pkg/builtin.html#name-true" class="ident">true</a>,</code></span>
+<span class="codeline" id="line-223"><code>		<a href="#line-312" class="ident">EIP150Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-224"><code>		<a href="#line-315" class="ident">EIP155Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-225"><code>		<a href="#line-316" class="ident">EIP158Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-226"><code>		<a href="#line-318" class="ident">ByzantiumBlock</a>:      <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-227"><code>		<a href="#line-319" class="ident">ConstantinopleBlock</a>: <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-228"><code>		<a href="#line-320" class="ident">PetersburgBlock</a>:     <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-229"><code>		<a href="#line-321" class="ident">IstanbulBlock</a>:       <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-230"><code>		<a href="#line-322" class="ident">MuirGlacierBlock</a>:    <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>,</code></span>
+<span class="codeline" id="line-231"><code>		<a href="#line-324" class="ident">YoloV2Block</a>:         <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>),</code></span>
+<span class="codeline" id="line-232"><code>		<a href="#line-329" class="ident">Clique</a>: &amp;<a href="#line-341" class="ident">CliqueConfig</a>{</code></span>
+<span class="codeline" id="line-233"><code>			<a href="#line-342" class="ident">Period</a>: <span class="lit-number">15</span>,</code></span>
+<span class="codeline" id="line-234"><code>			<a href="#line-343" class="ident">Epoch</a>:  <span class="lit-number">30000</span>,</code></span>
+<span class="codeline" id="line-235"><code>		},</code></span>
+<span class="codeline" id="line-236"><code>	}</code></span>
+<span class="codeline" id="line-237"><code></code></span>
+<span class="codeline" id="line-238"><code>	<span class="comment">// AllEthashProtocolChanges contains every protocol change (EIPs) introduced</span></code></span>
+<span class="codeline" id="line-239"><code><span class="comment">	// and accepted by the Ethereum core developers into the Ethash consensus.</span></code></span>
+<span class="codeline" id="line-240"><code><span class="comment">	//</span></code></span>
+<span class="codeline" id="line-241"><code><span class="comment">	// This configuration is intentionally not using keyed fields to force anyone</span></code></span>
+<span class="codeline" id="line-242"><code><span class="comment">	// adding flags to the config to also have to set these fields.</span></code></span>
+<span class="codeline" id="line-243"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-AllEthashProtocolChanges" class="ident">AllEthashProtocolChanges</a> = &amp;<a href="#line-303" class="ident">ChainConfig</a>{<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1337</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-false" class="ident">false</a>, <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>{}, <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-new" class="ident">new</a>(<a href="#line-333" class="ident">EthashConfig</a>), <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>}</code></span>
+<span class="codeline" id="line-244"><code></code></span>
+<span class="codeline" id="line-245"><code>	<span class="comment">// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced</span></code></span>
+<span class="codeline" id="line-246"><code><span class="comment">	// and accepted by the Ethereum core developers into the Clique consensus.</span></code></span>
+<span class="codeline" id="line-247"><code><span class="comment">	//</span></code></span>
+<span class="codeline" id="line-248"><code><span class="comment">	// This configuration is intentionally not using keyed fields to force anyone</span></code></span>
+<span class="codeline" id="line-249"><code><span class="comment">	// adding flags to the config to also have to set these fields.</span></code></span>
+<span class="codeline" id="line-250"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-AllCliqueProtocolChanges" class="ident">AllCliqueProtocolChanges</a> = &amp;<a href="#line-303" class="ident">ChainConfig</a>{<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1337</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-false" class="ident">false</a>, <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>{}, <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, &amp;<a href="#line-341" class="ident">CliqueConfig</a>{<a href="#line-342" class="ident">Period</a>: <span class="lit-number">0</span>, <a href="#line-343" class="ident">Epoch</a>: <span class="lit-number">30000</span>}}</code></span>
+<span class="codeline" id="line-251"><code></code></span>
+<span class="codeline" id="line-252"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-TestChainConfig" class="ident">TestChainConfig</a> = &amp;<a href="#line-303" class="ident">ChainConfig</a>{<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">1</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-false" class="ident">false</a>, <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>{}, <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-68" class="ident">NewInt</a>(<span class="lit-number">0</span>), <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>, <a href="../../../../../pkg/builtin.html#name-new" class="ident">new</a>(<a href="#line-333" class="ident">EthashConfig</a>), <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>}</code></span>
+<span class="codeline" id="line-253"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-TestRules" class="ident">TestRules</a>       = <a href="#line-252" class="ident">TestChainConfig</a>.<a href="#line-621" class="ident">Rules</a>(<a href="../../../../../pkg/builtin.html#name-new" class="ident">new</a>(<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>))</code></span>
+<span class="codeline" id="line-254"><code>)</code></span>
+<span class="codeline" id="line-255"><code></code></span>
+<span class="codeline" id="line-256"><code><span class="comment">// TrustedCheckpoint represents a set of post-processed trie roots (CHT and</span></code></span>
+<span class="codeline" id="line-257"><code><span class="comment">// BloomTrie) associated with the appropriate section index and head hash. It is</span></code></span>
+<span class="codeline" id="line-258"><code><span class="comment">// used to start light syncing from this checkpoint and avoid downloading the</span></code></span>
+<span class="codeline" id="line-259"><code><span class="comment">// entire header chain while still being able to securely access old headers/logs.</span></code></span>
+<span class="codeline" id="line-260"><code><span class="keyword">type</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-TrustedCheckpoint" class="ident">TrustedCheckpoint</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-261"><code>	SectionIndex <a href="../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a>      <span class="lit-string">`json:"sectionIndex"`</span></code></span>
+<span class="codeline" id="line-262"><code>	SectionHead  <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a> <span class="lit-string">`json:"sectionHead"`</span></code></span>
+<span class="codeline" id="line-263"><code>	CHTRoot      <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a> <span class="lit-string">`json:"chtRoot"`</span></code></span>
+<span class="codeline" id="line-264"><code>	BloomRoot    <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a> <span class="lit-string">`json:"bloomRoot"`</span></code></span>
+<span class="codeline" id="line-265"><code>}</code></span>
+<span class="codeline" id="line-266"><code></code></span>
+<span class="codeline" id="line-267"><code><span class="comment">// HashEqual returns an indicator comparing the itself hash with given one.</span></code></span>
+<span class="codeline" id="line-268"><code><span class="keyword">func</span> (<label for="r0" class="ident">c</label> *<a href="#line-260" class="ident">TrustedCheckpoint</a>) <label for="r1" class="ident">HashEqual</label>(<label for="r2" class="ident">hash</label> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-269"><code>	<span class="keyword">if</span> <label for="r0" class="ident">c</label>.<a href="#line-286" class="ident">Empty</a>() {</code></span>
+<span class="codeline" id="line-270"><code>		<span class="keyword">return</span> <label for="r2" class="ident">hash</label> == <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>{}</code></span>
+<span class="codeline" id="line-271"><code>	}</code></span>
+<span class="codeline" id="line-272"><code>	<span class="keyword">return</span> <label for="r0" class="ident">c</label>.<a href="#line-276" class="ident">Hash</a>() == <label for="r2" class="ident">hash</label></code></span>
+<span class="codeline" id="line-273"><code>}</code></span>
+<span class="codeline" id="line-274"><code></code></span>
+<span class="codeline" id="line-275"><code><span class="comment">// Hash returns the hash of checkpoint's four key fields(index, sectionHead, chtRoot and bloomTrieRoot).</span></code></span>
+<span class="codeline" id="line-276"><code><span class="keyword">func</span> (<label for="r3" class="ident">c</label> *<a href="#line-260" class="ident">TrustedCheckpoint</a>) <label for="r4" class="ident">Hash</label>() <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a> {</code></span>
+<span class="codeline" id="line-277"><code>	<label for="r5" class="ident">buf</label> := <a href="../../../../../pkg/builtin.html#name-make" class="ident">make</a>([]<a href="../../../../../pkg/builtin.html#name-byte" class="ident">byte</a>, <span class="lit-number">8</span>+<span class="lit-number">3</span>*<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-38" class="ident">HashLength</a>)</code></span>
+<span class="codeline" id="line-278"><code>	<a href="../../../../../pkg/encoding/binary.html" class="ident i0">binary</a>.<a href="../../../../encoding/binary/binary.go.html#line-48" class="ident">BigEndian</a>.<a href="../../../../encoding/binary/binary.go.html#line-130" class="ident">PutUint64</a>(<label for="r5" class="ident">buf</label>, <label for="r3" class="ident">c</label>.<a href="#line-261" class="ident">SectionIndex</a>)</code></span>
+<span class="codeline" id="line-279"><code>	<a href="../../../../../pkg/builtin.html#name-copy" class="ident">copy</a>(<label for="r5" class="ident">buf</label>[<span class="lit-number">8</span>:], <label for="r3" class="ident">c</label>.<a href="#line-262" class="ident">SectionHead</a>.<a href="../common/types.go.html#line-68" class="ident">Bytes</a>())</code></span>
+<span class="codeline" id="line-280"><code>	<a href="../../../../../pkg/builtin.html#name-copy" class="ident">copy</a>(<label for="r5" class="ident">buf</label>[<span class="lit-number">8</span>+<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-38" class="ident">HashLength</a>:], <label for="r3" class="ident">c</label>.<a href="#line-263" class="ident">CHTRoot</a>.<a href="../common/types.go.html#line-68" class="ident">Bytes</a>())</code></span>
+<span class="codeline" id="line-281"><code>	<a href="../../../../../pkg/builtin.html#name-copy" class="ident">copy</a>(<label for="r5" class="ident">buf</label>[<span class="lit-number">8</span>+<span class="lit-number">2</span>*<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-38" class="ident">HashLength</a>:], <label for="r3" class="ident">c</label>.<a href="#line-264" class="ident">BloomRoot</a>.<a href="../common/types.go.html#line-68" class="ident">Bytes</a>())</code></span>
+<span class="codeline" id="line-282"><code>	<span class="keyword">return</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/crypto.html" class="ident i4">crypto</a>.<a href="../crypto/crypto.go.html#line-89" class="ident">Keccak256Hash</a>(<label for="r5" class="ident">buf</label>)</code></span>
+<span class="codeline" id="line-283"><code>}</code></span>
+<span class="codeline" id="line-284"><code></code></span>
+<span class="codeline" id="line-285"><code><span class="comment">// Empty returns an indicator whether the checkpoint is regarded as empty.</span></code></span>
+<span class="codeline" id="line-286"><code><span class="keyword">func</span> (<label for="r6" class="ident">c</label> *<a href="#line-260" class="ident">TrustedCheckpoint</a>) <label for="r7" class="ident">Empty</label>() <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-287"><code>	<span class="keyword">return</span> <label for="r6" class="ident">c</label>.<a href="#line-262" class="ident">SectionHead</a> == (<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>{}) || <label for="r6" class="ident">c</label>.<a href="#line-263" class="ident">CHTRoot</a> == (<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>{}) || <label for="r6" class="ident">c</label>.<a href="#line-264" class="ident">BloomRoot</a> == (<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a>{})</code></span>
+<span class="codeline" id="line-288"><code>}</code></span>
+<span class="codeline" id="line-289"><code></code></span>
+<span class="codeline" id="line-290"><code><span class="comment">// CheckpointOracleConfig represents a set of checkpoint contract(which acts as an oracle)</span></code></span>
+<span class="codeline" id="line-291"><code><span class="comment">// config which used for light client checkpoint syncing.</span></code></span>
+<span class="codeline" id="line-292"><code><span class="keyword">type</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-CheckpointOracleConfig" class="ident">CheckpointOracleConfig</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-293"><code>	Address   <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-201" class="ident">Address</a>   <span class="lit-string">`json:"address"`</span></code></span>
+<span class="codeline" id="line-294"><code>	Signers   []<a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-201" class="ident">Address</a> <span class="lit-string">`json:"signers"`</span></code></span>
+<span class="codeline" id="line-295"><code>	Threshold <a href="../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a>           <span class="lit-string">`json:"threshold"`</span></code></span>
+<span class="codeline" id="line-296"><code>}</code></span>
+<span class="codeline" id="line-297"><code></code></span>
+<span class="codeline" id="line-298"><code><span class="comment">// ChainConfig is the core config which determines the blockchain settings.</span></code></span>
+<span class="codeline" id="line-299"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-300"><code><span class="comment">// ChainConfig is stored in the database on a per block basis. This means</span></code></span>
+<span class="codeline" id="line-301"><code><span class="comment">// that any network, identified by its genesis block, can have its own</span></code></span>
+<span class="codeline" id="line-302"><code><span class="comment">// set of configuration options.</span></code></span>
+<span class="codeline" id="line-303"><code><span class="keyword">type</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-ChainConfig" class="ident">ChainConfig</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-304"><code>	ChainID *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"chainId"`</span> <span class="comment">// chainId identifies the current chain and is used for replay protection</span></code></span>
+<span class="codeline" id="line-305"><code></code></span>
+<span class="codeline" id="line-306"><code>	HomesteadBlock *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"homesteadBlock,omitempty"`</span> <span class="comment">// Homestead switch block (nil = no fork, 0 = already homestead)</span></code></span>
+<span class="codeline" id="line-307"><code></code></span>
+<span class="codeline" id="line-308"><code>	DAOForkBlock   *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"daoForkBlock,omitempty"`</span>   <span class="comment">// TheDAO hard-fork switch block (nil = no fork)</span></code></span>
+<span class="codeline" id="line-309"><code>	DAOForkSupport <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a>     <span class="lit-string">`json:"daoForkSupport,omitempty"`</span> <span class="comment">// Whether the nodes supports or opposes the DAO hard-fork</span></code></span>
+<span class="codeline" id="line-310"><code></code></span>
+<span class="codeline" id="line-311"><code>	<span class="comment">// EIP150 implements the Gas price changes (https://github.com/ethereum/EIPs/issues/150)</span></code></span>
+<span class="codeline" id="line-312"><code>	EIP150Block *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>    <span class="lit-string">`json:"eip150Block,omitempty"`</span> <span class="comment">// EIP150 HF block (nil = no fork)</span></code></span>
+<span class="codeline" id="line-313"><code>	EIP150Hash  <a href="../../../../../pkg/github.com/ethereum/go-ethereum/common.html" class="ident i3">common</a>.<a href="../common/types.go.html#line-49" class="ident">Hash</a> <span class="lit-string">`json:"eip150Hash,omitempty"`</span>  <span class="comment">// EIP150 HF hash (needed for header only clients as only gas pricing changed)</span></code></span>
+<span class="codeline" id="line-314"><code></code></span>
+<span class="codeline" id="line-315"><code>	EIP155Block *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"eip155Block,omitempty"`</span> <span class="comment">// EIP155 HF block</span></code></span>
+<span class="codeline" id="line-316"><code>	EIP158Block *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"eip158Block,omitempty"`</span> <span class="comment">// EIP158 HF block</span></code></span>
+<span class="codeline" id="line-317"><code></code></span>
+<span class="codeline" id="line-318"><code>	ByzantiumBlock      *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"byzantiumBlock,omitempty"`</span>      <span class="comment">// Byzantium switch block (nil = no fork, 0 = already on byzantium)</span></code></span>
+<span class="codeline" id="line-319"><code>	ConstantinopleBlock *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"constantinopleBlock,omitempty"`</span> <span class="comment">// Constantinople switch block (nil = no fork, 0 = already activated)</span></code></span>
+<span class="codeline" id="line-320"><code>	PetersburgBlock     *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"petersburgBlock,omitempty"`</span>     <span class="comment">// Petersburg switch block (nil = same as Constantinople)</span></code></span>
+<span class="codeline" id="line-321"><code>	IstanbulBlock       *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"istanbulBlock,omitempty"`</span>       <span class="comment">// Istanbul switch block (nil = no fork, 0 = already on istanbul)</span></code></span>
+<span class="codeline" id="line-322"><code>	MuirGlacierBlock    *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"muirGlacierBlock,omitempty"`</span>    <span class="comment">// Eip-2384 (bomb delay) switch block (nil = no fork, 0 = already activated)</span></code></span>
+<span class="codeline" id="line-323"><code></code></span>
+<span class="codeline" id="line-324"><code>	YoloV2Block *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"yoloV2Block,omitempty"`</span> <span class="comment">// YOLO v2: Gas repricings TODO @holiman add EIP references</span></code></span>
+<span class="codeline" id="line-325"><code>	EWASMBlock  *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a> <span class="lit-string">`json:"ewasmBlock,omitempty"`</span>  <span class="comment">// EWASM switch block (nil = no fork, 0 = already activated)</span></code></span>
+<span class="codeline" id="line-326"><code></code></span>
+<span class="codeline" id="line-327"><code>	<span class="comment">// Various consensus engines</span></code></span>
+<span class="codeline" id="line-328"><code>	Ethash *<a href="#line-333" class="ident">EthashConfig</a> <span class="lit-string">`json:"ethash,omitempty"`</span></code></span>
+<span class="codeline" id="line-329"><code>	Clique *<a href="#line-341" class="ident">CliqueConfig</a> <span class="lit-string">`json:"clique,omitempty"`</span></code></span>
+<span class="codeline" id="line-330"><code>}</code></span>
+<span class="codeline" id="line-331"><code></code></span>
+<span class="codeline" id="line-332"><code><span class="comment">// EthashConfig is the consensus engine configs for proof-of-work based sealing.</span></code></span>
+<span class="codeline" id="line-333"><code><span class="keyword">type</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-EthashConfig" class="ident">EthashConfig</a> <span class="keyword">struct</span>{}</code></span>
+<span class="codeline" id="line-334"><code></code></span>
+<span class="codeline" id="line-335"><code><span class="comment">// String implements the stringer interface, returning the consensus engine details.</span></code></span>
+<span class="codeline" id="line-336"><code><span class="keyword">func</span> (<label for="r8" class="ident">c</label> *<a href="#line-333" class="ident">EthashConfig</a>) <label for="r9" class="ident"><a href="../../../../../imp/github.com/ethereum/go-ethereum/params.EthashConfig.html#name-String" class="ident">String</a></label>() <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a> {</code></span>
+<span class="codeline" id="line-337"><code>	<span class="keyword">return</span> <span class="lit-string">"ethash"</span></code></span>
+<span class="codeline" id="line-338"><code>}</code></span>
+<span class="codeline" id="line-339"><code></code></span>
+<span class="codeline" id="line-340"><code><span class="comment">// CliqueConfig is the consensus engine configs for proof-of-authority based sealing.</span></code></span>
+<span class="codeline" id="line-341"><code><span class="keyword">type</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-CliqueConfig" class="ident">CliqueConfig</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-342"><code>	Period <a href="../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> <span class="lit-string">`json:"period"`</span> <span class="comment">// Number of seconds between blocks to enforce</span></code></span>
+<span class="codeline" id="line-343"><code>	Epoch  <a href="../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> <span class="lit-string">`json:"epoch"`</span>  <span class="comment">// Epoch length to reset votes and checkpoint</span></code></span>
+<span class="codeline" id="line-344"><code>}</code></span>
+<span class="codeline" id="line-345"><code></code></span>
+<span class="codeline" id="line-346"><code><span class="comment">// String implements the stringer interface, returning the consensus engine details.</span></code></span>
+<span class="codeline" id="line-347"><code><span class="keyword">func</span> (<label for="r10" class="ident">c</label> *<a href="#line-341" class="ident">CliqueConfig</a>) <label for="r11" class="ident"><a href="../../../../../imp/github.com/ethereum/go-ethereum/params.CliqueConfig.html#name-String" class="ident">String</a></label>() <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a> {</code></span>
+<span class="codeline" id="line-348"><code>	<span class="keyword">return</span> <span class="lit-string">"clique"</span></code></span>
+<span class="codeline" id="line-349"><code>}</code></span>
+<span class="codeline" id="line-350"><code></code></span>
+<span class="codeline" id="line-351"><code><span class="comment">// String implements the fmt.Stringer interface.</span></code></span>
+<span class="codeline" id="line-352"><code><span class="keyword">func</span> (<label for="r12" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r13" class="ident"><a href="../../../../../imp/github.com/ethereum/go-ethereum/params.ChainConfig.html#name-String" class="ident">String</a></label>() <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a> {</code></span>
+<span class="codeline" id="line-353"><code>	<span class="keyword">var</span> <label for="r14" class="ident">engine</label> <span class="keyword">interface</span>{}</code></span>
+<span class="codeline" id="line-354"><code>	<span class="keyword">switch</span> {</code></span>
+<span class="codeline" id="line-355"><code>	<span class="keyword">case</span> <label for="r12" class="ident">c</label>.<a href="#line-328" class="ident">Ethash</a> != <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>:</code></span>
+<span class="codeline" id="line-356"><code>		<label for="r14" class="ident">engine</label> = <label for="r12" class="ident">c</label>.<a href="#line-328" class="ident">Ethash</a></code></span>
+<span class="codeline" id="line-357"><code>	<span class="keyword">case</span> <label for="r12" class="ident">c</label>.<a href="#line-329" class="ident">Clique</a> != <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>:</code></span>
+<span class="codeline" id="line-358"><code>		<label for="r14" class="ident">engine</label> = <label for="r12" class="ident">c</label>.<a href="#line-329" class="ident">Clique</a></code></span>
+<span class="codeline" id="line-359"><code>	<span class="keyword">default</span>:</code></span>
+<span class="codeline" id="line-360"><code>		<label for="r14" class="ident">engine</label> = <span class="lit-string">"unknown"</span></code></span>
+<span class="codeline" id="line-361"><code>	}</code></span>
+<span class="codeline" id="line-362"><code>	<span class="keyword">return</span> <a href="../../../../../pkg/fmt.html" class="ident i1">fmt</a>.<a href="../../../../fmt/print.go.html#line-217" class="ident">Sprintf</a>(<span class="lit-string">"{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, YOLO v2: %v, Engine: %v}"</span>,</code></span>
+<span class="codeline" id="line-363"><code>		<label for="r12" class="ident">c</label>.<a href="#line-304" class="ident">ChainID</a>,</code></span>
+<span class="codeline" id="line-364"><code>		<label for="r12" class="ident">c</label>.<a href="#line-306" class="ident">HomesteadBlock</a>,</code></span>
+<span class="codeline" id="line-365"><code>		<label for="r12" class="ident">c</label>.<a href="#line-308" class="ident">DAOForkBlock</a>,</code></span>
+<span class="codeline" id="line-366"><code>		<label for="r12" class="ident">c</label>.<a href="#line-309" class="ident">DAOForkSupport</a>,</code></span>
+<span class="codeline" id="line-367"><code>		<label for="r12" class="ident">c</label>.<a href="#line-312" class="ident">EIP150Block</a>,</code></span>
+<span class="codeline" id="line-368"><code>		<label for="r12" class="ident">c</label>.<a href="#line-315" class="ident">EIP155Block</a>,</code></span>
+<span class="codeline" id="line-369"><code>		<label for="r12" class="ident">c</label>.<a href="#line-316" class="ident">EIP158Block</a>,</code></span>
+<span class="codeline" id="line-370"><code>		<label for="r12" class="ident">c</label>.<a href="#line-318" class="ident">ByzantiumBlock</a>,</code></span>
+<span class="codeline" id="line-371"><code>		<label for="r12" class="ident">c</label>.<a href="#line-319" class="ident">ConstantinopleBlock</a>,</code></span>
+<span class="codeline" id="line-372"><code>		<label for="r12" class="ident">c</label>.<a href="#line-320" class="ident">PetersburgBlock</a>,</code></span>
+<span class="codeline" id="line-373"><code>		<label for="r12" class="ident">c</label>.<a href="#line-321" class="ident">IstanbulBlock</a>,</code></span>
+<span class="codeline" id="line-374"><code>		<label for="r12" class="ident">c</label>.<a href="#line-322" class="ident">MuirGlacierBlock</a>,</code></span>
+<span class="codeline" id="line-375"><code>		<label for="r12" class="ident">c</label>.<a href="#line-324" class="ident">YoloV2Block</a>,</code></span>
+<span class="codeline" id="line-376"><code>		<label for="r14" class="ident">engine</label>,</code></span>
+<span class="codeline" id="line-377"><code>	)</code></span>
+<span class="codeline" id="line-378"><code>}</code></span>
+<span class="codeline" id="line-379"><code></code></span>
+<span class="codeline" id="line-380"><code><span class="comment">// IsHomestead returns whether num is either equal to the homestead block or greater.</span></code></span>
+<span class="codeline" id="line-381"><code><span class="keyword">func</span> (<label for="r15" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r16" class="ident">IsHomestead</label>(<label for="r17" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-382"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r15" class="ident">c</label>.<a href="#line-306" class="ident">HomesteadBlock</a>, <label for="r17" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-383"><code>}</code></span>
+<span class="codeline" id="line-384"><code></code></span>
+<span class="codeline" id="line-385"><code><span class="comment">// IsDAOFork returns whether num is either equal to the DAO fork block or greater.</span></code></span>
+<span class="codeline" id="line-386"><code><span class="keyword">func</span> (<label for="r18" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r19" class="ident">IsDAOFork</label>(<label for="r20" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-387"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r18" class="ident">c</label>.<a href="#line-308" class="ident">DAOForkBlock</a>, <label for="r20" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-388"><code>}</code></span>
+<span class="codeline" id="line-389"><code></code></span>
+<span class="codeline" id="line-390"><code><span class="comment">// IsEIP150 returns whether num is either equal to the EIP150 fork block or greater.</span></code></span>
+<span class="codeline" id="line-391"><code><span class="keyword">func</span> (<label for="r21" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r22" class="ident">IsEIP150</label>(<label for="r23" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-392"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r21" class="ident">c</label>.<a href="#line-312" class="ident">EIP150Block</a>, <label for="r23" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-393"><code>}</code></span>
+<span class="codeline" id="line-394"><code></code></span>
+<span class="codeline" id="line-395"><code><span class="comment">// IsEIP155 returns whether num is either equal to the EIP155 fork block or greater.</span></code></span>
+<span class="codeline" id="line-396"><code><span class="keyword">func</span> (<label for="r24" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r25" class="ident">IsEIP155</label>(<label for="r26" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-397"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r24" class="ident">c</label>.<a href="#line-315" class="ident">EIP155Block</a>, <label for="r26" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-398"><code>}</code></span>
+<span class="codeline" id="line-399"><code></code></span>
+<span class="codeline" id="line-400"><code><span class="comment">// IsEIP158 returns whether num is either equal to the EIP158 fork block or greater.</span></code></span>
+<span class="codeline" id="line-401"><code><span class="keyword">func</span> (<label for="r27" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r28" class="ident">IsEIP158</label>(<label for="r29" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-402"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r27" class="ident">c</label>.<a href="#line-316" class="ident">EIP158Block</a>, <label for="r29" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-403"><code>}</code></span>
+<span class="codeline" id="line-404"><code></code></span>
+<span class="codeline" id="line-405"><code><span class="comment">// IsByzantium returns whether num is either equal to the Byzantium fork block or greater.</span></code></span>
+<span class="codeline" id="line-406"><code><span class="keyword">func</span> (<label for="r30" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r31" class="ident">IsByzantium</label>(<label for="r32" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-407"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r30" class="ident">c</label>.<a href="#line-318" class="ident">ByzantiumBlock</a>, <label for="r32" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-408"><code>}</code></span>
+<span class="codeline" id="line-409"><code></code></span>
+<span class="codeline" id="line-410"><code><span class="comment">// IsConstantinople returns whether num is either equal to the Constantinople fork block or greater.</span></code></span>
+<span class="codeline" id="line-411"><code><span class="keyword">func</span> (<label for="r33" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r34" class="ident">IsConstantinople</label>(<label for="r35" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-412"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r33" class="ident">c</label>.<a href="#line-319" class="ident">ConstantinopleBlock</a>, <label for="r35" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-413"><code>}</code></span>
+<span class="codeline" id="line-414"><code></code></span>
+<span class="codeline" id="line-415"><code><span class="comment">// IsMuirGlacier returns whether num is either equal to the Muir Glacier (EIP-2384) fork block or greater.</span></code></span>
+<span class="codeline" id="line-416"><code><span class="keyword">func</span> (<label for="r36" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r37" class="ident">IsMuirGlacier</label>(<label for="r38" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-417"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r36" class="ident">c</label>.<a href="#line-322" class="ident">MuirGlacierBlock</a>, <label for="r38" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-418"><code>}</code></span>
+<span class="codeline" id="line-419"><code></code></span>
+<span class="codeline" id="line-420"><code><span class="comment">// IsPetersburg returns whether num is either</span></code></span>
+<span class="codeline" id="line-421"><code><span class="comment">// - equal to or greater than the PetersburgBlock fork block,</span></code></span>
+<span class="codeline" id="line-422"><code><span class="comment">// - OR is nil, and Constantinople is active</span></code></span>
+<span class="codeline" id="line-423"><code><span class="keyword">func</span> (<label for="r39" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r40" class="ident">IsPetersburg</label>(<label for="r41" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-424"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r39" class="ident">c</label>.<a href="#line-320" class="ident">PetersburgBlock</a>, <label for="r41" class="ident">num</label>) || <label for="r39" class="ident">c</label>.<a href="#line-320" class="ident">PetersburgBlock</a> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> &amp;&amp; <a href="#line-560" class="ident">isForked</a>(<label for="r39" class="ident">c</label>.<a href="#line-319" class="ident">ConstantinopleBlock</a>, <label for="r41" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-425"><code>}</code></span>
+<span class="codeline" id="line-426"><code></code></span>
+<span class="codeline" id="line-427"><code><span class="comment">// IsIstanbul returns whether num is either equal to the Istanbul fork block or greater.</span></code></span>
+<span class="codeline" id="line-428"><code><span class="keyword">func</span> (<label for="r42" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r43" class="ident">IsIstanbul</label>(<label for="r44" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-429"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r42" class="ident">c</label>.<a href="#line-321" class="ident">IstanbulBlock</a>, <label for="r44" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-430"><code>}</code></span>
+<span class="codeline" id="line-431"><code></code></span>
+<span class="codeline" id="line-432"><code><span class="comment">// IsYoloV2 returns whether num is either equal to the YoloV1 fork block or greater.</span></code></span>
+<span class="codeline" id="line-433"><code><span class="keyword">func</span> (<label for="r45" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r46" class="ident">IsYoloV2</label>(<label for="r47" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-434"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r45" class="ident">c</label>.<a href="#line-324" class="ident">YoloV2Block</a>, <label for="r47" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-435"><code>}</code></span>
+<span class="codeline" id="line-436"><code></code></span>
+<span class="codeline" id="line-437"><code><span class="comment">// IsEWASM returns whether num represents a block number after the EWASM fork</span></code></span>
+<span class="codeline" id="line-438"><code><span class="keyword">func</span> (<label for="r48" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r49" class="ident">IsEWASM</label>(<label for="r50" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-439"><code>	<span class="keyword">return</span> <a href="#line-560" class="ident">isForked</a>(<label for="r48" class="ident">c</label>.<a href="#line-325" class="ident">EWASMBlock</a>, <label for="r50" class="ident">num</label>)</code></span>
+<span class="codeline" id="line-440"><code>}</code></span>
+<span class="codeline" id="line-441"><code></code></span>
+<span class="codeline" id="line-442"><code><span class="comment">// CheckCompatible checks whether scheduled fork transitions have been imported</span></code></span>
+<span class="codeline" id="line-443"><code><span class="comment">// with a mismatching chain configuration.</span></code></span>
+<span class="codeline" id="line-444"><code><span class="keyword">func</span> (<label for="r51" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r52" class="ident">CheckCompatible</label>(<label for="r53" class="ident">newcfg</label> *<a href="#line-303" class="ident">ChainConfig</a>, <label for="r54" class="ident">height</label> <a href="../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a>) *<a href="#line-579" class="ident">ConfigCompatError</a> {</code></span>
+<span class="codeline" id="line-445"><code>	<label for="r55" class="ident">bhead</label> := <a href="../../../../../pkg/builtin.html#name-new" class="ident">new</a>(<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>).<a href="../../../../math/big/int.go.html#line-61" class="ident">SetUint64</a>(<label for="r54" class="ident">height</label>)</code></span>
+<span class="codeline" id="line-446"><code></code></span>
+<span class="codeline" id="line-447"><code>	<span class="comment">// Iterate checkCompatible to find the lowest conflict.</span></code></span>
+<span class="codeline" id="line-448"><code>	<span class="keyword">var</span> <label for="r56" class="ident">lasterr</label> *<a href="#line-579" class="ident">ConfigCompatError</a></code></span>
+<span class="codeline" id="line-449"><code>	<span class="keyword">for</span> {</code></span>
+<span class="codeline" id="line-450"><code>		<label for="r57" class="ident">err</label> := <label for="r51" class="ident">c</label>.<a href="#line-503" class="ident">checkCompatible</a>(<label for="r53" class="ident">newcfg</label>, <label for="r55" class="ident">bhead</label>)</code></span>
+<span class="codeline" id="line-451"><code>		<span class="keyword">if</span> <label for="r57" class="ident">err</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> || (<label for="r56" class="ident">lasterr</label> != <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> &amp;&amp; <label for="r57" class="ident">err</label>.<a href="#line-584" class="ident">RewindTo</a> == <label for="r56" class="ident">lasterr</label>.<a href="#line-584" class="ident">RewindTo</a>) {</code></span>
+<span class="codeline" id="line-452"><code>			<span class="keyword">break</span></code></span>
+<span class="codeline" id="line-453"><code>		}</code></span>
+<span class="codeline" id="line-454"><code>		<label for="r56" class="ident">lasterr</label> = <label for="r57" class="ident">err</label></code></span>
+<span class="codeline" id="line-455"><code>		<label for="r55" class="ident">bhead</label>.<a href="../../../../math/big/int.go.html#line-61" class="ident">SetUint64</a>(<label for="r57" class="ident">err</label>.<a href="#line-584" class="ident">RewindTo</a>)</code></span>
+<span class="codeline" id="line-456"><code>	}</code></span>
+<span class="codeline" id="line-457"><code>	<span class="keyword">return</span> <label for="r56" class="ident">lasterr</label></code></span>
+<span class="codeline" id="line-458"><code>}</code></span>
+<span class="codeline" id="line-459"><code></code></span>
+<span class="codeline" id="line-460"><code><span class="comment">// CheckConfigForkOrder checks that we don't "skip" any forks, geth isn't pluggable enough</span></code></span>
+<span class="codeline" id="line-461"><code><span class="comment">// to guarantee that forks can be implemented in a different order than on official networks</span></code></span>
+<span class="codeline" id="line-462"><code><span class="keyword">func</span> (<label for="r58" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r59" class="ident">CheckConfigForkOrder</label>() <a href="../../../../../pkg/builtin.html#name-error" class="ident">error</a> {</code></span>
+<span class="codeline" id="line-463"><code>	<span class="keyword">type</span> <label for="r60" class="ident">fork</label> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-464"><code>		<label for="r61" class="ident">name</label>     <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a></code></span>
+<span class="codeline" id="line-465"><code>		<label for="r62" class="ident">block</label>    *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a></code></span>
+<span class="codeline" id="line-466"><code>		<label for="r63" class="ident">optional</label> <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> <span class="comment">// if true, the fork may be nil and next fork is still allowed</span></code></span>
+<span class="codeline" id="line-467"><code>	}</code></span>
+<span class="codeline" id="line-468"><code>	<span class="keyword">var</span> <label for="r64" class="ident">lastFork</label> <label for="r60" class="ident">fork</label></code></span>
+<span class="codeline" id="line-469"><code>	<span class="keyword">for</span> <label for="r65" class="ident">_</label>, <label for="r66" class="ident">cur</label> := <span class="keyword">range</span> []<label for="r60" class="ident">fork</label>{</code></span>
+<span class="codeline" id="line-470"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"homesteadBlock"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-306" class="ident">HomesteadBlock</a>},</code></span>
+<span class="codeline" id="line-471"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"daoForkBlock"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-308" class="ident">DAOForkBlock</a>, <label for="r63" class="ident">optional</label>: <a href="../../../../../pkg/builtin.html#name-true" class="ident">true</a>},</code></span>
+<span class="codeline" id="line-472"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"eip150Block"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-312" class="ident">EIP150Block</a>},</code></span>
+<span class="codeline" id="line-473"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"eip155Block"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-315" class="ident">EIP155Block</a>},</code></span>
+<span class="codeline" id="line-474"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"eip158Block"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-316" class="ident">EIP158Block</a>},</code></span>
+<span class="codeline" id="line-475"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"byzantiumBlock"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-318" class="ident">ByzantiumBlock</a>},</code></span>
+<span class="codeline" id="line-476"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"constantinopleBlock"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-319" class="ident">ConstantinopleBlock</a>},</code></span>
+<span class="codeline" id="line-477"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"petersburgBlock"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-320" class="ident">PetersburgBlock</a>},</code></span>
+<span class="codeline" id="line-478"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"istanbulBlock"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-321" class="ident">IstanbulBlock</a>},</code></span>
+<span class="codeline" id="line-479"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"muirGlacierBlock"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-322" class="ident">MuirGlacierBlock</a>, <label for="r63" class="ident">optional</label>: <a href="../../../../../pkg/builtin.html#name-true" class="ident">true</a>},</code></span>
+<span class="codeline" id="line-480"><code>		{<label for="r61" class="ident">name</label>: <span class="lit-string">"yoloV2Block"</span>, <label for="r62" class="ident">block</label>: <label for="r58" class="ident">c</label>.<a href="#line-324" class="ident">YoloV2Block</a>},</code></span>
+<span class="codeline" id="line-481"><code>	} {</code></span>
+<span class="codeline" id="line-482"><code>		<span class="keyword">if</span> <label for="r64" class="ident">lastFork</label>.<label for="r61" class="ident">name</label> != <span class="lit-string">""</span> {</code></span>
+<span class="codeline" id="line-483"><code>			<span class="comment">// Next one must be higher number</span></code></span>
+<span class="codeline" id="line-484"><code>			<span class="keyword">if</span> <label for="r64" class="ident">lastFork</label>.<label for="r62" class="ident">block</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> &amp;&amp; <label for="r66" class="ident">cur</label>.<label for="r62" class="ident">block</label> != <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-485"><code>				<span class="keyword">return</span> <a href="../../../../../pkg/fmt.html" class="ident i1">fmt</a>.<a href="../../../../fmt/errors.go.html#line-17" class="ident">Errorf</a>(<span class="lit-string">"unsupported fork ordering: %v not enabled, but %v enabled at %v"</span>,</code></span>
+<span class="codeline" id="line-486"><code>					<label for="r64" class="ident">lastFork</label>.<label for="r61" class="ident">name</label>, <label for="r66" class="ident">cur</label>.<label for="r61" class="ident">name</label>, <label for="r66" class="ident">cur</label>.<label for="r62" class="ident">block</label>)</code></span>
+<span class="codeline" id="line-487"><code>			}</code></span>
+<span class="codeline" id="line-488"><code>			<span class="keyword">if</span> <label for="r64" class="ident">lastFork</label>.<label for="r62" class="ident">block</label> != <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> &amp;&amp; <label for="r66" class="ident">cur</label>.<label for="r62" class="ident">block</label> != <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-489"><code>				<span class="keyword">if</span> <label for="r64" class="ident">lastFork</label>.<label for="r62" class="ident">block</label>.<a href="../../../../math/big/int.go.html#line-320" class="ident">Cmp</a>(<label for="r66" class="ident">cur</label>.<label for="r62" class="ident">block</label>) &gt; <span class="lit-number">0</span> {</code></span>
+<span class="codeline" id="line-490"><code>					<span class="keyword">return</span> <a href="../../../../../pkg/fmt.html" class="ident i1">fmt</a>.<a href="../../../../fmt/errors.go.html#line-17" class="ident">Errorf</a>(<span class="lit-string">"unsupported fork ordering: %v enabled at %v, but %v enabled at %v"</span>,</code></span>
+<span class="codeline" id="line-491"><code>						<label for="r64" class="ident">lastFork</label>.<label for="r61" class="ident">name</label>, <label for="r64" class="ident">lastFork</label>.<label for="r62" class="ident">block</label>, <label for="r66" class="ident">cur</label>.<label for="r61" class="ident">name</label>, <label for="r66" class="ident">cur</label>.<label for="r62" class="ident">block</label>)</code></span>
+<span class="codeline" id="line-492"><code>				}</code></span>
+<span class="codeline" id="line-493"><code>			}</code></span>
+<span class="codeline" id="line-494"><code>		}</code></span>
+<span class="codeline" id="line-495"><code>		<span class="comment">// If it was optional and not set, then ignore it</span></code></span>
+<span class="codeline" id="line-496"><code>		<span class="keyword">if</span> !<label for="r66" class="ident">cur</label>.<label for="r63" class="ident">optional</label> || <label for="r66" class="ident">cur</label>.<label for="r62" class="ident">block</label> != <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-497"><code>			<label for="r64" class="ident">lastFork</label> = <label for="r66" class="ident">cur</label></code></span>
+<span class="codeline" id="line-498"><code>		}</code></span>
+<span class="codeline" id="line-499"><code>	}</code></span>
+<span class="codeline" id="line-500"><code>	<span class="keyword">return</span> <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a></code></span>
+<span class="codeline" id="line-501"><code>}</code></span>
+<span class="codeline" id="line-502"><code></code></span>
+<span class="codeline" id="line-503"><code><span class="keyword">func</span> (<label for="r67" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r68" class="ident">checkCompatible</label>(<label for="r69" class="ident">newcfg</label> *<a href="#line-303" class="ident">ChainConfig</a>, <label for="r70" class="ident">head</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) *<a href="#line-579" class="ident">ConfigCompatError</a> {</code></span>
+<span class="codeline" id="line-504"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-306" class="ident">HomesteadBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-306" class="ident">HomesteadBlock</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-505"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"Homestead fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-306" class="ident">HomesteadBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-306" class="ident">HomesteadBlock</a>)</code></span>
+<span class="codeline" id="line-506"><code>	}</code></span>
+<span class="codeline" id="line-507"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-308" class="ident">DAOForkBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-308" class="ident">DAOForkBlock</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-508"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"DAO fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-308" class="ident">DAOForkBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-308" class="ident">DAOForkBlock</a>)</code></span>
+<span class="codeline" id="line-509"><code>	}</code></span>
+<span class="codeline" id="line-510"><code>	<span class="keyword">if</span> <label for="r67" class="ident">c</label>.<a href="#line-386" class="ident">IsDAOFork</a>(<label for="r70" class="ident">head</label>) &amp;&amp; <label for="r67" class="ident">c</label>.<a href="#line-309" class="ident">DAOForkSupport</a> != <label for="r69" class="ident">newcfg</label>.<a href="#line-309" class="ident">DAOForkSupport</a> {</code></span>
+<span class="codeline" id="line-511"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"DAO fork support flag"</span>, <label for="r67" class="ident">c</label>.<a href="#line-308" class="ident">DAOForkBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-308" class="ident">DAOForkBlock</a>)</code></span>
+<span class="codeline" id="line-512"><code>	}</code></span>
+<span class="codeline" id="line-513"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-312" class="ident">EIP150Block</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-312" class="ident">EIP150Block</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-514"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"EIP150 fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-312" class="ident">EIP150Block</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-312" class="ident">EIP150Block</a>)</code></span>
+<span class="codeline" id="line-515"><code>	}</code></span>
+<span class="codeline" id="line-516"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-315" class="ident">EIP155Block</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-315" class="ident">EIP155Block</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-517"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"EIP155 fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-315" class="ident">EIP155Block</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-315" class="ident">EIP155Block</a>)</code></span>
+<span class="codeline" id="line-518"><code>	}</code></span>
+<span class="codeline" id="line-519"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-316" class="ident">EIP158Block</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-316" class="ident">EIP158Block</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-520"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"EIP158 fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-316" class="ident">EIP158Block</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-316" class="ident">EIP158Block</a>)</code></span>
+<span class="codeline" id="line-521"><code>	}</code></span>
+<span class="codeline" id="line-522"><code>	<span class="keyword">if</span> <label for="r67" class="ident">c</label>.<a href="#line-401" class="ident">IsEIP158</a>(<label for="r70" class="ident">head</label>) &amp;&amp; !<a href="#line-567" class="ident">configNumEqual</a>(<label for="r67" class="ident">c</label>.<a href="#line-304" class="ident">ChainID</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-304" class="ident">ChainID</a>) {</code></span>
+<span class="codeline" id="line-523"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"EIP158 chain ID"</span>, <label for="r67" class="ident">c</label>.<a href="#line-316" class="ident">EIP158Block</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-316" class="ident">EIP158Block</a>)</code></span>
+<span class="codeline" id="line-524"><code>	}</code></span>
+<span class="codeline" id="line-525"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-318" class="ident">ByzantiumBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-318" class="ident">ByzantiumBlock</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-526"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"Byzantium fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-318" class="ident">ByzantiumBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-318" class="ident">ByzantiumBlock</a>)</code></span>
+<span class="codeline" id="line-527"><code>	}</code></span>
+<span class="codeline" id="line-528"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-319" class="ident">ConstantinopleBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-319" class="ident">ConstantinopleBlock</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-529"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"Constantinople fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-319" class="ident">ConstantinopleBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-319" class="ident">ConstantinopleBlock</a>)</code></span>
+<span class="codeline" id="line-530"><code>	}</code></span>
+<span class="codeline" id="line-531"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-320" class="ident">PetersburgBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-320" class="ident">PetersburgBlock</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-532"><code>		<span class="comment">// the only case where we allow Petersburg to be set in the past is if it is equal to Constantinople</span></code></span>
+<span class="codeline" id="line-533"><code><span class="comment">		// mainly to satisfy fork ordering requirements which state that Petersburg fork be set if Constantinople fork is set</span></code></span>
+<span class="codeline" id="line-534"><code>		<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-319" class="ident">ConstantinopleBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-320" class="ident">PetersburgBlock</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-535"><code>			<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"Petersburg fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-320" class="ident">PetersburgBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-320" class="ident">PetersburgBlock</a>)</code></span>
+<span class="codeline" id="line-536"><code>		}</code></span>
+<span class="codeline" id="line-537"><code>	}</code></span>
+<span class="codeline" id="line-538"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-321" class="ident">IstanbulBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-321" class="ident">IstanbulBlock</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-539"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"Istanbul fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-321" class="ident">IstanbulBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-321" class="ident">IstanbulBlock</a>)</code></span>
+<span class="codeline" id="line-540"><code>	}</code></span>
+<span class="codeline" id="line-541"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-322" class="ident">MuirGlacierBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-322" class="ident">MuirGlacierBlock</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-542"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"Muir Glacier fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-322" class="ident">MuirGlacierBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-322" class="ident">MuirGlacierBlock</a>)</code></span>
+<span class="codeline" id="line-543"><code>	}</code></span>
+<span class="codeline" id="line-544"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-324" class="ident">YoloV2Block</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-324" class="ident">YoloV2Block</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-545"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"YOLOv2 fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-324" class="ident">YoloV2Block</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-324" class="ident">YoloV2Block</a>)</code></span>
+<span class="codeline" id="line-546"><code>	}</code></span>
+<span class="codeline" id="line-547"><code>	<span class="keyword">if</span> <a href="#line-555" class="ident">isForkIncompatible</a>(<label for="r67" class="ident">c</label>.<a href="#line-325" class="ident">EWASMBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-325" class="ident">EWASMBlock</a>, <label for="r70" class="ident">head</label>) {</code></span>
+<span class="codeline" id="line-548"><code>		<span class="keyword">return</span> <a href="#line-587" class="ident">newCompatError</a>(<span class="lit-string">"ewasm fork block"</span>, <label for="r67" class="ident">c</label>.<a href="#line-325" class="ident">EWASMBlock</a>, <label for="r69" class="ident">newcfg</label>.<a href="#line-325" class="ident">EWASMBlock</a>)</code></span>
+<span class="codeline" id="line-549"><code>	}</code></span>
+<span class="codeline" id="line-550"><code>	<span class="keyword">return</span> <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a></code></span>
+<span class="codeline" id="line-551"><code>}</code></span>
+<span class="codeline" id="line-552"><code></code></span>
+<span class="codeline" id="line-553"><code><span class="comment">// isForkIncompatible returns true if a fork scheduled at s1 cannot be rescheduled to</span></code></span>
+<span class="codeline" id="line-554"><code><span class="comment">// block s2 because head is already past the fork.</span></code></span>
+<span class="codeline" id="line-555"><code><span class="keyword">func</span> <label for="r71" class="ident"><a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-isForkIncompatible" class="ident">isForkIncompatible</a></label>(<label for="r72" class="ident">s1</label>, <label for="r73" class="ident">s2</label>, <label for="r74" class="ident">head</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-556"><code>	<span class="keyword">return</span> (<a href="#line-560" class="ident">isForked</a>(<label for="r72" class="ident">s1</label>, <label for="r74" class="ident">head</label>) || <a href="#line-560" class="ident">isForked</a>(<label for="r73" class="ident">s2</label>, <label for="r74" class="ident">head</label>)) &amp;&amp; !<a href="#line-567" class="ident">configNumEqual</a>(<label for="r72" class="ident">s1</label>, <label for="r73" class="ident">s2</label>)</code></span>
+<span class="codeline" id="line-557"><code>}</code></span>
+<span class="codeline" id="line-558"><code></code></span>
+<span class="codeline" id="line-559"><code><span class="comment">// isForked returns whether a fork scheduled at block s is active at the given head block.</span></code></span>
+<span class="codeline" id="line-560"><code><span class="keyword">func</span> <label for="r75" class="ident"><a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-isForked" class="ident">isForked</a></label>(<label for="r76" class="ident">s</label>, <label for="r77" class="ident">head</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-561"><code>	<span class="keyword">if</span> <label for="r76" class="ident">s</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> || <label for="r77" class="ident">head</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-562"><code>		<span class="keyword">return</span> <a href="../../../../../pkg/builtin.html#name-false" class="ident">false</a></code></span>
+<span class="codeline" id="line-563"><code>	}</code></span>
+<span class="codeline" id="line-564"><code>	<span class="keyword">return</span> <label for="r76" class="ident">s</label>.<a href="../../../../math/big/int.go.html#line-320" class="ident">Cmp</a>(<label for="r77" class="ident">head</label>) &lt;= <span class="lit-number">0</span></code></span>
+<span class="codeline" id="line-565"><code>}</code></span>
+<span class="codeline" id="line-566"><code></code></span>
+<span class="codeline" id="line-567"><code><span class="keyword">func</span> <label for="r78" class="ident"><a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-configNumEqual" class="ident">configNumEqual</a></label>(<label for="r79" class="ident">x</label>, <label for="r80" class="ident">y</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a> {</code></span>
+<span class="codeline" id="line-568"><code>	<span class="keyword">if</span> <label for="r79" class="ident">x</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-569"><code>		<span class="keyword">return</span> <label for="r80" class="ident">y</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a></code></span>
+<span class="codeline" id="line-570"><code>	}</code></span>
+<span class="codeline" id="line-571"><code>	<span class="keyword">if</span> <label for="r80" class="ident">y</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-572"><code>		<span class="keyword">return</span> <label for="r79" class="ident">x</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a></code></span>
+<span class="codeline" id="line-573"><code>	}</code></span>
+<span class="codeline" id="line-574"><code>	<span class="keyword">return</span> <label for="r79" class="ident">x</label>.<a href="../../../../math/big/int.go.html#line-320" class="ident">Cmp</a>(<label for="r80" class="ident">y</label>) == <span class="lit-number">0</span></code></span>
+<span class="codeline" id="line-575"><code>}</code></span>
+<span class="codeline" id="line-576"><code></code></span>
+<span class="codeline" id="line-577"><code><span class="comment">// ConfigCompatError is raised if the locally-stored blockchain is initialised with a</span></code></span>
+<span class="codeline" id="line-578"><code><span class="comment">// ChainConfig that would alter the past.</span></code></span>
+<span class="codeline" id="line-579"><code><span class="keyword">type</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-ConfigCompatError" class="ident">ConfigCompatError</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-580"><code>	What <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a></code></span>
+<span class="codeline" id="line-581"><code>	<span class="comment">// block numbers of the stored and new configurations</span></code></span>
+<span class="codeline" id="line-582"><code>	StoredConfig, NewConfig *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a></code></span>
+<span class="codeline" id="line-583"><code>	<span class="comment">// the block number to which the local chain must be rewound to correct the error</span></code></span>
+<span class="codeline" id="line-584"><code>	RewindTo <a href="../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a></code></span>
+<span class="codeline" id="line-585"><code>}</code></span>
+<span class="codeline" id="line-586"><code></code></span>
+<span class="codeline" id="line-587"><code><span class="keyword">func</span> <label for="r81" class="ident"><a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-newCompatError" class="ident">newCompatError</a></label>(<label for="r82" class="ident">what</label> <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a>, <label for="r83" class="ident">storedblock</label>, <label for="r84" class="ident">newblock</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) *<a href="#line-579" class="ident">ConfigCompatError</a> {</code></span>
+<span class="codeline" id="line-588"><code>	<span class="keyword">var</span> <label for="r85" class="ident">rew</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a></code></span>
+<span class="codeline" id="line-589"><code>	<span class="keyword">switch</span> {</code></span>
+<span class="codeline" id="line-590"><code>	<span class="keyword">case</span> <label for="r83" class="ident">storedblock</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a>:</code></span>
+<span class="codeline" id="line-591"><code>		<label for="r85" class="ident">rew</label> = <label for="r84" class="ident">newblock</label></code></span>
+<span class="codeline" id="line-592"><code>	<span class="keyword">case</span> <label for="r84" class="ident">newblock</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> || <label for="r83" class="ident">storedblock</label>.<a href="../../../../math/big/int.go.html#line-320" class="ident">Cmp</a>(<label for="r84" class="ident">newblock</label>) &lt; <span class="lit-number">0</span>:</code></span>
+<span class="codeline" id="line-593"><code>		<label for="r85" class="ident">rew</label> = <label for="r83" class="ident">storedblock</label></code></span>
+<span class="codeline" id="line-594"><code>	<span class="keyword">default</span>:</code></span>
+<span class="codeline" id="line-595"><code>		<label for="r85" class="ident">rew</label> = <label for="r84" class="ident">newblock</label></code></span>
+<span class="codeline" id="line-596"><code>	}</code></span>
+<span class="codeline" id="line-597"><code>	<label for="r86" class="ident">err</label> := &amp;<a href="#line-579" class="ident">ConfigCompatError</a>{<label for="r82" class="ident">what</label>, <label for="r83" class="ident">storedblock</label>, <label for="r84" class="ident">newblock</label>, <span class="lit-number">0</span>}</code></span>
+<span class="codeline" id="line-598"><code>	<span class="keyword">if</span> <label for="r85" class="ident">rew</label> != <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> &amp;&amp; <label for="r85" class="ident">rew</label>.<a href="../../../../math/big/int.go.html#line-38" class="ident">Sign</a>() &gt; <span class="lit-number">0</span> {</code></span>
+<span class="codeline" id="line-599"><code>		<label for="r86" class="ident">err</label>.<a href="#line-584" class="ident">RewindTo</a> = <label for="r85" class="ident">rew</label>.<a href="../../../../math/big/int.go.html#line-383" class="ident">Uint64</a>() - <span class="lit-number">1</span></code></span>
+<span class="codeline" id="line-600"><code>	}</code></span>
+<span class="codeline" id="line-601"><code>	<span class="keyword">return</span> <label for="r86" class="ident">err</label></code></span>
+<span class="codeline" id="line-602"><code>}</code></span>
+<span class="codeline" id="line-603"><code></code></span>
+<span class="codeline" id="line-604"><code><span class="keyword">func</span> (<label for="r87" class="ident">err</label> *<a href="#line-579" class="ident">ConfigCompatError</a>) <label for="r88" class="ident"><a href="../../../../../imp/github.com/ethereum/go-ethereum/params.ConfigCompatError.html#name-Error" class="ident">Error</a></label>() <a href="../../../../../pkg/builtin.html#name-string" class="ident">string</a> {</code></span>
+<span class="codeline" id="line-605"><code>	<span class="keyword">return</span> <a href="../../../../../pkg/fmt.html" class="ident i1">fmt</a>.<a href="../../../../fmt/print.go.html#line-217" class="ident">Sprintf</a>(<span class="lit-string">"mismatching %s in database (have %d, want %d, rewindto %d)"</span>, <label for="r87" class="ident">err</label>.<a href="#line-580" class="ident">What</a>, <label for="r87" class="ident">err</label>.<a href="#line-582" class="ident">StoredConfig</a>, <label for="r87" class="ident">err</label>.<a href="#line-582" class="ident">NewConfig</a>, <label for="r87" class="ident">err</label>.<a href="#line-584" class="ident">RewindTo</a>)</code></span>
+<span class="codeline" id="line-606"><code>}</code></span>
+<span class="codeline" id="line-607"><code></code></span>
+<span class="codeline" id="line-608"><code><span class="comment">// Rules wraps ChainConfig and is merely syntactic sugar or can be used for functions</span></code></span>
+<span class="codeline" id="line-609"><code><span class="comment">// that do not have or require information about the block.</span></code></span>
+<span class="codeline" id="line-610"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-611"><code><span class="comment">// Rules is a one time interface meaning that it shouldn't be used in between transition</span></code></span>
+<span class="codeline" id="line-612"><code><span class="comment">// phases.</span></code></span>
+<span class="codeline" id="line-613"><code><span class="keyword">type</span> <a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-Rules" class="ident">Rules</a> <span class="keyword">struct</span> {</code></span>
+<span class="codeline" id="line-614"><code>	ChainID                                                 *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a></code></span>
+<span class="codeline" id="line-615"><code>	IsHomestead, IsEIP150, IsEIP155, IsEIP158               <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a></code></span>
+<span class="codeline" id="line-616"><code>	IsByzantium, IsConstantinople, IsPetersburg, IsIstanbul <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a></code></span>
+<span class="codeline" id="line-617"><code>	IsYoloV2                                                <a href="../../../../../pkg/builtin.html#name-bool" class="ident">bool</a></code></span>
+<span class="codeline" id="line-618"><code>}</code></span>
+<span class="codeline" id="line-619"><code></code></span>
+<span class="codeline" id="line-620"><code><span class="comment">// Rules ensures c's ChainID is not nil.</span></code></span>
+<span class="codeline" id="line-621"><code><span class="keyword">func</span> (<label for="r89" class="ident">c</label> *<a href="#line-303" class="ident">ChainConfig</a>) <label for="r90" class="ident">Rules</label>(<label for="r91" class="ident">num</label> *<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>) <a href="#line-613" class="ident">Rules</a> {</code></span>
+<span class="codeline" id="line-622"><code>	<label for="r92" class="ident">chainID</label> := <label for="r89" class="ident">c</label>.<a href="#line-304" class="ident">ChainID</a></code></span>
+<span class="codeline" id="line-623"><code>	<span class="keyword">if</span> <label for="r92" class="ident">chainID</label> == <a href="../../../../../pkg/builtin.html#name-nil" class="ident">nil</a> {</code></span>
+<span class="codeline" id="line-624"><code>		<label for="r92" class="ident">chainID</label> = <a href="../../../../../pkg/builtin.html#name-new" class="ident">new</a>(<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>)</code></span>
+<span class="codeline" id="line-625"><code>	}</code></span>
+<span class="codeline" id="line-626"><code>	<span class="keyword">return</span> <a href="#line-613" class="ident">Rules</a>{</code></span>
+<span class="codeline" id="line-627"><code>		<a href="#line-614" class="ident">ChainID</a>:          <a href="../../../../../pkg/builtin.html#name-new" class="ident">new</a>(<a href="../../../../../pkg/math/big.html" class="ident i2">big</a>.<a href="../../../../math/big/int.go.html#line-25" class="ident">Int</a>).<a href="../../../../math/big/int.go.html#line-73" class="ident">Set</a>(<label for="r92" class="ident">chainID</label>),</code></span>
+<span class="codeline" id="line-628"><code>		<a href="#line-615" class="ident">IsHomestead</a>:      <label for="r89" class="ident">c</label>.<a href="#line-381" class="ident">IsHomestead</a>(<label for="r91" class="ident">num</label>),</code></span>
+<span class="codeline" id="line-629"><code>		<a href="#line-615" class="ident">IsEIP150</a>:         <label for="r89" class="ident">c</label>.<a href="#line-391" class="ident">IsEIP150</a>(<label for="r91" class="ident">num</label>),</code></span>
+<span class="codeline" id="line-630"><code>		<a href="#line-615" class="ident">IsEIP155</a>:         <label for="r89" class="ident">c</label>.<a href="#line-396" class="ident">IsEIP155</a>(<label for="r91" class="ident">num</label>),</code></span>
+<span class="codeline" id="line-631"><code>		<a href="#line-615" class="ident">IsEIP158</a>:         <label for="r89" class="ident">c</label>.<a href="#line-401" class="ident">IsEIP158</a>(<label for="r91" class="ident">num</label>),</code></span>
+<span class="codeline" id="line-632"><code>		<a href="#line-616" class="ident">IsByzantium</a>:      <label for="r89" class="ident">c</label>.<a href="#line-406" class="ident">IsByzantium</a>(<label for="r91" class="ident">num</label>),</code></span>
+<span class="codeline" id="line-633"><code>		<a href="#line-616" class="ident">IsConstantinople</a>: <label for="r89" class="ident">c</label>.<a href="#line-411" class="ident">IsConstantinople</a>(<label for="r91" class="ident">num</label>),</code></span>
+<span class="codeline" id="line-634"><code>		<a href="#line-616" class="ident">IsPetersburg</a>:     <label for="r89" class="ident">c</label>.<a href="#line-423" class="ident">IsPetersburg</a>(<label for="r91" class="ident">num</label>),</code></span>
+<span class="codeline" id="line-635"><code>		<a href="#line-616" class="ident">IsIstanbul</a>:       <label for="r89" class="ident">c</label>.<a href="#line-428" class="ident">IsIstanbul</a>(<label for="r91" class="ident">num</label>),</code></span>
+<span class="codeline" id="line-636"><code>		<a href="#line-617" class="ident">IsYoloV2</a>:         <label for="r89" class="ident">c</label>.<a href="#line-433" class="ident">IsYoloV2</a>(<label for="r91" class="ident">num</label>),</code></span>
+<span class="codeline" id="line-637"><code>	}</code></span>
+<span class="codeline" id="line-638"><code>}</code></span>
+</pre><pre id="footer">
+<table><tr><td><img src="../../../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

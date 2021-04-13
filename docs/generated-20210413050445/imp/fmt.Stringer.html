@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Method Implmentations: fmt.Stringer</title>
+<link href="../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+<pre><code><span style="font-size:x-large;">type <a href="../pkg/fmt.html">fmt</a>.<b><a href="../src/fmt/print.go.html#line-62">Stringer</a></b></span><span style="font-size:large;"> <b><i>(interface)</i></b></span>
+
+<code><span class="title">Method Implmentations<span class="title-stat"><i></i></span></span>
+
+<div class="anchor" id="name-String">	<a href="../src/runtime/error.go.html#line-205">String</a>() <a href="../pkg/builtin.html#name-string">string</a>
+		*bytes.<a href="../pkg/bytes.html#name-Buffer">Buffer</a>.<b><a href="../src/bytes/buffer.go.html#line-60">String</a></b>
+		 crypto.<a href="../pkg/crypto.html#name-Hash">Hash</a>.<b><a href="../src/crypto/crypto.go.html#line-23">String</a></b>
+		 encoding/asn1.<a href="../pkg/encoding/asn1.html#name-ObjectIdentifier">ObjectIdentifier</a>.<b><a href="../src/encoding/asn1/asn1.go.html#line-238">String</a></b>
+		 encoding/binary.<a href="../pkg/encoding/binary.html#name-ByteOrder">ByteOrder</a>.<b><a href="../src/encoding/binary/binary.go.html#line-41">String</a></b>
+		 encoding/json.<a href="../pkg/encoding/json.html#name-Delim">Delim</a>.<b><a href="../src/encoding/json/stream.go.html#line-355">String</a></b>
+		 encoding/json.<a href="../pkg/encoding/json.html#name-Number">Number</a>.<b><a href="../src/encoding/json/decode.go.html#line-191">String</a></b>
+		 github.com/ethereum/go-ethereum/common.<a href="../pkg/github.com/ethereum/go-ethereum/common.html#name-Address">Address</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/types.go.html#line-240">String</a></b>
+		 github.com/ethereum/go-ethereum/common.<a href="../pkg/github.com/ethereum/go-ethereum/common.html#name-Hash">Hash</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/types.go.html#line-84">String</a></b>
+		*github.com/ethereum/go-ethereum/common.<a href="../pkg/github.com/ethereum/go-ethereum/common.html#name-MixedcaseAddress">MixedcaseAddress</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/types.go.html#line-413">String</a></b>
+		 github.com/ethereum/go-ethereum/common.<a href="../pkg/github.com/ethereum/go-ethereum/common.html#name-PrettyAge">PrettyAge</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/format.go.html#line-62">String</a></b>
+		 github.com/ethereum/go-ethereum/common.<a href="../pkg/github.com/ethereum/go-ethereum/common.html#name-PrettyDuration">PrettyDuration</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/format.go.html#line-34">String</a></b>
+		 github.com/ethereum/go-ethereum/common.<a href="../pkg/github.com/ethereum/go-ethereum/common.html#name-StorageSize">StorageSize</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/size.go.html#line-28">String</a></b>
+		*github.com/ethereum/go-ethereum/common/hexutil.<a href="../pkg/github.com/ethereum/go-ethereum/common/hexutil.html#name-Big">Big</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/hexutil/json.go.html#line-205">String</a></b>
+		 github.com/ethereum/go-ethereum/common/hexutil.<a href="../pkg/github.com/ethereum/go-ethereum/common/hexutil.html#name-Bytes">Bytes</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/hexutil/json.go.html#line-71">String</a></b>
+		 github.com/ethereum/go-ethereum/common/hexutil.<a href="../pkg/github.com/ethereum/go-ethereum/common/hexutil.html#name-Uint">Uint</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/hexutil/json.go.html#line-323">String</a></b>
+		 github.com/ethereum/go-ethereum/common/hexutil.<a href="../pkg/github.com/ethereum/go-ethereum/common/hexutil.html#name-Uint64">Uint64</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/hexutil/json.go.html#line-271">String</a></b>
+		*github.com/ethereum/go-ethereum/common/math.<a href="../pkg/github.com/ethereum/go-ethereum/common/math.html#name-Decimal256">Decimal256</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/math/big.go.html#line-97">String</a></b>
+		*github.com/ethereum/go-ethereum/params.<a href="../pkg/github.com/ethereum/go-ethereum/params.html#name-ChainConfig">ChainConfig</a>.<b><a href="../src/github.com/ethereum/go-ethereum/params/config.go.html#line-352">String</a></b>
+		*github.com/ethereum/go-ethereum/params.<a href="../pkg/github.com/ethereum/go-ethereum/params.html#name-CliqueConfig">CliqueConfig</a>.<b><a href="../src/github.com/ethereum/go-ethereum/params/config.go.html#line-347">String</a></b>
+		*github.com/ethereum/go-ethereum/params.<a href="../pkg/github.com/ethereum/go-ethereum/params.html#name-EthashConfig">EthashConfig</a>.<b><a href="../src/github.com/ethereum/go-ethereum/params/config.go.html#line-336">String</a></b>
+		 github.com/ethereum/go-ethereum/rlp.<a href="../pkg/github.com/ethereum/go-ethereum/rlp.html#name-Kind">Kind</a>.<b><a href="../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-515">String</a></b>
+		 internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-Kind">Kind</a>.<b><a href="../src/internal/reflectlite/type.go.html#line-388">String</a></b>
+		 internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-Type">Type</a>.<b><a href="../src/internal/reflectlite/type.go.html#line-60">String</a></b>
+		 io/fs.<a href="../pkg/io/fs.html#name-FileMode">FileMode</a>.<b><a href="../src/io/fs/fs.go.html#line-194">String</a></b>
+		 math/big.<a href="../pkg/math/big.html#name-Accuracy">Accuracy</a>.<b><a href="../src/math/big/accuracy_string.go.html#line-11">String</a></b>
+		*math/big.<a href="../pkg/math/big.html#name-Float">Float</a>.<b><a href="../src/math/big/ftoa.go.html#line-57">String</a></b>
+		*math/big.<a href="../pkg/math/big.html#name-Int">Int</a>.<b><a href="../src/math/big/intconv.go.html#line-39">String</a></b>
+		*math/big.<a href="../pkg/math/big.html#name-Rat">Rat</a>.<b><a href="../src/math/big/ratconv.go.html#line-295">String</a></b>
+		 math/big.<a href="../pkg/math/big.html#name-RoundingMode">RoundingMode</a>.<b><a href="../src/math/big/roundingmode_string.go.html#line-11">String</a></b>
+		*os.<a href="../pkg/os.html#name-ProcessState">ProcessState</a>.<b><a href="../src/os/exec_posix.go.html#line-97">String</a></b>
+		 os.<a href="../pkg/os.html#name-Signal">Signal</a>.<b><a href="../src/os/exec.go.html#line-70">String</a></b>
+		 reflect.<a href="../pkg/reflect.html#name-ChanDir">ChanDir</a>.<b><a href="../src/reflect/type.go.html#line-1040">String</a></b>
+		 reflect.<a href="../pkg/reflect.html#name-Kind">Kind</a>.<b><a href="../src/reflect/type.go.html#line-591">String</a></b>
+		 reflect.<a href="../pkg/reflect.html#name-Type">Type</a>.<b><a href="../src/reflect/type.go.html#line-97">String</a></b>
+		 reflect.<a href="../pkg/reflect.html#name-Value">Value</a>.<b><a href="../src/reflect/value.go.html#line-1871">String</a></b>
+		*regexp.<a href="../pkg/regexp.html#name-Regexp">Regexp</a>.<b><a href="../src/regexp/regexp.go.html#line-105">String</a></b>
+		 regexp/syntax.<a href="../pkg/regexp/syntax.html#name-ErrorCode">ErrorCode</a>.<b><a href="../src/regexp/syntax/parse.go.html#line-48">String</a></b>
+		*regexp/syntax.<a href="../pkg/regexp/syntax.html#name-Inst">Inst</a>.<b><a href="../src/regexp/syntax/prog.go.html#line-281">String</a></b>
+		 regexp/syntax.<a href="../pkg/regexp/syntax.html#name-InstOp">InstOp</a>.<b><a href="../src/regexp/syntax/prog.go.html#line-54">String</a></b>
+		 regexp/syntax.<a href="../pkg/regexp/syntax.html#name-Op">Op</a>.<b><a href="../src/regexp/syntax/op_string.go.html#line-16">String</a></b>
+		*regexp/syntax.<a href="../pkg/regexp/syntax.html#name-Prog">Prog</a>.<b><a href="../src/regexp/syntax/prog.go.html#line-119">String</a></b>
+		*regexp/syntax.<a href="../pkg/regexp/syntax.html#name-Regexp">Regexp</a>.<b><a href="../src/regexp/syntax/regexp.go.html#line-246">String</a></b>
+		*strings.<a href="../pkg/strings.html#name-Builder">Builder</a>.<b><a href="../src/strings/builder.go.html#line-47">String</a></b>
+		 syscall.<a href="../pkg/syscall.html#name-Signal">Signal</a>.<b><a href="../src/syscall/syscall_unix.go.html#line-176">String</a></b>
+		 time.<a href="../pkg/time.html#name-Duration">Duration</a>.<b><a href="../src/time/time.go.html#line-614">String</a></b>
+		*time.<a href="../pkg/time.html#name-Location">Location</a>.<b><a href="../src/time/zoneinfo.go.html#line-99">String</a></b>
+		 time.<a href="../pkg/time.html#name-Month">Month</a>.<b><a href="../src/time/time.go.html#line-291">String</a></b>
+		 time.<a href="../pkg/time.html#name-Time">Time</a>.<b><a href="../src/time/format.go.html#line-450">String</a></b>
+		 time.<a href="../pkg/time.html#name-Weekday">Weekday</a>.<b><a href="../src/time/time.go.html#line-314">String</a></b>
+		*context.<a href="../pkg/context.html#name-cancelCtx">cancelCtx</a>.<b><a href="../src/context/context.go.html#line-388">String</a></b>
+		*context.<a href="../pkg/context.html#name-emptyCtx">emptyCtx</a>.<b><a href="../src/context/context.go.html#line-189">String</a></b>
+		 context.<a href="../pkg/context.html#name-stringer">stringer</a>.<b><a href="../src/runtime/error.go.html#line-205">String</a></b>
+		*context.<a href="../pkg/context.html#name-timerCtx">timerCtx</a>.<b><a href="../src/context/context.go.html#line-472">String</a></b>
+		*context.<a href="../pkg/context.html#name-valueCtx">valueCtx</a>.<b><a href="../src/context/context.go.html#line-552">String</a></b>
+		 database/sql/driver.<a href="../pkg/database/sql/driver.html#name-boolType">boolType</a>.<b><a href="../src/database/sql/driver/types.go.html#line-61">String</a></b>
+		 encoding/binary.<a href="../pkg/encoding/binary.html#name-bigEndian">bigEndian</a>.<b><a href="../src/encoding/binary/binary.go.html#line-142">String</a></b>
+		 encoding/binary.<a href="../pkg/encoding/binary.html#name-littleEndian">littleEndian</a>.<b><a href="../src/encoding/binary/binary.go.html#line-94">String</a></b>
+		*encoding/json.<a href="../pkg/encoding/json.html#name-encodeState">encodeState</a>.<i><a href="../src/encoding/json/encode.go.html#line-288">Buffer</a></i>.<b><a href="../src/bytes/buffer.go.html#line-60">String</a></b>
+		 github.com/ethereum/go-ethereum/rlp.<a href="../pkg/github.com/ethereum/go-ethereum/rlp.html#name-typekey">typekey</a>.<i><a href="../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-59">Type</a></i>.<b><a href="../src/reflect/type.go.html#line-97">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-arrayType">arrayType</a>.<i><a href="../src/internal/reflectlite/type.go.html#line-198">rtype</a></i>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-chanType">chanType</a>.<i><a href="../src/internal/reflectlite/type.go.html#line-206">rtype</a></i>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-funcType">funcType</a>.<i><a href="../src/internal/reflectlite/type.go.html#line-223">rtype</a></i>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-interfaceType">interfaceType</a>.<i><a href="../src/internal/reflectlite/type.go.html#line-236">rtype</a></i>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-mapType">mapType</a>.<i><a href="../src/internal/reflectlite/type.go.html#line-243">rtype</a></i>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-ptrType">ptrType</a>.<i><a href="../src/internal/reflectlite/type.go.html#line-257">rtype</a></i>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-rtype">rtype</a>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-sliceType">sliceType</a>.<i><a href="../src/internal/reflectlite/type.go.html#line-257">rtype</a></i>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-structType">structType</a>.<i><a href="../src/internal/reflectlite/type.go.html#line-284">rtype</a></i>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-structTypeUncommon">structTypeUncommon</a>.<i><a href="../src/internal/reflectlite/type.go.html#line-945">structType</a></i>.<i><a href="../src/internal/reflectlite/type.go.html#line-284">rtype</a></i>.<b><a href="../src/internal/reflectlite/type.go.html#line-519">String</a></b>
+		*math/big.<a href="../pkg/math/big.html#name-decimal">decimal</a>.<b><a href="../src/math/big/decimal.go.html#line-160">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-arrayType">arrayType</a>.<i><a href="../src/reflect/type.go.html#line-352">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-chanType">chanType</a>.<i><a href="../src/reflect/type.go.html#line-360">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-funcType">funcType</a>.<i><a href="../src/reflect/type.go.html#line-377">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-funcTypeFixed128">funcTypeFixed128</a>.<i><a href="../src/reflect/type.go.html#line-1932">funcType</a></i>.<i><a href="../src/reflect/type.go.html#line-377">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-funcTypeFixed16">funcTypeFixed16</a>.<i><a href="../src/reflect/type.go.html#line-1920">funcType</a></i>.<i><a href="../src/reflect/type.go.html#line-377">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-funcTypeFixed32">funcTypeFixed32</a>.<i><a href="../src/reflect/type.go.html#line-1924">funcType</a></i>.<i><a href="../src/reflect/type.go.html#line-377">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-funcTypeFixed4">funcTypeFixed4</a>.<i><a href="../src/reflect/type.go.html#line-1912">funcType</a></i>.<i><a href="../src/reflect/type.go.html#line-377">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-funcTypeFixed64">funcTypeFixed64</a>.<i><a href="../src/reflect/type.go.html#line-1928">funcType</a></i>.<i><a href="../src/reflect/type.go.html#line-377">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-funcTypeFixed8">funcTypeFixed8</a>.<i><a href="../src/reflect/type.go.html#line-1916">funcType</a></i>.<i><a href="../src/reflect/type.go.html#line-377">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-interfaceType">interfaceType</a>.<i><a href="../src/reflect/type.go.html#line-390">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-mapType">mapType</a>.<i><a href="../src/reflect/type.go.html#line-397">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-ptrType">ptrType</a>.<i><a href="../src/reflect/type.go.html#line-411">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-rtype">rtype</a>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-sliceType">sliceType</a>.<i><a href="../src/reflect/type.go.html#line-411">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-structType">structType</a>.<i><a href="../src/reflect/type.go.html#line-438">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-structTypeUncommon">structTypeUncommon</a>.<i><a href="../src/reflect/type.go.html#line-2332">structType</a></i>.<i><a href="../src/reflect/type.go.html#line-438">rtype</a></i>.<b><a href="../src/reflect/type.go.html#line-755">String</a></b>
+		*regexp.<a href="../pkg/regexp.html#name-onePassInst">onePassInst</a>.<i><a href="../src/regexp/onepass.go.html#line-31">Inst</a></i>.<b><a href="../src/regexp/syntax/prog.go.html#line-281">String</a></b>
+		 runtime.<a href="../pkg/runtime.html#name-lockRank">lockRank</a>.<b><a href="../src/runtime/lockrank.go.html#line-175">String</a></b>
+		 runtime.<a href="../pkg/runtime.html#name-stringer">stringer</a>.<b><a href="../src/runtime/error.go.html#line-205">String</a></b>
+		 runtime.<a href="../pkg/runtime.html#name-waitReason">waitReason</a>.<b><a href="../src/runtime/runtime2.go.html#line-1047">String</a></b>
+		*strconv.<a href="../pkg/strconv.html#name-decimal">decimal</a>.<b><a href="../src/strconv/decimal.go.html#line-22">String</a></b></div></code></pre><pre id="footer">
+<table><tr><td><img src="../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>
