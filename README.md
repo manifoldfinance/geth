@@ -138,9 +138,7 @@ The `blocknumber` defines the block height at which the bundle is to be included
 
 The `minTimestamp` and `maxTimestamp` are optional conditions to further restrict bundle validity within a time range.
 
-MEV-Geth miners select the most profitable bundle per unit of gas used and place it at the beginning of the list of transactions of the block template at a given blockheight. Miners determine the value of a bundle based on the following equation. _Note, the change in block.coinbase balance represents a direct transfer of ETH through a smart contract._
-
-<img width="544" src="https://hackmd.io/_uploads/Bk6iQmr5P.png">
+MEV-Geth miners select the most profitable bundle per unit of gas used and place it at the beginning of the list of transactions of the block template at a given blockheight. Miners determine the value of a bundle based on the following equation: the total eth sent to the coinbase divided by the total gas used by the bundle. This equation completely ignores gas fees from the transactions.
 
 To submit a bundle, the searcher sends the bundle directly to the miner using the rpc method `eth_sendBundle`. Since MEV-Geth requires direct communication between searchers and miners, a searcher can configure the list of miners where they want to send their bundle.
 
