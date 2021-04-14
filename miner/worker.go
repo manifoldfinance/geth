@@ -18,8 +18,11 @@ package miner
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
+	"fmt"
 	"math/big"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -578,7 +581,10 @@ func (w *worker) taskLoop() {
 
 		prevParentHash common.Hash
 		prevProfit     *big.Int
+		timer          = time.NewTimer(0)
 	)
+
+	<-timer.C // usual skip first tick
 
 	// interrupt aborts the in-flight sealing task.
 	interrupt := func() {
@@ -587,41 +593,101 @@ func (w *worker) taskLoop() {
 			stopCh = nil
 		}
 	}
+
+	taskWork := map[string]struct{}{}
+	var defaultTaskPick *task
+
+	asSha256 := func(o interface{}) string {
+		h := sha256.New()
+		h.Write([]byte(fmt.Sprintf("%v", o)))
+		return fmt.Sprintf("%x", h.Sum(nil))
+	}
+
+	handle := func(task *task) {
+		if w.newTaskHook != nil {
+			w.newTaskHook(task)
+		}
+		// Reject duplicate sealing work due to resubmitting.
+		sealHash := w.engine.SealHash(task.block.Header())
+		if sealHash == prev {
+			return
+		}
+
+		taskParentHash := task.block.Header().ParentHash
+		// reject new tasks which don't profit
+		if taskParentHash == prevParentHash &&
+			prevProfit != nil && task.profit.Cmp(prevProfit) < 0 {
+			return
+		}
+		prevParentHash = taskParentHash
+		prevProfit = task.profit
+
+		// Interrupt previous sealing operation
+		interrupt()
+		stopCh, prev = make(chan struct{}), sealHash
+		log.Info("Proposed miner block", "blockNumber", task.block.Number(), "profit", ethIntToFloat(prevProfit), "isFlashbots", task.isFlashbots, "sealhash", sealHash, "parentHash", prevParentHash)
+		if w.skipSealHook != nil && w.skipSealHook(task) {
+			return
+		}
+		w.pendingMu.Lock()
+		w.pendingTasks[sealHash] = task
+		w.pendingMu.Unlock()
+
+		if err := w.engine.Seal(w.chain, task.block, w.resultCh, stopCh); err != nil {
+			log.Warn("Block sealing failed", "err", err)
+		}
+
+	}
+
+	type unique struct {
+		receipts []*types.Receipt
+		state    *state.StateDB
+		block    *types.Block
+	}
+
 	for {
 		select {
+
+		case <-timer.C:
+			// timer went off, use first bundle, defaultTaskPick
+			if d := defaultTaskPick; d != nil {
+				handle(d)
+			}
+
 		case task := <-w.taskCh:
-			if w.newTaskHook != nil {
-				w.newTaskHook(task)
-			}
-			// Reject duplicate sealing work due to resubmitting.
-			sealHash := w.engine.SealHash(task.block.Header())
-			if sealHash == prev {
+			if w.config.StrictProfitWait == 0 {
+				handle(task)
 				continue
 			}
 
-			taskParentHash := task.block.Header().ParentHash
-			// reject new tasks which don't profit
-			if taskParentHash == prevParentHash &&
-				prevProfit != nil && task.profit.Cmp(prevProfit) < 0 {
-				continue
-			}
-			prevParentHash = taskParentHash
-			prevProfit = task.profit
+			func() {
+				defer func() {
+					if len(taskWork) > 4096 {
+						taskWork = map[string]struct{}{}
+					}
+				}()
+				u := asSha256(unique{task.receipts, task.state, task.block})
+				_, plainExists := taskWork[fmt.Sprintf("%s-%v", u, false)]
+				_, flashBotsExists := taskWork[fmt.Sprintf("%s-%v", u, true)]
+				taskKey := fmt.Sprintf("%s-%v", u, task.isFlashbots)
 
-			// Interrupt previous sealing operation
-			interrupt()
-			stopCh, prev = make(chan struct{}), sealHash
-			log.Info("Proposed miner block", "blockNumber", task.block.Number(), "profit", prevProfit, "isFlashbots", task.isFlashbots, "sealhash", sealHash, "parentHash", prevParentHash)
-			if w.skipSealHook != nil && w.skipSealHook(task) {
-				continue
-			}
-			w.pendingMu.Lock()
-			w.pendingTasks[sealHash] = task
-			w.pendingMu.Unlock()
-
-			if err := w.engine.Seal(w.chain, task.block, w.resultCh, stopCh); err != nil {
-				log.Warn("Block sealing failed", "err", err)
-			}
+				switch {
+				// one of the workers already made this task
+				case plainExists || flashBotsExists:
+					timer.Stop()
+					if defaultTaskPick.profit.Cmp(task.profit) >= 0 {
+						handle(defaultTaskPick)
+					} else {
+						handle(task)
+					}
+				// neither worker produced the task yet
+				case !plainExists && !flashBotsExists:
+					taskWork[taskKey] = struct{}{}
+					defaultTaskPick = task
+					timer.Reset(w.config.StrictProfitWait)
+					return
+				}
+			}()
 		case <-w.exitCh:
 			interrupt()
 			return
@@ -793,9 +859,8 @@ func (w *worker) updateSnapshot() {
 	w.snapshotState = w.current.state.Copy()
 }
 
-func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Address, trackProfit bool) ([]*types.Log, error) {
+func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Address) ([]*types.Log, error) {
 	snap := w.current.state.Snapshot()
-	initialBalance := w.current.state.GetBalance(w.coinbase)
 
 	receipt, err := core.ApplyTransaction(w.chainConfig, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig())
 	if err != nil {
@@ -805,14 +870,8 @@ func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Addres
 	w.current.txs = append(w.current.txs, tx)
 	w.current.receipts = append(w.current.receipts, receipt)
 
-	// coinbase balance difference already contains gas fee
-	if trackProfit {
-		finalBalance := w.current.state.GetBalance(w.coinbase)
-		w.current.profit.Add(w.current.profit, new(big.Int).Sub(finalBalance, initialBalance))
-	} else {
-		gasUsed := new(big.Int).SetUint64(receipt.GasUsed)
-		w.current.profit.Add(w.current.profit, gasUsed.Mul(gasUsed, tx.GasPrice()))
-	}
+	gasUsed := new(big.Int).SetUint64(receipt.GasUsed)
+	w.current.profit.Add(w.current.profit, gasUsed.Mul(gasUsed, tx.GasPrice()))
 
 	return receipt.Logs, nil
 }
@@ -869,7 +928,7 @@ func (w *worker) commitBundle(txs types.Transactions, coinbase common.Address, i
 		// Start executing the transaction
 		w.current.state.Prepare(tx.Hash(), common.Hash{}, w.current.tcount)
 
-		logs, err := w.commitTransaction(tx, coinbase, true)
+		logs, err := w.commitTransaction(tx, coinbase)
 		switch err {
 		case core.ErrGasLimitReached:
 			// Pop the current out-of-gas transaction without shifting in the next from the account
@@ -978,7 +1037,7 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 		// Start executing the transaction
 		w.current.state.Prepare(tx.Hash(), common.Hash{}, w.current.tcount)
 
-		logs, err := w.commitTransaction(tx, coinbase, false)
+		logs, err := w.commitTransaction(tx, coinbase)
 		switch {
 		case errors.Is(err, core.ErrGasLimitReached):
 			// Pop the current out-of-gas transaction without shifting in the next from the account
@@ -1178,11 +1237,15 @@ func (w *worker) commitNewWork(
 			log.Error("Failed to fetch pending transactions", "err", err)
 			return
 		}
-		maxBundle, bundlePrice, ethToCoinbase, gasUsed := w.findMostProfitableBundle(bundles, w.coinbase, parent, header)
-		log.Info("Flashbots bundle", "ethToCoinbase", ethToCoinbase, "gasUsed", gasUsed, "bundlePrice", bundlePrice, "bundleLength", len(maxBundle))
-		if w.commitBundle(maxBundle, w.coinbase, interrupt) {
+		bundle, ethSentToCoinbase, err := w.generateFlashbotsBundle(bundles, w.coinbase, parent, header)
+		if err != nil {
+			log.Error("Failed to generate flashbots bundle", "err", err)
 			return
 		}
+		if w.commitBundle(bundle, w.coinbase, interrupt) {
+			return
+		}
+		w.current.profit.Add(w.current.profit, ethSentToCoinbase) // TODO: move this to commitBundle
 	}
 	if len(localTxs) > 0 {
 		txs := types.NewTransactionsByPriceAndNonce(w.current.signer, localTxs)
@@ -1213,12 +1276,13 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 		if interval != nil {
 			interval()
 		}
+
 		select {
 		case w.taskCh <- &task{receipts: receipts, state: s, block: block, createdAt: time.Now(), profit: w.current.profit, isFlashbots: w.flashbots.isFlashbots}:
 			w.unconfirmed.Shift(block.NumberU64() - 1)
 			log.Info("Commit new mining work", "number", block.Number(), "sealhash", w.engine.SealHash(block.Header()),
 				"uncles", len(uncles), "txs", w.current.tcount,
-				"gas", block.GasUsed(), "fees", totalFees(block, receipts),
+				"gas", block.GasUsed(), "fees", totalFees(block, receipts), "profit", ethIntToFloat(w.current.profit),
 				"elapsed", common.PrettyDuration(time.Since(start)),
 				"isFlashbots", w.flashbots.isFlashbots)
 
@@ -1232,64 +1296,144 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 	return nil
 }
 
-func (w *worker) findMostProfitableBundle(bundles []types.Transactions, coinbase common.Address, parent *types.Block, header *types.Header) (types.Transactions, *big.Int, *big.Int, uint64) {
-	maxBundlePrice := new(big.Int)
-	maxTotalEth := new(big.Int)
-	var maxTotalGasUsed uint64
-	maxBundle := types.Transactions{}
+type simulatedBundle struct {
+	mevGasPrice    *big.Int
+	totalEth       *big.Int
+	totalGasUsed   uint64
+	originalBundle types.MevBundle
+}
+
+func (w *worker) generateFlashbotsBundle(bundles []types.MevBundle, coinbase common.Address, parent *types.Block, header *types.Header) (types.Transactions, *big.Int, error) {
+	simulatedBundles, err := w.simulateBundles(bundles, coinbase, parent, header)
+	if err != nil {
+		return nil, new(big.Int), err
+	}
+
+	sort.SliceStable(simulatedBundles, func(i, j int) bool {
+		return simulatedBundles[j].mevGasPrice.Cmp(simulatedBundles[i].mevGasPrice) < 0
+	})
+
+	if len(simulatedBundles) > 0 {
+		bundle := simulatedBundles[0]
+		log.Info("Highest flashbots bundle", "ethToCoinbase", ethIntToFloat(bundle.totalEth), "gasUsed", bundle.totalGasUsed, "bundleScore", bundle.mevGasPrice, "bundleLength", len(bundle.originalBundle.Txs))
+	}
+
+	return w.mergeBundles(simulatedBundles, parent, header)
+}
+
+func (w *worker) mergeBundles(bundles []simulatedBundle, parent *types.Block, header *types.Header) (types.Transactions, *big.Int, error) {
+	finalBundle := types.Transactions{}
+	totalEth := new(big.Int)
+
+	state, err := w.chain.StateAt(parent.Root())
+	if err != nil {
+		return nil, totalEth, err
+	}
+	gasPool := new(core.GasPool).AddGas(header.GasLimit)
+
+	prevState := state
+	prevGasPool := gasPool
+
+	var totalGasUsed uint64
+
+	count := 0
 	for _, bundle := range bundles {
-		if len(bundle) == 0 {
+		prevState = state.Copy()
+		prevGasPool = new(core.GasPool).AddGas(gasPool.Gas())
+
+		simmed, err := w.computeBundleGas(bundle.originalBundle, parent, header, state, gasPool)
+		if err != nil || simmed.mevGasPrice.Cmp(bundle.originalBundle.TailGas) < 0 || simmed.totalEth.Cmp(new(big.Int)) < 0 {
+			state = prevState
+			gasPool = prevGasPool
 			continue
 		}
-		totalEth, totalGasUsed, err := w.computeBundleGas(bundle, parent, header)
+		log.Info("Included bundle", "ethToCoinbase", ethIntToFloat(simmed.totalEth), "gasUsed", simmed.totalGasUsed, "bundleScore", simmed.mevGasPrice, "bundleLength", len(simmed.originalBundle.Txs))
+		finalBundle = append(finalBundle, simmed.originalBundle.Txs...)
+		totalEth.Add(totalEth, bundle.totalEth)
+		totalGasUsed += bundle.totalGasUsed
+		count++
+	}
+
+	if len(finalBundle) == 0 {
+		return nil, totalEth, nil
+	}
+	log.Info("Flashbots bundle", "ethToCoinbase", ethIntToFloat(totalEth), "gasUsed", totalGasUsed, "bundleScore", new(big.Int).Div(totalEth, new(big.Int).SetUint64(totalGasUsed)), "bundleLength", len(finalBundle), "numBundles", count)
+
+	return finalBundle, totalEth, nil
+}
+
+func (w *worker) simulateBundles(bundles []types.MevBundle, coinbase common.Address, parent *types.Block, header *types.Header) ([]simulatedBundle, error) {
+	simulatedBundles := []simulatedBundle{}
+
+	for _, bundle := range bundles {
+		state, err := w.chain.StateAt(parent.Root())
+		if err != nil {
+			return nil, err
+		}
+		gasPool := new(core.GasPool).AddGas(header.GasLimit)
+		if len(bundle.Txs) == 0 {
+			continue
+		}
+		simmed, err := w.computeBundleGas(bundle, parent, header, state, gasPool)
 
 		if err != nil {
 			log.Debug("Error computing gas for a bundle", "error", err)
 			continue
 		}
 
-		mevGasPrice := new(big.Int).Div(totalEth, new(big.Int).SetUint64(totalGasUsed))
-		if mevGasPrice.Cmp(maxBundlePrice) > 0 {
-			maxBundle = bundle
-			maxBundlePrice = mevGasPrice
-			maxTotalEth = totalEth
-			maxTotalGasUsed = totalGasUsed
-		}
+		simulatedBundles = append(simulatedBundles, simmed)
 	}
 
-	return maxBundle, maxBundlePrice, maxTotalEth, maxTotalGasUsed
+	return simulatedBundles, nil
+}
+
+func containsHash(arr []common.Hash, match common.Hash) bool {
+	for _, elem := range arr {
+		if elem == match {
+			return true
+		}
+	}
+	return false
 }
 
 // Compute the adjusted gas price for a whole bundle
 // Done by calculating all gas spent, adding transfers to the coinbase, and then dividing by gas used
-func (w *worker) computeBundleGas(bundle types.Transactions, parent *types.Block, header *types.Header) (*big.Int, uint64, error) {
-	env, err := w.generateEnv(parent, header)
-	if err != nil {
-		return nil, 0, err
-	}
-
+func (w *worker) computeBundleGas(bundle types.MevBundle, parent *types.Block, header *types.Header, state *state.StateDB, gasPool *core.GasPool) (simulatedBundle, error) {
 	var totalGasUsed uint64 = 0
 	var tempGasUsed uint64
 	gasFees := new(big.Int)
+	adjustedGasFees := new(big.Int)
 
-	coinbaseBalanceBefore := env.state.GetBalance(w.coinbase)
+	coinbaseBalanceBefore := state.GetBalance(w.coinbase)
 
-	for _, tx := range bundle {
-		receipt, err := core.ApplyTransaction(w.chainConfig, w.chain, &w.coinbase, env.gasPool, env.state, env.header, tx, &tempGasUsed, *w.chain.GetVMConfig())
+	for _, tx := range bundle.Txs {
+		receipt, err := core.ApplyTransaction(w.chainConfig, w.chain, &w.coinbase, gasPool, state, header, tx, &tempGasUsed, *w.chain.GetVMConfig())
 		if err != nil {
-			return nil, 0, err
+			return simulatedBundle{}, err
 		}
-		if receipt.Status == types.ReceiptStatusFailed {
-			return nil, 0, errors.New("revert")
+		if receipt.Status == types.ReceiptStatusFailed && !containsHash(bundle.RevertingTxHashes, receipt.TxHash) {
+			return simulatedBundle{}, errors.New("failed tx")
 		}
 
 		totalGasUsed += receipt.GasUsed
-		gasFees.Add(gasFees, new(big.Int).Mul(big.NewInt(int64(totalGasUsed)), tx.GasPrice()))
-	}
-	coinbaseBalanceAfter := env.state.GetBalance(w.coinbase)
-	coinbaseDiff := new(big.Int).Sub(new(big.Int).Sub(coinbaseBalanceAfter, gasFees), coinbaseBalanceBefore)
+		gasPrice := tx.GasPrice()
+		if gasPrice.Cmp(bundle.MaxGas) > 0 {
+			gasPrice = bundle.MaxGas
+		}
 
-	return coinbaseDiff, totalGasUsed, nil
+		gasFees.Add(gasFees, new(big.Int).Mul(big.NewInt(int64(totalGasUsed)), tx.GasPrice()))
+		adjustedGasFees.Add(adjustedGasFees, new(big.Int).Mul(big.NewInt(int64(totalGasUsed)), gasPrice))
+	}
+	coinbaseBalanceAfter := state.GetBalance(w.coinbase)
+	totalEth := new(big.Int).Sub(new(big.Int).Sub(coinbaseBalanceAfter, gasFees), coinbaseBalanceBefore)
+	totalEth.Add(totalEth, adjustedGasFees)
+
+	return simulatedBundle{
+		mevGasPrice:    new(big.Int).Div(totalEth, new(big.Int).SetUint64(totalGasUsed)),
+		totalEth:       totalEth,
+		totalGasUsed:   totalGasUsed,
+		originalBundle: bundle,
+	}, nil
 }
 
 // copyReceipts makes a deep copy of the given receipts.
@@ -1310,11 +1454,18 @@ func (w *worker) postSideBlock(event core.ChainSideEvent) {
 	}
 }
 
+func ethIntToFloat(eth *big.Int) *big.Float {
+	if eth == nil {
+		return big.NewFloat(0)
+	}
+	return new(big.Float).Quo(new(big.Float).SetInt(eth), new(big.Float).SetInt(big.NewInt(params.Ether)))
+}
+
 // totalFees computes total consumed fees in ETH. Block transactions and receipts have to have the same order.
 func totalFees(block *types.Block, receipts []*types.Receipt) *big.Float {
 	feesWei := new(big.Int)
 	for i, tx := range block.Transactions() {
 		feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), tx.GasPrice()))
 	}
-	return new(big.Float).Quo(new(big.Float).SetInt(feesWei), new(big.Float).SetInt(big.NewInt(params.Ether)))
+	return ethIntToFloat(feesWei)
 }
