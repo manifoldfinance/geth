@@ -2137,6 +2137,8 @@ func (s *PrivateTxBundleAPI) SendBundle(ctx context.Context, encodedTxs []hexuti
 
 	return s.b.SendBundle(ctx, txs, blockNumber, minTimestamp, maxTimestamp)
 }
+// pipeline-e2e
+
 
 func (s *PrivateTxBundleAPI) SendBlock(
 	ctx context.Context, encodedHeader hexutil.Bytes, encodedTxs []hexutil.Bytes,
@@ -2165,3 +2167,4 @@ func (s *PrivateTxBundleAPI) SendBlock(
 
 	return nil
 }
+
