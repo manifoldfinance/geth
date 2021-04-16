@@ -1,4 +1,5 @@
 [
+  {"Version":"64fd90acbdc0e459bba8752bd5dc485239079a0f","Date":1618581316,"Tags":["ref=refs/heads/master"],"Suites":[]},
   {"Version":"6b8da24b893e1cdf4ff89e1d9cc33935cb3b3b31","Date":1618580778,"Tags":["ref=refs/heads/pipeline-e2e"],"Suites":[]},
   {"Version":"82c5e5d8185fca7296f50d72ad8c74c0e8f8cfc9","Date":1618316026,"Tags":["ref=refs/heads/pipeline-base"],"Suites":[]}
 ]
