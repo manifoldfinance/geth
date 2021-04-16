@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Method Implmentations: builtin.error</title>
+<link href="../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+<pre><code><span style="font-size:x-large;">type <a href="../pkg/builtin.html">builtin</a>.<b><a href="../pkg/builtin.html#name-error">error</a></b></span><span style="font-size:large;"> <b><i>(interface)</i></b></span>
+
+<code><span class="title">Method Implmentations<span class="title-stat"><i></i></span></span>
+
+<div class="anchor" id="name-Error">	Error() <a href="../pkg/builtin.html#name-string">string</a>
+		 crypto/aes.<a href="../pkg/crypto/aes.html#name-KeySizeError">KeySizeError</a>.<b><a href="../src/crypto/aes/cipher.go.html#line-24">Error</a></b>
+		 encoding/asn1.<a href="../pkg/encoding/asn1.html#name-StructuralError">StructuralError</a>.<b><a href="../src/encoding/asn1/asn1.go.html#line-40">Error</a></b>
+		 encoding/asn1.<a href="../pkg/encoding/asn1.html#name-SyntaxError">SyntaxError</a>.<b><a href="../src/encoding/asn1/asn1.go.html#line-47">Error</a></b>
+		 encoding/base64.<a href="../pkg/encoding/base64.html#name-CorruptInputError">CorruptInputError</a>.<b><a href="../src/encoding/base64/base64.go.html#line-276">Error</a></b>
+		 encoding/hex.<a href="../pkg/encoding/hex.html#name-InvalidByteError">InvalidByteError</a>.<b><a href="../src/encoding/hex/hex.go.html#line-43">Error</a></b>
+		*encoding/json.<a href="../pkg/encoding/json.html#name-InvalidUnmarshalError">InvalidUnmarshalError</a>.<b><a href="../src/encoding/json/decode.go.html#line-159">Error</a></b>
+		*encoding/json.<a href="../pkg/encoding/json.html#name-InvalidUTF8Error">InvalidUTF8Error</a>.<b><a href="../src/encoding/json/encode.go.html#line-260">Error</a></b>
+		*encoding/json.<a href="../pkg/encoding/json.html#name-MarshalerError">MarshalerError</a>.<b><a href="../src/encoding/json/encode.go.html#line-271">Error</a></b>
+		*encoding/json.<a href="../pkg/encoding/json.html#name-SyntaxError">SyntaxError</a>.<b><a href="../src/encoding/json/scanner.go.html#line-50">Error</a></b>
+		*encoding/json.<a href="../pkg/encoding/json.html#name-UnmarshalFieldError">UnmarshalFieldError</a>.<b><a href="../src/encoding/json/decode.go.html#line-149">Error</a></b>
+		*encoding/json.<a href="../pkg/encoding/json.html#name-UnmarshalTypeError">UnmarshalTypeError</a>.<b><a href="../src/encoding/json/decode.go.html#line-132">Error</a></b>
+		*encoding/json.<a href="../pkg/encoding/json.html#name-UnsupportedTypeError">UnsupportedTypeError</a>.<b><a href="../src/encoding/json/encode.go.html#line-235">Error</a></b>
+		*encoding/json.<a href="../pkg/encoding/json.html#name-UnsupportedValueError">UnsupportedValueError</a>.<b><a href="../src/encoding/json/encode.go.html#line-246">Error</a></b>
+		*github.com/ethereum/go-ethereum/params.<a href="../pkg/github.com/ethereum/go-ethereum/params.html#name-ConfigCompatError">ConfigCompatError</a>.<b><a href="../src/github.com/ethereum/go-ethereum/params/config.go.html#line-604">Error</a></b>
+		*internal/poll.<a href="../pkg/internal/poll.html#name-DeadlineExceededError">DeadlineExceededError</a>.<b><a href="../src/internal/poll/fd.go.html#line-49">Error</a></b>
+		*internal/reflectlite.<a href="../pkg/internal/reflectlite.html#name-ValueError">ValueError</a>.<b><a href="../src/internal/reflectlite/value.go.html#line-162">Error</a></b>
+		*io/fs.<a href="../pkg/io/fs.html#name-PathError">PathError</a>.<b><a href="../src/io/fs/fs.go.html#line-249">Error</a></b>
+		 math/big.<a href="../pkg/math/big.html#name-ErrNaN">ErrNaN</a>.<b><a href="../src/math/big/float.go.html#line-81">Error</a></b>
+		*os.<a href="../pkg/os.html#name-LinkError">LinkError</a>.<b><a href="../src/os/file.go.html#line-102">Error</a></b>
+		*os.<a href="../pkg/os.html#name-SyscallError">SyscallError</a>.<b><a href="../src/os/error.go.html#line-56">Error</a></b>
+		*reflect.<a href="../pkg/reflect.html#name-ValueError">ValueError</a>.<b><a href="../src/reflect/value.go.html#line-164">Error</a></b>
+		*regexp/syntax.<a href="../pkg/regexp/syntax.html#name-Error">Error</a>.<b><a href="../src/regexp/syntax/parse.go.html#line-21">Error</a></b>
+		 runtime.<a href="../pkg/runtime.html#name-Error">Error</a>.<b>Error</b>
+		*runtime.<a href="../pkg/runtime.html#name-TypeAssertionError">TypeAssertionError</a>.<b><a href="../src/runtime/error.go.html#line-30">Error</a></b>
+		*strconv.<a href="../pkg/strconv.html#name-NumError">NumError</a>.<b><a href="../src/strconv/atoi.go.html#line-30">Error</a></b>
+		 syscall.<a href="../pkg/syscall.html#name-Errno">Errno</a>.<b><a href="../src/syscall/syscall_unix.go.html#line-116">Error</a></b>
+		*time.<a href="../pkg/time.html#name-ParseError">ParseError</a>.<b><a href="../src/time/format.go.html#line-694">Error</a></b>
+		 context.<a href="../pkg/context.html#name-deadlineExceededError">deadlineExceededError</a>.<b><a href="../src/context/context.go.html#line-165">Error</a></b>
+		*encoding/asn1.<a href="../pkg/encoding/asn1.html#name-invalidUnmarshalError">invalidUnmarshalError</a>.<b><a href="../src/encoding/asn1/asn1.go.html#line-1099">Error</a></b>
+		 encoding/json.<a href="../pkg/encoding/json.html#name-jsonError">jsonError</a>.<i><a href="../src/encoding/json/encode.go.html#line-320">error</a></i>.<b>Error</b>
+		*errors.<a href="../pkg/errors.html#name-errorString">errorString</a>.<b><a href="../src/errors/errors.go.html#line-67">Error</a></b>
+		*fmt.<a href="../pkg/fmt.html#name-wrapError">wrapError</a>.<b><a href="../src/fmt/errors.go.html#line-37">Error</a></b>
+		 github.com/ethereum/go-ethereum/common/hexutil.<a href="../pkg/github.com/ethereum/go-ethereum/common/hexutil.html#name-decError">decError</a>.<b><a href="../src/github.com/ethereum/go-ethereum/common/hexutil/hexutil.go.html#line-57">Error</a></b>
+		*github.com/ethereum/go-ethereum/rlp.<a href="../pkg/github.com/ethereum/go-ethereum/rlp.html#name-decodeError">decodeError</a>.<b><a href="../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-110">Error</a></b>
+		 github.com/ethereum/go-ethereum/rlp.<a href="../pkg/github.com/ethereum/go-ethereum/rlp.html#name-structFieldError">structFieldError</a>.<b><a href="../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-135">Error</a></b>
+		 github.com/ethereum/go-ethereum/rlp.<a href="../pkg/github.com/ethereum/go-ethereum/rlp.html#name-structTagError">structTagError</a>.<b><a href="../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-144">Error</a></b>
+		 runtime.<a href="../pkg/runtime.html#name-boundsError">boundsError</a>.<b><a href="../src/runtime/error.go.html#line-178">Error</a></b>
+		 runtime.<a href="../pkg/runtime.html#name-errorAddressString">errorAddressString</a>.<b><a href="../src/runtime/error.go.html#line-87">Error</a></b>
+		 runtime.<a href="../pkg/runtime.html#name-errorString">errorString</a>.<b><a href="../src/runtime/error.go.html#line-76">Error</a></b>
+		 runtime.<a href="../pkg/runtime.html#name-plainError">plainError</a>.<b><a href="../src/runtime/error.go.html#line-107">Error</a></b>
+		 time.<a href="../pkg/time.html#name-fileSizeError">fileSizeError</a>.<b><a href="../src/time/zoneinfo_read.go.html#line-37">Error</a></b></div></code></pre><pre id="footer">
+<table><tr><td><img src="../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

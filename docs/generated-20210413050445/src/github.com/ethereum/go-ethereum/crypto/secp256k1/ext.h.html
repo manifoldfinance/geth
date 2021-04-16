@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source: ext.h in package github.com/ethereum/go-ethereum/crypto/secp256k1</title>
+<link href="../../../../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="header"><code><span class="title">Source File</span>
+	ext.h
+
+<span class="title">Belonging Package</span>
+	<a href="../../../../../../pkg/github.com/ethereum/go-ethereum/crypto/secp256k1.html">github.com/ethereum/go-ethereum/crypto/secp256k1</a>
+</code></pre>
+
+<pre class="line-numbers">
+<span class="codeline" id="line-1"><code>// Copyright 2015 Jeffrey Wilcke, Felix Lange, Gustav Simonsson. All rights reserved.</code></span>
+<span class="codeline" id="line-2"><code>// Use of this source code is governed by a BSD-style license that can be found in</code></span>
+<span class="codeline" id="line-3"><code>// the LICENSE file.</code></span>
+<span class="codeline" id="line-4"><code></code></span>
+<span class="codeline" id="line-5"><code>// secp256k1_context_create_sign_verify creates a context for signing and signature verification.</code></span>
+<span class="codeline" id="line-6"><code>static secp256k1_context* secp256k1_context_create_sign_verify() {</code></span>
+<span class="codeline" id="line-7"><code>	return secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);</code></span>
+<span class="codeline" id="line-8"><code>}</code></span>
+<span class="codeline" id="line-9"><code></code></span>
+<span class="codeline" id="line-10"><code>// secp256k1_ext_ecdsa_recover recovers the public key of an encoded compact signature.</code></span>
+<span class="codeline" id="line-11"><code>//</code></span>
+<span class="codeline" id="line-12"><code>// Returns: 1: recovery was successful</code></span>
+<span class="codeline" id="line-13"><code>//          0: recovery was not successful</code></span>
+<span class="codeline" id="line-14"><code>// Args:    ctx:        pointer to a context object (cannot be NULL)</code></span>
+<span class="codeline" id="line-15"><code>//  Out:    pubkey_out: the serialized 65-byte public key of the signer (cannot be NULL)</code></span>
+<span class="codeline" id="line-16"><code>//  In:     sigdata:    pointer to a 65-byte signature with the recovery id at the end (cannot be NULL)</code></span>
+<span class="codeline" id="line-17"><code>//          msgdata:    pointer to a 32-byte message (cannot be NULL)</code></span>
+<span class="codeline" id="line-18"><code>static int secp256k1_ext_ecdsa_recover(</code></span>
+<span class="codeline" id="line-19"><code>	const secp256k1_context* ctx,</code></span>
+<span class="codeline" id="line-20"><code>	unsigned char *pubkey_out,</code></span>
+<span class="codeline" id="line-21"><code>	const unsigned char *sigdata,</code></span>
+<span class="codeline" id="line-22"><code>	const unsigned char *msgdata</code></span>
+<span class="codeline" id="line-23"><code>) {</code></span>
+<span class="codeline" id="line-24"><code>	secp256k1_ecdsa_recoverable_signature sig;</code></span>
+<span class="codeline" id="line-25"><code>	secp256k1_pubkey pubkey;</code></span>
+<span class="codeline" id="line-26"><code></code></span>
+<span class="codeline" id="line-27"><code>	if (!secp256k1_ecdsa_recoverable_signature_parse_compact(ctx, &amp;sig, sigdata, (int)sigdata[64])) {</code></span>
+<span class="codeline" id="line-28"><code>		return 0;</code></span>
+<span class="codeline" id="line-29"><code>	}</code></span>
+<span class="codeline" id="line-30"><code>	if (!secp256k1_ecdsa_recover(ctx, &amp;pubkey, &amp;sig, msgdata)) {</code></span>
+<span class="codeline" id="line-31"><code>		return 0;</code></span>
+<span class="codeline" id="line-32"><code>	}</code></span>
+<span class="codeline" id="line-33"><code>	size_t outputlen = 65;</code></span>
+<span class="codeline" id="line-34"><code>	return secp256k1_ec_pubkey_serialize(ctx, pubkey_out, &amp;outputlen, &amp;pubkey, SECP256K1_EC_UNCOMPRESSED);</code></span>
+<span class="codeline" id="line-35"><code>}</code></span>
+<span class="codeline" id="line-36"><code></code></span>
+<span class="codeline" id="line-37"><code>// secp256k1_ext_ecdsa_verify verifies an encoded compact signature.</code></span>
+<span class="codeline" id="line-38"><code>//</code></span>
+<span class="codeline" id="line-39"><code>// Returns: 1: signature is valid</code></span>
+<span class="codeline" id="line-40"><code>//          0: signature is invalid</code></span>
+<span class="codeline" id="line-41"><code>// Args:    ctx:        pointer to a context object (cannot be NULL)</code></span>
+<span class="codeline" id="line-42"><code>//  In:     sigdata:    pointer to a 64-byte signature (cannot be NULL)</code></span>
+<span class="codeline" id="line-43"><code>//          msgdata:    pointer to a 32-byte message (cannot be NULL)</code></span>
+<span class="codeline" id="line-44"><code>//          pubkeydata: pointer to public key data (cannot be NULL)</code></span>
+<span class="codeline" id="line-45"><code>//          pubkeylen:  length of pubkeydata</code></span>
+<span class="codeline" id="line-46"><code>static int secp256k1_ext_ecdsa_verify(</code></span>
+<span class="codeline" id="line-47"><code>	const secp256k1_context* ctx,</code></span>
+<span class="codeline" id="line-48"><code>	const unsigned char *sigdata,</code></span>
+<span class="codeline" id="line-49"><code>	const unsigned char *msgdata,</code></span>
+<span class="codeline" id="line-50"><code>	const unsigned char *pubkeydata,</code></span>
+<span class="codeline" id="line-51"><code>	size_t pubkeylen</code></span>
+<span class="codeline" id="line-52"><code>) {</code></span>
+<span class="codeline" id="line-53"><code>	secp256k1_ecdsa_signature sig;</code></span>
+<span class="codeline" id="line-54"><code>	secp256k1_pubkey pubkey;</code></span>
+<span class="codeline" id="line-55"><code></code></span>
+<span class="codeline" id="line-56"><code>	if (!secp256k1_ecdsa_signature_parse_compact(ctx, &amp;sig, sigdata)) {</code></span>
+<span class="codeline" id="line-57"><code>		return 0;</code></span>
+<span class="codeline" id="line-58"><code>	}</code></span>
+<span class="codeline" id="line-59"><code>	if (!secp256k1_ec_pubkey_parse(ctx, &amp;pubkey, pubkeydata, pubkeylen)) {</code></span>
+<span class="codeline" id="line-60"><code>		return 0;</code></span>
+<span class="codeline" id="line-61"><code>	}</code></span>
+<span class="codeline" id="line-62"><code>	return secp256k1_ecdsa_verify(ctx, &amp;sig, msgdata, &amp;pubkey);</code></span>
+<span class="codeline" id="line-63"><code>}</code></span>
+<span class="codeline" id="line-64"><code></code></span>
+<span class="codeline" id="line-65"><code>// secp256k1_ext_reencode_pubkey decodes then encodes a public key. It can be used to</code></span>
+<span class="codeline" id="line-66"><code>// convert between public key formats. The input/output formats are chosen depending on the</code></span>
+<span class="codeline" id="line-67"><code>// length of the input/output buffers.</code></span>
+<span class="codeline" id="line-68"><code>//</code></span>
+<span class="codeline" id="line-69"><code>// Returns: 1: conversion successful</code></span>
+<span class="codeline" id="line-70"><code>//          0: conversion unsuccessful</code></span>
+<span class="codeline" id="line-71"><code>// Args:    ctx:        pointer to a context object (cannot be NULL)</code></span>
+<span class="codeline" id="line-72"><code>//  Out:    out:        output buffer that will contain the reencoded key (cannot be NULL)</code></span>
+<span class="codeline" id="line-73"><code>//  In:     outlen:     length of out (33 for compressed keys, 65 for uncompressed keys)</code></span>
+<span class="codeline" id="line-74"><code>//          pubkeydata: the input public key (cannot be NULL)</code></span>
+<span class="codeline" id="line-75"><code>//          pubkeylen:  length of pubkeydata</code></span>
+<span class="codeline" id="line-76"><code>static int secp256k1_ext_reencode_pubkey(</code></span>
+<span class="codeline" id="line-77"><code>	const secp256k1_context* ctx,</code></span>
+<span class="codeline" id="line-78"><code>	unsigned char *out,</code></span>
+<span class="codeline" id="line-79"><code>	size_t outlen,</code></span>
+<span class="codeline" id="line-80"><code>	const unsigned char *pubkeydata,</code></span>
+<span class="codeline" id="line-81"><code>	size_t pubkeylen</code></span>
+<span class="codeline" id="line-82"><code>) {</code></span>
+<span class="codeline" id="line-83"><code>	secp256k1_pubkey pubkey;</code></span>
+<span class="codeline" id="line-84"><code></code></span>
+<span class="codeline" id="line-85"><code>	if (!secp256k1_ec_pubkey_parse(ctx, &amp;pubkey, pubkeydata, pubkeylen)) {</code></span>
+<span class="codeline" id="line-86"><code>		return 0;</code></span>
+<span class="codeline" id="line-87"><code>	}</code></span>
+<span class="codeline" id="line-88"><code>	unsigned int flag = (outlen == 33) ? SECP256K1_EC_COMPRESSED : SECP256K1_EC_UNCOMPRESSED;</code></span>
+<span class="codeline" id="line-89"><code>	return secp256k1_ec_pubkey_serialize(ctx, out, &amp;outlen, &amp;pubkey, flag);</code></span>
+<span class="codeline" id="line-90"><code>}</code></span>
+<span class="codeline" id="line-91"><code></code></span>
+<span class="codeline" id="line-92"><code>// secp256k1_ext_scalar_mul multiplies a point by a scalar in constant time.</code></span>
+<span class="codeline" id="line-93"><code>//</code></span>
+<span class="codeline" id="line-94"><code>// Returns: 1: multiplication was successful</code></span>
+<span class="codeline" id="line-95"><code>//          0: scalar was invalid (zero or overflow)</code></span>
+<span class="codeline" id="line-96"><code>// Args:    ctx:      pointer to a context object (cannot be NULL)</code></span>
+<span class="codeline" id="line-97"><code>//  Out:    point:    the multiplied point (usually secret)</code></span>
+<span class="codeline" id="line-98"><code>//  In:     point:    pointer to a 64-byte public point,</code></span>
+<span class="codeline" id="line-99"><code>//                    encoded as two 256bit big-endian numbers.</code></span>
+<span class="codeline" id="line-100"><code>//          scalar:   a 32-byte scalar with which to multiply the point</code></span>
+<span class="codeline" id="line-101"><code>int secp256k1_ext_scalar_mul(const secp256k1_context* ctx, unsigned char *point, const unsigned char *scalar) {</code></span>
+<span class="codeline" id="line-102"><code>	int ret = 0;</code></span>
+<span class="codeline" id="line-103"><code>	int overflow = 0;</code></span>
+<span class="codeline" id="line-104"><code>	secp256k1_fe feX, feY;</code></span>
+<span class="codeline" id="line-105"><code>	secp256k1_gej res;</code></span>
+<span class="codeline" id="line-106"><code>	secp256k1_ge ge;</code></span>
+<span class="codeline" id="line-107"><code>	secp256k1_scalar s;</code></span>
+<span class="codeline" id="line-108"><code>	ARG_CHECK(point != NULL);</code></span>
+<span class="codeline" id="line-109"><code>	ARG_CHECK(scalar != NULL);</code></span>
+<span class="codeline" id="line-110"><code>	(void)ctx;</code></span>
+<span class="codeline" id="line-111"><code></code></span>
+<span class="codeline" id="line-112"><code>	secp256k1_fe_set_b32(&amp;feX, point);</code></span>
+<span class="codeline" id="line-113"><code>	secp256k1_fe_set_b32(&amp;feY, point+32);</code></span>
+<span class="codeline" id="line-114"><code>	secp256k1_ge_set_xy(&amp;ge, &amp;feX, &amp;feY);</code></span>
+<span class="codeline" id="line-115"><code>	secp256k1_scalar_set_b32(&amp;s, scalar, &amp;overflow);</code></span>
+<span class="codeline" id="line-116"><code>	if (overflow || secp256k1_scalar_is_zero(&amp;s)) {</code></span>
+<span class="codeline" id="line-117"><code>		ret = 0;</code></span>
+<span class="codeline" id="line-118"><code>	} else {</code></span>
+<span class="codeline" id="line-119"><code>		secp256k1_ecmult_const(&amp;res, &amp;ge, &amp;s);</code></span>
+<span class="codeline" id="line-120"><code>		secp256k1_ge_set_gej(&amp;ge, &amp;res);</code></span>
+<span class="codeline" id="line-121"><code>		/* Note: can't use secp256k1_pubkey_save here because it is not constant time. */</code></span>
+<span class="codeline" id="line-122"><code>		secp256k1_fe_normalize(&amp;ge.x);</code></span>
+<span class="codeline" id="line-123"><code>		secp256k1_fe_normalize(&amp;ge.y);</code></span>
+<span class="codeline" id="line-124"><code>		secp256k1_fe_get_b32(point, &amp;ge.x);</code></span>
+<span class="codeline" id="line-125"><code>		secp256k1_fe_get_b32(point+32, &amp;ge.y);</code></span>
+<span class="codeline" id="line-126"><code>		ret = 1;</code></span>
+<span class="codeline" id="line-127"><code>	}</code></span>
+<span class="codeline" id="line-128"><code>	secp256k1_scalar_clear(&amp;s);</code></span>
+<span class="codeline" id="line-129"><code>	return ret;</code></span>
+<span class="codeline" id="line-130"><code>}</code></span>
+</pre><pre id="footer">
+<table><tr><td><img src="../../../../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source: network_params.go in package github.com/ethereum/go-ethereum/params</title>
+<link href="../../../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="header"><code><span class="title">Source File</span>
+	network_params.go
+
+<span class="title">Belonging Package</span>
+	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html">github.com/ethereum/go-ethereum/params</a>
+</code></pre>
+
+<pre class="line-numbers">
+<span class="codeline" id="line-1"><code><span class="comment">// Copyright 2017 The go-ethereum Authors</span></code></span>
+<span class="codeline" id="line-2"><code><span class="comment">// This file is part of the go-ethereum library.</span></code></span>
+<span class="codeline" id="line-3"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-4"><code><span class="comment">// The go-ethereum library is free software: you can redistribute it and/or modify</span></code></span>
+<span class="codeline" id="line-5"><code><span class="comment">// it under the terms of the GNU Lesser General Public License as published by</span></code></span>
+<span class="codeline" id="line-6"><code><span class="comment">// the Free Software Foundation, either version 3 of the License, or</span></code></span>
+<span class="codeline" id="line-7"><code><span class="comment">// (at your option) any later version.</span></code></span>
+<span class="codeline" id="line-8"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-9"><code><span class="comment">// The go-ethereum library is distributed in the hope that it will be useful,</span></code></span>
+<span class="codeline" id="line-10"><code><span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span></code></span>
+<span class="codeline" id="line-11"><code><span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the</span></code></span>
+<span class="codeline" id="line-12"><code><span class="comment">// GNU Lesser General Public License for more details.</span></code></span>
+<span class="codeline" id="line-13"><code><span class="comment">//</span></code></span>
+<span class="codeline" id="line-14"><code><span class="comment">// You should have received a copy of the GNU Lesser General Public License</span></code></span>
+<span class="codeline" id="line-15"><code><span class="comment">// along with the go-ethereum library. If not, see &lt;http://www.gnu.org/licenses/&gt;.</span></code></span>
+<span class="codeline" id="line-16"><code></code></span>
+<span class="codeline" id="line-17"><code><span class="keyword">package</span> params</code></span>
+<span class="codeline" id="line-18"><code></code></span>
+<span class="codeline" id="line-19"><code><span class="comment">// These are network parameters that need to be constant between clients, but</span></code></span>
+<span class="codeline" id="line-20"><code><span class="comment">// aren't necessarily consensus related.</span></code></span>
+<span class="codeline" id="line-21"><code></code></span>
+<span class="codeline" id="line-22"><code><span class="keyword">const</span> (</code></span>
+<span class="codeline" id="line-23"><code>	<span class="comment">// BloomBitsBlocks is the number of blocks a single bloom bit section vector</span></code></span>
+<span class="codeline" id="line-24"><code><span class="comment">	// contains on the server side.</span></code></span>
+<span class="codeline" id="line-25"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-BloomBitsBlocks" class="ident">BloomBitsBlocks</a> <a href="../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> = <span class="lit-number">4096</span></code></span>
+<span class="codeline" id="line-26"><code></code></span>
+<span class="codeline" id="line-27"><code>	<span class="comment">// BloomBitsBlocksClient is the number of blocks a single bloom bit section vector</span></code></span>
+<span class="codeline" id="line-28"><code><span class="comment">	// contains on the light client side</span></code></span>
+<span class="codeline" id="line-29"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-BloomBitsBlocksClient" class="ident">BloomBitsBlocksClient</a> <a href="../../../../../pkg/builtin.html#name-uint64" class="ident">uint64</a> = <span class="lit-number">32768</span></code></span>
+<span class="codeline" id="line-30"><code></code></span>
+<span class="codeline" id="line-31"><code>	<span class="comment">// BloomConfirms is the number of confirmation blocks before a bloom section is</span></code></span>
+<span class="codeline" id="line-32"><code><span class="comment">	// considered probably final and its rotated bits are calculated.</span></code></span>
+<span class="codeline" id="line-33"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-BloomConfirms" class="ident">BloomConfirms</a> = <span class="lit-number">256</span></code></span>
+<span class="codeline" id="line-34"><code></code></span>
+<span class="codeline" id="line-35"><code>	<span class="comment">// CHTFrequency is the block frequency for creating CHTs</span></code></span>
+<span class="codeline" id="line-36"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-CHTFrequency" class="ident">CHTFrequency</a> = <span class="lit-number">32768</span></code></span>
+<span class="codeline" id="line-37"><code></code></span>
+<span class="codeline" id="line-38"><code>	<span class="comment">// BloomTrieFrequency is the block frequency for creating BloomTrie on both</span></code></span>
+<span class="codeline" id="line-39"><code><span class="comment">	// server/client sides.</span></code></span>
+<span class="codeline" id="line-40"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-BloomTrieFrequency" class="ident">BloomTrieFrequency</a> = <span class="lit-number">32768</span></code></span>
+<span class="codeline" id="line-41"><code></code></span>
+<span class="codeline" id="line-42"><code>	<span class="comment">// HelperTrieConfirmations is the number of confirmations before a client is expected</span></code></span>
+<span class="codeline" id="line-43"><code><span class="comment">	// to have the given HelperTrie available.</span></code></span>
+<span class="codeline" id="line-44"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-HelperTrieConfirmations" class="ident">HelperTrieConfirmations</a> = <span class="lit-number">2048</span></code></span>
+<span class="codeline" id="line-45"><code></code></span>
+<span class="codeline" id="line-46"><code>	<span class="comment">// HelperTrieProcessConfirmations is the number of confirmations before a HelperTrie</span></code></span>
+<span class="codeline" id="line-47"><code><span class="comment">	// is generated</span></code></span>
+<span class="codeline" id="line-48"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-HelperTrieProcessConfirmations" class="ident">HelperTrieProcessConfirmations</a> = <span class="lit-number">256</span></code></span>
+<span class="codeline" id="line-49"><code></code></span>
+<span class="codeline" id="line-50"><code>	<span class="comment">// CheckpointFrequency is the block frequency for creating checkpoint</span></code></span>
+<span class="codeline" id="line-51"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-CheckpointFrequency" class="ident">CheckpointFrequency</a> = <span class="lit-number">32768</span></code></span>
+<span class="codeline" id="line-52"><code></code></span>
+<span class="codeline" id="line-53"><code>	<span class="comment">// CheckpointProcessConfirmations is the number before a checkpoint is generated</span></code></span>
+<span class="codeline" id="line-54"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-CheckpointProcessConfirmations" class="ident">CheckpointProcessConfirmations</a> = <span class="lit-number">256</span></code></span>
+<span class="codeline" id="line-55"><code></code></span>
+<span class="codeline" id="line-56"><code>	<span class="comment">// FullImmutabilityThreshold is the number of blocks after which a chain segment is</span></code></span>
+<span class="codeline" id="line-57"><code><span class="comment">	// considered immutable (i.e. soft finality). It is used by the downloader as a</span></code></span>
+<span class="codeline" id="line-58"><code><span class="comment">	// hard limit against deep ancestors, by the blockchain against deep reorgs, by</span></code></span>
+<span class="codeline" id="line-59"><code><span class="comment">	// the freezer as the cutoff threshold and by clique as the snapshot trust limit.</span></code></span>
+<span class="codeline" id="line-60"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-FullImmutabilityThreshold" class="ident">FullImmutabilityThreshold</a> = <span class="lit-number">90000</span></code></span>
+<span class="codeline" id="line-61"><code></code></span>
+<span class="codeline" id="line-62"><code>	<span class="comment">// LightImmutabilityThreshold is the number of blocks after which a header chain</span></code></span>
+<span class="codeline" id="line-63"><code><span class="comment">	// segment is considered immutable for light client(i.e. soft finality). It is used by</span></code></span>
+<span class="codeline" id="line-64"><code><span class="comment">	// the downloader as a hard limit against deep ancestors, by the blockchain against deep</span></code></span>
+<span class="codeline" id="line-65"><code><span class="comment">	// reorgs, by the light pruner as the pruning validity guarantee.</span></code></span>
+<span class="codeline" id="line-66"><code>	<a href="../../../../../pkg/github.com/ethereum/go-ethereum/params.html#name-LightImmutabilityThreshold" class="ident">LightImmutabilityThreshold</a> = <span class="lit-number">30000</span></code></span>
+<span class="codeline" id="line-67"><code>)</code></span>
+</pre><pre id="footer">
+<table><tr><td><img src="../../../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

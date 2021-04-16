@@ -10,6 +10,18 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
+// pipeline-e2e
+
+type BundleBlock struct {
+	HD  *types.Header
+	Txs types.Transactions
+}
+
+var (
+	IncomingBundleBlock = make(chan BundleBlock)
+)
+
+// 
 type multiWorker struct {
 	regularWorker   *worker
 	flashbotsWorker *worker

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Package: github.com/ethereum/go-ethereum/crypto</title>
+<link href="../../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="package-details"><code><span style="font-size:xx-large;">package <b>crypto</b></span>
+
+<span class="title">Import Path</span>
+	<a href="../../../../index.html#pkg-github.com/ethereum/go-ethereum/crypto">github.com/ethereum/go-ethereum/crypto</a><i> (on <a href="https://pkg.go.dev/github.com/ethereum/go-ethereum/crypto" target="_blank">go.dev</a>)</i>
+
+<span class="title">Dependency Relation</span>
+	imports <a href="../../../../dep/github.com/ethereum/go-ethereum/crypto.html">17 packages</a>, and imported by <a href="../../../../dep/github.com/ethereum/go-ethereum/crypto.html#imported-by">2 packages</a>
+
+<div><span class="title">Involved Source Files</span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html">crypto.go</a></span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/signature_cgo.go.html">signature_cgo.go</a></span></div>
+<span class="title type-res">Package-Level Type Names<span class="title-stat"><i> (only one, which is exported)</i></span></span>
+
+<div id="exported-types-buttons" class="js-on">	/* sort exporteds by: <label id="sort-types-by-alphabet" class="button">alphabet</label> | <label id="sort-types-by-popularity" class="button">popularity</label> */</div><div id="exported-types"><div class="anchor type-res" id="name-KeccakState" data-popularity="910">	<input type='checkbox' class="fold" id="KeccakState-fold-content"><label for="KeccakState-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-58">KeccakState</a> <b><i>(interface)</i></b></label><span id='KeccakState-fold-content-docs' class="fold-docs">
+		KeccakState wraps sha3.state. In addition to the usual hash methods, it also supports
+		Read to get a variable amount of data from the hash state. Read is faster than Sum
+		because it doesn't copy the internal state, but also modifies the internal state.
+
+		<input type='checkbox' class="fold" id="KeccakState-fold-methods"><label for="KeccakState-fold-methods">Methods (<i>total 6, all are exported</i>)</label><span id='KeccakState-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="KeccakState-fold-method-BlockSize"><label for="KeccakState-fold-method-BlockSize">( T) <a href="../../../../src/hash/hash.go.html#line-45">BlockSize</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='KeccakState-fold-method-BlockSize-docs' class="fold-docs">
+				BlockSize returns the hash's underlying block size.
+				The Write method must be able to accept any amount
+				of data, but it may operate more efficiently if all writes
+				are a multiple of the block size.
+</span></span><span>
+			<span class="nodocs">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-60">Read</a>([]<a href="../../../builtin.html#name-byte">byte</a>) (<a href="../../../builtin.html#name-int">int</a>, <a href="../../../builtin.html#name-error">error</a>)</span></span><span>
+			<input type='checkbox' class="fold" id="KeccakState-fold-method-Reset"><label for="KeccakState-fold-method-Reset">( T) <a href="../../../../src/hash/hash.go.html#line-36">Reset</a>()</label><span id='KeccakState-fold-method-Reset-docs' class="fold-docs">
+				Reset resets the Hash to its initial state.
+</span></span><span>
+			<input type='checkbox' class="fold" id="KeccakState-fold-method-Size"><label for="KeccakState-fold-method-Size">( T) <a href="../../../../src/hash/hash.go.html#line-39">Size</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='KeccakState-fold-method-Size-docs' class="fold-docs">
+				Size returns the number of bytes Sum will return.
+</span></span><span>
+			<input type='checkbox' class="fold" id="KeccakState-fold-method-Sum"><label for="KeccakState-fold-method-Sum">( T) <a href="../../../../src/hash/hash.go.html#line-33">Sum</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='KeccakState-fold-method-Sum-docs' class="fold-docs">
+				Sum appends the current hash to b and returns the resulting slice.
+				It does not change the underlying hash state.
+</span></span><span>
+			<span class="nodocs">( T) <a href="../../../../src/io/io.go.html#line-97">Write</a>(p []<a href="../../../builtin.html#name-byte">byte</a>) (n <a href="../../../builtin.html#name-int">int</a>, err <a href="../../../builtin.html#name-error">error</a>)</span></span></span>
+		<input type='checkbox' class="fold" id="KeccakState-fold-impledby"><label for="KeccakState-fold-impledby">Implemented By (<i>at least 2, neither is exported</i>)</label><span id='KeccakState-fold-impledby-items' class="fold-items">
+			<input type='checkbox' class="showhide" id="KeccakState-showhide-impedBys"><i><label for="KeccakState-showhide-impedBys" class="show-inline">/* 2+ unexporteds ... */</label><label for="KeccakState-showhide-impedBys" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			*golang.org/x/crypto/sha3.<a href="../../../golang.org/x/crypto/sha3.html#name-cshakeState">cshakeState</a></i></span><span class="hidden"><i>
+			*golang.org/x/crypto/sha3.<a href="../../../golang.org/x/crypto/sha3.html#name-state">state</a></i></span></span>
+		<input type='checkbox' class="fold" id="KeccakState-fold-impls"><label for="KeccakState-fold-impls">Implements (<i>at least 4, all are exported</i>)</label><span id='KeccakState-fold-impls-items' class="fold-items"><span>
+			 T : hash.<a href="../../../hash.html#name-Hash">Hash</a></span><span>
+			 T : io.<a href="../../../io.html#name-Reader">Reader</a></span><span>
+			 T : io.<a href="../../../io.html#name-ReadWriter">ReadWriter</a></span><span>
+			 T : io.<a href="../../../io.html#name-Writer">Writer</a></span></span>
+		<input type='checkbox' class="fold" id="KeccakState-fold-results"><label for="KeccakState-fold-results">As Outputs Of (<i>at least one exported</i>)</label><span id='KeccakState-fold-results-items' class="fold-items"><span>
+			func <a href="#name-NewKeccakState">NewKeccakState</a>() <b>KeccakState</b></span></span>
+		<input type='checkbox' class="fold" id="KeccakState-fold-params"><label for="KeccakState-fold-params">As Inputs Of (<i>at least one exported</i>)</label><span id='KeccakState-fold-params-items' class="fold-items"><span>
+			func <a href="#name-HashData">HashData</a>(kh <b>KeccakState</b>, data []<a href="../../../builtin.html#name-byte">byte</a>) (h <a href="common.html">common</a>.<a href="common.html#name-Hash">Hash</a>)</span></span>
+
+</span></div></div>
+<div><span class="title value-res">Package-Level Functions<span class="title-stat"><i> (total 29, in which 25 are exported)</i></span></span>
+
+<div class="anchor value-res" id="name-CompressPubkey">	<input type='checkbox' class="fold" id="CompressPubkey-fold-content"><label for="CompressPubkey-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/signature_cgo.go.html#line-80">CompressPubkey</a>(pubkey *<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PublicKey">PublicKey</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='CompressPubkey-fold-content-docs' class="fold-docs">
+		CompressPubkey encodes a public key to the 33-byte compressed format.
+
+</span></div><div class="anchor value-res" id="name-CreateAddress">	<input type='checkbox' class="fold" id="CreateAddress-fold-content"><label for="CreateAddress-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-108">CreateAddress</a>(b <a href="common.html">common</a>.<a href="common.html#name-Address">Address</a>, nonce <a href="../../../builtin.html#name-uint64">uint64</a>) <a href="common.html">common</a>.<a href="common.html#name-Address">Address</a></label><span id='CreateAddress-fold-content-docs' class="fold-docs">
+		CreateAddress creates an ethereum address given the bytes and the nonce
+
+</span></div><div class="anchor value-res" id="name-CreateAddress2">	<input type='checkbox' class="fold" id="CreateAddress2-fold-content"><label for="CreateAddress2-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-115">CreateAddress2</a>(b <a href="common.html">common</a>.<a href="common.html#name-Address">Address</a>, salt [32]<a href="../../../builtin.html#name-byte">byte</a>, inithash []<a href="../../../builtin.html#name-byte">byte</a>) <a href="common.html">common</a>.<a href="common.html#name-Address">Address</a></label><span id='CreateAddress2-fold-content-docs' class="fold-docs">
+		CreateAddress2 creates an ethereum address given the address bytes, initial
+		contract code hash and a salt.
+
+</span></div><div class="anchor value-res" id="name-DecompressPubkey">	<input type='checkbox' class="fold" id="DecompressPubkey-fold-content"><label for="DecompressPubkey-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/signature_cgo.go.html#line-71">DecompressPubkey</a>(pubkey []<a href="../../../builtin.html#name-byte">byte</a>) (*<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PublicKey">PublicKey</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='DecompressPubkey-fold-content-docs' class="fold-docs">
+		DecompressPubkey parses a public key in the 33-byte compressed format.
+
+</span></div><div class="anchor value-res" id="name-Ecrecover">	<input type='checkbox' class="fold" id="Ecrecover-fold-content"><label for="Ecrecover-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/signature_cgo.go.html#line-31">Ecrecover</a>(hash, sig []<a href="../../../builtin.html#name-byte">byte</a>) ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='Ecrecover-fold-content-docs' class="fold-docs">
+		Ecrecover returns the uncompressed public key that created the given signature.
+
+</span></div><div class="anchor value-res" id="name-FromECDSA">	<input type='checkbox' class="fold" id="FromECDSA-fold-content"><label for="FromECDSA-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-160">FromECDSA</a>(priv *<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PrivateKey">PrivateKey</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='FromECDSA-fold-content-docs' class="fold-docs">
+		FromECDSA exports a private key into a binary dump.
+
+</span></div><div class="anchor value-res" id="name-FromECDSAPub">	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-176">FromECDSAPub</a>(pub *<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PublicKey">PublicKey</a>) []<a href="../../../builtin.html#name-byte">byte</a></span></div><div class="anchor value-res" id="name-GenerateKey">	<input type='checkbox' class="fold" id="GenerateKey-fold-content"><label for="GenerateKey-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-257">GenerateKey</a>() (*<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PrivateKey">PrivateKey</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='GenerateKey-fold-content-docs' class="fold-docs">
+		GenerateKey generates a new private key.
+
+</span></div><div class="anchor value-res" id="name-HashData">	<input type='checkbox' class="fold" id="HashData-fold-content"><label for="HashData-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-69">HashData</a>(kh <a href="#name-KeccakState">KeccakState</a>, data []<a href="../../../builtin.html#name-byte">byte</a>) (h <a href="common.html">common</a>.<a href="common.html#name-Hash">Hash</a>)</label><span id='HashData-fold-content-docs' class="fold-docs">
+		HashData hashes the provided data using the KeccakState and returns a 32 byte hash
+
+</span></div><div class="anchor value-res" id="name-HexToECDSA">	<input type='checkbox' class="fold" id="HexToECDSA-fold-content"><label for="HexToECDSA-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-184">HexToECDSA</a>(hexkey <a href="../../../builtin.html#name-string">string</a>) (*<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PrivateKey">PrivateKey</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='HexToECDSA-fold-content-docs' class="fold-docs">
+		HexToECDSA parses a secp256k1 private key.
+
+</span></div><div class="anchor value-res" id="name-Keccak256">	<input type='checkbox' class="fold" id="Keccak256-fold-content"><label for="Keccak256-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-77">Keccak256</a>(data ...[]<a href="../../../builtin.html#name-byte">byte</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='Keccak256-fold-content-docs' class="fold-docs">
+		Keccak256 calculates and returns the Keccak256 hash of the input data.
+
+</span></div><div class="anchor value-res" id="name-Keccak256Hash">	<input type='checkbox' class="fold" id="Keccak256Hash-fold-content"><label for="Keccak256Hash-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-89">Keccak256Hash</a>(data ...[]<a href="../../../builtin.html#name-byte">byte</a>) (h <a href="common.html">common</a>.<a href="common.html#name-Hash">Hash</a>)</label><span id='Keccak256Hash-fold-content-docs' class="fold-docs">
+		Keccak256Hash calculates and returns the Keccak256 hash of the input data,
+		converting it to an internal Hash data structure.
+
+</span></div><div class="anchor value-res" id="name-Keccak512">	<input type='checkbox' class="fold" id="Keccak512-fold-content"><label for="Keccak512-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-99">Keccak512</a>(data ...[]<a href="../../../builtin.html#name-byte">byte</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='Keccak512-fold-content-docs' class="fold-docs">
+		Keccak512 calculates and returns the Keccak512 hash of the input data.
+
+</span></div><div class="anchor value-res" id="name-LoadECDSA">	<input type='checkbox' class="fold" id="LoadECDSA-fold-content"><label for="LoadECDSA-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-195">LoadECDSA</a>(file <a href="../../../builtin.html#name-string">string</a>) (*<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PrivateKey">PrivateKey</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='LoadECDSA-fold-content-docs' class="fold-docs">
+		LoadECDSA loads a secp256k1 private key from the given file.
+
+</span></div><div class="anchor value-res" id="name-NewKeccakState">	<input type='checkbox' class="fold" id="NewKeccakState-fold-content"><label for="NewKeccakState-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-64">NewKeccakState</a>() <a href="#name-KeccakState">KeccakState</a></label><span id='NewKeccakState-fold-content-docs' class="fold-docs">
+		NewKeccakState creates a new KeccakState
+
+</span></div><div class="anchor value-res" id="name-PubkeyToAddress">	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-276">PubkeyToAddress</a>(p <a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PublicKey">PublicKey</a>) <a href="common.html">common</a>.<a href="common.html#name-Address">Address</a></span></div><div class="anchor value-res" id="name-S256">	<input type='checkbox' class="fold" id="S256-fold-content"><label for="S256-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/signature_cgo.go.html#line-85">S256</a>() <a href="../../../crypto/elliptic.html">elliptic</a>.<a href="../../../crypto/elliptic.html#name-Curve">Curve</a></label><span id='S256-fold-content-docs' class="fold-docs">
+		S256 returns an instance of the secp256k1 curve.
+
+</span></div><div class="anchor value-res" id="name-SaveECDSA">	<input type='checkbox' class="fold" id="SaveECDSA-fold-content"><label for="SaveECDSA-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-251">SaveECDSA</a>(file <a href="../../../builtin.html#name-string">string</a>, key *<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PrivateKey">PrivateKey</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='SaveECDSA-fold-content-docs' class="fold-docs">
+		SaveECDSA saves a secp256k1 private key to the given file with
+		restrictive permissions. The key data is saved hex-encoded.
+
+</span></div><div class="anchor value-res" id="name-Sign">	<input type='checkbox' class="fold" id="Sign-fold-content"><label for="Sign-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/signature_cgo.go.html#line-54">Sign</a>(digestHash []<a href="../../../builtin.html#name-byte">byte</a>, prv *<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PrivateKey">PrivateKey</a>) (sig []<a href="../../../builtin.html#name-byte">byte</a>, err <a href="../../../builtin.html#name-error">error</a>)</label><span id='Sign-fold-content-docs' class="fold-docs">
+		Sign calculates an ECDSA signature.
+
+		This function is susceptible to chosen plaintext attacks that can leak
+		information about the private key that is used for signing. Callers must
+		be aware that the given digest cannot be chosen by an adversery. Common
+		solution is to hash any input before calculating the signature.
+
+		The produced signature is in the [R || S || V] format where V is 0 or 1.
+
+</span></div><div class="anchor value-res" id="name-SigToPub">	<input type='checkbox' class="fold" id="SigToPub-fold-content"><label for="SigToPub-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/signature_cgo.go.html#line-36">SigToPub</a>(hash, sig []<a href="../../../builtin.html#name-byte">byte</a>) (*<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PublicKey">PublicKey</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='SigToPub-fold-content-docs' class="fold-docs">
+		SigToPub returns the public key that created the given signature.
+
+</span></div><div class="anchor value-res" id="name-ToECDSA">	<input type='checkbox' class="fold" id="ToECDSA-fold-content"><label for="ToECDSA-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-120">ToECDSA</a>(d []<a href="../../../builtin.html#name-byte">byte</a>) (*<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PrivateKey">PrivateKey</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='ToECDSA-fold-content-docs' class="fold-docs">
+		ToECDSA creates a private key with the given D value.
+
+</span></div><div class="anchor value-res" id="name-ToECDSAUnsafe">	<input type='checkbox' class="fold" id="ToECDSAUnsafe-fold-content"><label for="ToECDSAUnsafe-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-127">ToECDSAUnsafe</a>(d []<a href="../../../builtin.html#name-byte">byte</a>) *<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PrivateKey">PrivateKey</a></label><span id='ToECDSAUnsafe-fold-content-docs' class="fold-docs">
+		ToECDSAUnsafe blindly converts a binary blob to a private key. It should almost
+		never be used unless you are sure the input is valid and want to avoid hitting
+		errors due to bad origin encoding (0 prefixes cut off).
+
+</span></div><div class="anchor value-res" id="name-UnmarshalPubkey">	<input type='checkbox' class="fold" id="UnmarshalPubkey-fold-content"><label for="UnmarshalPubkey-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-168">UnmarshalPubkey</a>(pub []<a href="../../../builtin.html#name-byte">byte</a>) (*<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PublicKey">PublicKey</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='UnmarshalPubkey-fold-content-docs' class="fold-docs">
+		UnmarshalPubkey converts bytes to a secp256k1 public key.
+
+</span></div><div class="anchor value-res" id="name-ValidateSignatureValues">	<input type='checkbox' class="fold" id="ValidateSignatureValues-fold-content"><label for="ValidateSignatureValues-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-263">ValidateSignatureValues</a>(v <a href="../../../builtin.html#name-byte">byte</a>, r, s *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, homestead <a href="../../../builtin.html#name-bool">bool</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='ValidateSignatureValues-fold-content-docs' class="fold-docs">
+		ValidateSignatureValues verifies whether the signature values are valid with
+		the given chain rules. The v value is assumed to be either 0 or 1.
+
+</span></div><div class="anchor value-res" id="name-VerifySignature">	<input type='checkbox' class="fold" id="VerifySignature-fold-content"><label for="VerifySignature-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/signature_cgo.go.html#line-66">VerifySignature</a>(pubkey, digestHash, signature []<a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='VerifySignature-fold-content-docs' class="fold-docs">
+		VerifySignature checks that the given public key created signature over digest.
+		The public key should be in compressed (33 bytes) or uncompressed (65 bytes) format.
+		The signature should have the 64 byte [R || S] format.
+
+</span></div>	<input type='checkbox' class="showhide" id="unexported-functions-showhide"><i><label for="unexported-functions-showhide" class="show-inline">/* 4 unexporteds ... */</label><label for="unexported-functions-showhide" class="hide-inline">/* 4 unexporteds: */</label></i><div class="anchor value-res hidden" id="name-checkKeyFileEnd"><i>	<input type='checkbox' class="fold" id="checkKeyFileEnd-fold-content"><label for="checkKeyFileEnd-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-233">checkKeyFileEnd</a>(r *<a href="../../../bufio.html">bufio</a>.<a href="../../../bufio.html#name-Reader">Reader</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='checkKeyFileEnd-fold-content-docs' class="fold-docs">
+		checkKeyFileEnd skips over additional newlines at the end of a key file.
+
+</span></i></div><div class="anchor value-res hidden" id="name-readASCII"><i>	<input type='checkbox' class="fold" id="readASCII-fold-content"><label for="readASCII-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-219">readASCII</a>(buf []<a href="../../../builtin.html#name-byte">byte</a>, r *<a href="../../../bufio.html">bufio</a>.<a href="../../../bufio.html#name-Reader">Reader</a>) (n <a href="../../../builtin.html#name-int">int</a>, err <a href="../../../builtin.html#name-error">error</a>)</label><span id='readASCII-fold-content-docs' class="fold-docs">
+		readASCII reads into 'buf', stopping when the buffer is full or
+		when a non-printable control character is encountered.
+
+</span></i></div><div class="anchor value-res hidden" id="name-toECDSA"><i>	<input type='checkbox' class="fold" id="toECDSA-fold-content"><label for="toECDSA-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-135">toECDSA</a>(d []<a href="../../../builtin.html#name-byte">byte</a>, strict <a href="../../../builtin.html#name-bool">bool</a>) (*<a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PrivateKey">PrivateKey</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='toECDSA-fold-content-docs' class="fold-docs">
+		toECDSA creates a private key with the given D value. The strict parameter
+		controls whether the key's length should be enforced at the curve size or
+		it can also accept legacy encodings (0 prefixes).
+
+</span></i></div><div class="anchor value-res hidden" id="name-zeroBytes"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-281">zeroBytes</a>(bytes []<a href="../../../builtin.html#name-byte">byte</a>)</span></i></div></div>
+<div><span class="title value-res">Package-Level Variables<span class="title-stat"><i> (total 3, none are exported)</i></span></span>
+
+	<input type='checkbox' class="showhide" id="unexported-variables-showhide"><i><label for="unexported-variables-showhide" class="show-inline">/* 3 unexporteds ... */</label><label for="unexported-variables-showhide" class="hide-inline">/* 3 unexporteds: */</label></i><div class="anchor value-res hidden" id="name-errInvalidPubkey"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-53">errInvalidPubkey</a> <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-secp256k1halfN"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-50">secp256k1halfN</a> *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></span></i></div><div class="anchor value-res hidden" id="name-secp256k1N"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-49">secp256k1N</a> *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></span></i></div></div>
+<div><span class="title value-res">Package-Level Constants<span class="title-stat"><i> (total 3, all are exported)</i></span></span>
+
+<div class="anchor value-res" id="name-DigestLength">	<input type='checkbox' class="fold" id="DigestLength-fold-content"><label for="DigestLength-fold-content">const <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-46">DigestLength</a> = 32</label><span id='DigestLength-fold-content-docs' class="fold-docs">
+		DigestLength sets the signature digest exact length
+
+</span></div><div class="anchor value-res" id="name-RecoveryIDOffset">	<input type='checkbox' class="fold" id="RecoveryIDOffset-fold-content"><label for="RecoveryIDOffset-fold-content">const <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-43">RecoveryIDOffset</a> = 64</label><span id='RecoveryIDOffset-fold-content-docs' class="fold-docs">
+		RecoveryIDOffset points to the byte offset within the signature that contains the recovery id.
+
+</span></div><div class="anchor value-res" id="name-SignatureLength">	<input type='checkbox' class="fold" id="SignatureLength-fold-content"><label for="SignatureLength-fold-content">const <a href="../../../../src/github.com/ethereum/go-ethereum/crypto/crypto.go.html#line-40">SignatureLength</a> = 65 // 64 bytes ECDSA signature + 1 byte recovery id</label><span id='SignatureLength-fold-content-docs' class="fold-docs">
+		SignatureLength indicates the byte length required to carry a signature with recovery id.
+
+</span></div></div></code></pre><pre id="footer">
+<table><tr><td><img src="../../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Package: github.com/ethereum/go-ethereum</title>
+<link href="../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="package-details"><code><span style="font-size:xx-large;">package <b>ethereum</b></span>
+
+<span class="title">Import Path</span>
+	<a href="../../../index.html#pkg-github.com/ethereum/go-ethereum">github.com/ethereum/go-ethereum</a><i> (on <a href="https://pkg.go.dev/github.com/ethereum/go-ethereum" target="_blank">go.dev</a>)</i>
+
+<span class="title">Dependency Relation</span>
+	imports <a href="../../../dep/github.com/ethereum/go-ethereum.html">5 packages</a>, and imported by 0 packages
+
+<div><span class="title">Involved Source Files</span>
+	<input type='checkbox' class="fold" id="file-0-fold-content"><label for="file-0-fold-content">   <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#doc">d➜</a> <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html">interfaces.go</a></label><span id='file-0-fold-content-items' class="fold-items">
+		Package ethereum defines interfaces for interacting with Ethereum.</span></div>
+<span class="title type-res">Package-Level Type Names<span class="title-stat"><i> (total 16, all are exported)</i></span></span>
+
+<div id="exported-types-buttons" class="js-on">	/* sort exporteds by: <label id="sort-types-by-alphabet" class="button">alphabet</label> | <label id="sort-types-by-popularity" class="button">popularity</label> */</div><div id="exported-types"><div class="anchor type-res" id="name-CallMsg" data-popularity="105">	<input type='checkbox' class="fold" id="CallMsg-fold-content"><label for="CallMsg-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-115">CallMsg</a> <i>(struct)</i></label><span id='CallMsg-fold-content-docs' class="fold-docs">
+		CallMsg contains parameters for contract calls.
+
+		<input type='checkbox' class="fold" id="CallMsg-fold-fields"><label for="CallMsg-fold-fields">Fields (<i>total 6, all are exported</i>)</label><span id='CallMsg-fold-fields-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="CallMsg-fold-field-Data"><label for="CallMsg-fold-field-Data"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-121">Data</a> <i>[]<a href="../../builtin.html#name-byte">byte</a></i></label><span id='CallMsg-fold-field-Data-docs' class="fold-docs">
+				// input data, usually an ABI-encoded contract method invocation
+</span></span><span>
+			<input type='checkbox' class="fold" id="CallMsg-fold-field-From"><label for="CallMsg-fold-field-From"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-116">From</a> <i><a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a></i></label><span id='CallMsg-fold-field-From-docs' class="fold-docs">
+				// the sender of the 'transaction'
+</span></span><span>
+			<input type='checkbox' class="fold" id="CallMsg-fold-field-Gas"><label for="CallMsg-fold-field-Gas"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-118">Gas</a> <i><a href="../../builtin.html#name-uint64">uint64</a></i></label><span id='CallMsg-fold-field-Gas-docs' class="fold-docs">
+				// if 0, the call executes with near-infinite gas
+</span></span><span>
+			<input type='checkbox' class="fold" id="CallMsg-fold-field-GasPrice"><label for="CallMsg-fold-field-GasPrice"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-119">GasPrice</a> <i>*<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a></i></label><span id='CallMsg-fold-field-GasPrice-docs' class="fold-docs">
+				// wei &lt;-&gt; gas exchange ratio
+</span></span><span>
+			<input type='checkbox' class="fold" id="CallMsg-fold-field-To"><label for="CallMsg-fold-field-To"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-117">To</a> <i>*<a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a></i></label><span id='CallMsg-fold-field-To-docs' class="fold-docs">
+				// the destination contract (nil for contract creation)
+</span></span><span>
+			<input type='checkbox' class="fold" id="CallMsg-fold-field-Value"><label for="CallMsg-fold-field-Value"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-120">Value</a> <i>*<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a></i></label><span id='CallMsg-fold-field-Value-docs' class="fold-docs">
+				// amount of wei sent along with the call
+</span></span></span>
+		<input type='checkbox' class="fold" id="CallMsg-fold-params"><label for="CallMsg-fold-params">As Inputs Of (<i>at least 3, all are exported</i>)</label><span id='CallMsg-fold-params-items' class="fold-items"><span>
+			func <a href="#name-ContractCaller">ContractCaller</a>.<a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-129">CallContract</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, call <b>CallMsg</b>, blockNumber *<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>) ([]<a href="../../builtin.html#name-byte">byte</a>, <a href="../../builtin.html#name-error">error</a>)</span><span>
+			func <a href="#name-GasEstimator">GasEstimator</a>.<a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-204">EstimateGas</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, call <b>CallMsg</b>) (<a href="../../builtin.html#name-uint64">uint64</a>, <a href="../../builtin.html#name-error">error</a>)</span><span>
+			func <a href="#name-PendingContractCaller">PendingContractCaller</a>.<a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-196">PendingCallContract</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, call <b>CallMsg</b>) ([]<a href="../../builtin.html#name-byte">byte</a>, <a href="../../builtin.html#name-error">error</a>)</span></span>
+
+</span></div><div class="anchor type-res" id="name-ChainReader" data-popularity="350">	<input type='checkbox' class="fold" id="ChainReader-fold-content"><label for="ChainReader-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-54">ChainReader</a> <b><i>(interface)</i></b></label><span id='ChainReader-fold-content-docs' class="fold-docs">
+		ChainReader provides access to the blockchain. The methods in this interface access raw
+		data from either the canonical chain (when requesting by block number) or any
+		blockchain fork that was previously downloaded and processed by the node. The block
+		number argument can be nil to select the latest canonical block. Reading block headers
+		should be preferred over full blocks whenever possible.
+
+		The returned error is NotFound if the requested item does not exist.
+
+		<input type='checkbox' class="fold" id="ChainReader-fold-methods"><label for="ChainReader-fold-methods">Methods (<i>total 7, all are exported</i>)</label><span id='ChainReader-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-55">BlockByHash</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, hash <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a>) (*<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Block">Block</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-56">BlockByNumber</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, number *<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>) (*<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Block">Block</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-57">HeaderByHash</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, hash <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a>) (*<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Header">Header</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-58">HeaderByNumber</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, number *<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>) (*<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Header">Header</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<input type='checkbox' class="fold" id="ChainReader-fold-method-SubscribeNewHead"><label for="ChainReader-fold-method-SubscribeNewHead">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-64">SubscribeNewHead</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, ch chan&lt;- *<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Header">Header</a>) (<a href="#name-Subscription">Subscription</a>, <a href="../../builtin.html#name-error">error</a>)</label><span id='ChainReader-fold-method-SubscribeNewHead-docs' class="fold-docs">
+				This method subscribes to notifications about changes of the head block of
+				the canonical chain.
+</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-59">TransactionCount</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, blockHash <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a>) (<a href="../../builtin.html#name-uint">uint</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-60">TransactionInBlock</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, blockHash <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a>, index <a href="../../builtin.html#name-uint">uint</a>) (*<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Transaction">Transaction</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-ChainStateReader" data-popularity="200">	<input type='checkbox' class="fold" id="ChainStateReader-fold-content"><label for="ChainStateReader-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-91">ChainStateReader</a> <b><i>(interface)</i></b></label><span id='ChainStateReader-fold-content-docs' class="fold-docs">
+		ChainStateReader wraps access to the state trie of the canonical blockchain. Note that
+		implementations of the interface may be unable to return state values for old blocks.
+		In many cases, using CallContract can be preferable to reading raw contract storage.
+
+		<input type='checkbox' class="fold" id="ChainStateReader-fold-methods"><label for="ChainStateReader-fold-methods">Methods (<i>total 4, all are exported</i>)</label><span id='ChainStateReader-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-92">BalanceAt</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, account <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a>, blockNumber *<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>) (*<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-94">CodeAt</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, account <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a>, blockNumber *<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>) ([]<a href="../../builtin.html#name-byte">byte</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-95">NonceAt</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, account <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a>, blockNumber *<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>) (<a href="../../builtin.html#name-uint64">uint64</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-93">StorageAt</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, account <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a>, key <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a>, blockNumber *<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>) ([]<a href="../../builtin.html#name-byte">byte</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-ChainSyncReader" data-popularity="50">	<input type='checkbox' class="fold" id="ChainSyncReader-fold-content"><label for="ChainSyncReader-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-110">ChainSyncReader</a> <b><i>(interface)</i></b></label><span id='ChainSyncReader-fold-content-docs' class="fold-docs">
+		ChainSyncReader wraps access to the node's current sync status. If there's no
+		sync currently running, it returns nil.
+
+		<input type='checkbox' class="fold" id="ChainSyncReader-fold-methods"><label for="ChainSyncReader-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='ChainSyncReader-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-111">SyncProgress</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>) (*<a href="#name-SyncProgress">SyncProgress</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-ContractCaller" data-popularity="50">	<input type='checkbox' class="fold" id="ContractCaller-fold-content"><label for="ContractCaller-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-128">ContractCaller</a> <b><i>(interface)</i></b></label><span id='ContractCaller-fold-content-docs' class="fold-docs">
+		A ContractCaller provides contract calls, essentially transactions that are executed by
+		the EVM but not mined into the blockchain. ContractCall is a low-level method to
+		execute such calls. For applications which are structured around specific contracts,
+		the abigen tool provides a nicer, properly typed way to perform calls.
+
+		<input type='checkbox' class="fold" id="ContractCaller-fold-methods"><label for="ContractCaller-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='ContractCaller-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-129">CallContract</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, call <a href="#name-CallMsg">CallMsg</a>, blockNumber *<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>) ([]<a href="../../builtin.html#name-byte">byte</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-FilterQuery" data-popularity="70">	<input type='checkbox' class="fold" id="FilterQuery-fold-content"><label for="FilterQuery-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-133">FilterQuery</a> <i>(struct)</i></label><span id='FilterQuery-fold-content-docs' class="fold-docs">
+		FilterQuery contains options for contract log filtering.
+
+		<input type='checkbox' class="fold" id="FilterQuery-fold-fields"><label for="FilterQuery-fold-fields">Fields (<i>total 5, all are exported</i>)</label><span id='FilterQuery-fold-fields-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="FilterQuery-fold-field-Addresses"><label for="FilterQuery-fold-field-Addresses"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-137">Addresses</a> <i>[]<a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a></i></label><span id='FilterQuery-fold-field-Addresses-docs' class="fold-docs">
+				// restricts matches to events created by specific contracts
+</span></span><span>
+			<input type='checkbox' class="fold" id="FilterQuery-fold-field-BlockHash"><label for="FilterQuery-fold-field-BlockHash"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-134">BlockHash</a> <i>*<a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a></i></label><span id='FilterQuery-fold-field-BlockHash-docs' class="fold-docs">
+				// used by eth_getLogs, return logs only from block with this hash
+</span></span><span>
+			<input type='checkbox' class="fold" id="FilterQuery-fold-field-FromBlock"><label for="FilterQuery-fold-field-FromBlock"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-135">FromBlock</a> <i>*<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a></i></label><span id='FilterQuery-fold-field-FromBlock-docs' class="fold-docs">
+				// beginning of the queried range, nil means genesis block
+</span></span><span>
+			<input type='checkbox' class="fold" id="FilterQuery-fold-field-ToBlock"><label for="FilterQuery-fold-field-ToBlock"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-136">ToBlock</a> <i>*<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a></i></label><span id='FilterQuery-fold-field-ToBlock-docs' class="fold-docs">
+				// end of the range, nil means latest block
+</span></span><span>
+			<input type='checkbox' class="fold" id="FilterQuery-fold-field-Topics"><label for="FilterQuery-fold-field-Topics"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-150">Topics</a> <i>[][]<a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a></i></label><span id='FilterQuery-fold-field-Topics-docs' class="fold-docs">
+				The Topic list restricts matches to particular event topics. Each event has a list
+				of topics. Topics matches a prefix of that list. An empty element slice matches any
+				topic. Non-empty elements represent an alternative that matches any of the
+				contained topics.
+
+				Examples:
+				{} or nil          matches any topic list
+				{{A}}              matches topic A in first position
+				{{}, {B}}          matches any topic in first position AND B in second position
+				{{A}, {B}}         matches topic A in first position AND B in second position
+				{{A, B}, {C, D}}   matches topic (A OR B) in first position AND (C OR D) in second position
+</span></span></span>
+		<input type='checkbox' class="fold" id="FilterQuery-fold-params"><label for="FilterQuery-fold-params">As Inputs Of (<i>at least 2, both are exported</i>)</label><span id='FilterQuery-fold-params-items' class="fold-items"><span>
+			func <a href="#name-LogFilterer">LogFilterer</a>.<a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-159">FilterLogs</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, q <b>FilterQuery</b>) ([]<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Log">Log</a>, <a href="../../builtin.html#name-error">error</a>)</span><span>
+			func <a href="#name-LogFilterer">LogFilterer</a>.<a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-160">SubscribeFilterLogs</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, q <b>FilterQuery</b>, ch chan&lt;- <a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Log">Log</a>) (<a href="#name-Subscription">Subscription</a>, <a href="../../builtin.html#name-error">error</a>)</span></span>
+
+</span></div><div class="anchor type-res" id="name-GasEstimator" data-popularity="50">	<input type='checkbox' class="fold" id="GasEstimator-fold-content"><label for="GasEstimator-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-203">GasEstimator</a> <b><i>(interface)</i></b></label><span id='GasEstimator-fold-content-docs' class="fold-docs">
+		GasEstimator wraps EstimateGas, which tries to estimate the gas needed to execute a
+		specific transaction based on the pending state. There is no guarantee that this is the
+		true gas limit requirement as other transactions may be added or removed by miners, but
+		it should provide a basis for setting a reasonable default.
+
+		<input type='checkbox' class="fold" id="GasEstimator-fold-methods"><label for="GasEstimator-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='GasEstimator-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-204">EstimateGas</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, call <a href="#name-CallMsg">CallMsg</a>) (<a href="../../builtin.html#name-uint64">uint64</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-GasPricer" data-popularity="50">	<input type='checkbox' class="fold" id="GasPricer-fold-content"><label for="GasPricer-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-177">GasPricer</a> <b><i>(interface)</i></b></label><span id='GasPricer-fold-content-docs' class="fold-docs">
+		GasPricer wraps the gas price oracle, which monitors the blockchain to determine the
+		optimal gas price given current fee market conditions.
+
+		<input type='checkbox' class="fold" id="GasPricer-fold-methods"><label for="GasPricer-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='GasPricer-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-178">SuggestGasPrice</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>) (*<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-LogFilterer" data-popularity="100">	<input type='checkbox' class="fold" id="LogFilterer-fold-content"><label for="LogFilterer-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-158">LogFilterer</a> <b><i>(interface)</i></b></label><span id='LogFilterer-fold-content-docs' class="fold-docs">
+		LogFilterer provides access to contract log events using a one-off query or continuous
+		event subscription.
+
+		Logs received through a streaming query subscription may have Removed set to true,
+		indicating that the log was reverted due to a chain reorganisation.
+
+		<input type='checkbox' class="fold" id="LogFilterer-fold-methods"><label for="LogFilterer-fold-methods">Methods (<i>total 2, both are exported</i>)</label><span id='LogFilterer-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-159">FilterLogs</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, q <a href="#name-FilterQuery">FilterQuery</a>) ([]<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Log">Log</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-160">SubscribeFilterLogs</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, q <a href="#name-FilterQuery">FilterQuery</a>, ch chan&lt;- <a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Log">Log</a>) (<a href="#name-Subscription">Subscription</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-PendingContractCaller" data-popularity="50">	<input type='checkbox' class="fold" id="PendingContractCaller-fold-content"><label for="PendingContractCaller-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-195">PendingContractCaller</a> <b><i>(interface)</i></b></label><span id='PendingContractCaller-fold-content-docs' class="fold-docs">
+		PendingContractCaller can be used to perform calls against the pending state.
+
+		<input type='checkbox' class="fold" id="PendingContractCaller-fold-methods"><label for="PendingContractCaller-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='PendingContractCaller-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-196">PendingCallContract</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, call <a href="#name-CallMsg">CallMsg</a>) ([]<a href="../../builtin.html#name-byte">byte</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-PendingStateEventer" data-popularity="50">	<input type='checkbox' class="fold" id="PendingStateEventer-fold-content"><label for="PendingStateEventer-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-209">PendingStateEventer</a> <b><i>(interface)</i></b></label><span id='PendingStateEventer-fold-content-docs' class="fold-docs">
+		A PendingStateEventer provides access to real time notifications about changes to the
+		pending state.
+
+		<input type='checkbox' class="fold" id="PendingStateEventer-fold-methods"><label for="PendingStateEventer-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='PendingStateEventer-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-210">SubscribePendingTransactions</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, ch chan&lt;- *<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Transaction">Transaction</a>) (<a href="#name-Subscription">Subscription</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-PendingStateReader" data-popularity="250">	<input type='checkbox' class="fold" id="PendingStateReader-fold-content"><label for="PendingStateReader-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-186">PendingStateReader</a> <b><i>(interface)</i></b></label><span id='PendingStateReader-fold-content-docs' class="fold-docs">
+		A PendingStateReader provides access to the pending state, which is the result of all
+		known executable transactions which have not yet been included in the blockchain. It is
+		commonly used to display the result of ’unconfirmed’ actions (e.g. wallet value
+		transfers) initiated by the user. The PendingNonceAt operation is a good way to
+		retrieve the next available transaction nonce for a specific account.
+
+		<input type='checkbox' class="fold" id="PendingStateReader-fold-methods"><label for="PendingStateReader-fold-methods">Methods (<i>total 5, all are exported</i>)</label><span id='PendingStateReader-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-187">PendingBalanceAt</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, account <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a>) (*<a href="../../math/big.html">big</a>.<a href="../../math/big.html#name-Int">Int</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-189">PendingCodeAt</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, account <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a>) ([]<a href="../../builtin.html#name-byte">byte</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-190">PendingNonceAt</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, account <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a>) (<a href="../../builtin.html#name-uint64">uint64</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-188">PendingStorageAt</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, account <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Address">Address</a>, key <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a>) ([]<a href="../../builtin.html#name-byte">byte</a>, <a href="../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-191">PendingTransactionCount</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>) (<a href="../../builtin.html#name-uint">uint</a>, <a href="../../builtin.html#name-error">error</a>)</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-Subscription" data-popularity="325">	<input type='checkbox' class="fold" id="Subscription-fold-content"><label for="Subscription-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-36">Subscription</a> <b><i>(interface)</i></b></label><span id='Subscription-fold-content-docs' class="fold-docs">
+		Subscription represents an event subscription where events are
+		delivered on a data channel.
+
+		<input type='checkbox' class="fold" id="Subscription-fold-methods"><label for="Subscription-fold-methods">Methods (<i>total 2, both are exported</i>)</label><span id='Subscription-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="Subscription-fold-method-Err"><label for="Subscription-fold-method-Err">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-44">Err</a>() &lt;-chan <a href="../../builtin.html#name-error">error</a></label><span id='Subscription-fold-method-Err-docs' class="fold-docs">
+				Err returns the subscription error channel. The error channel receives
+				a value if there is an issue with the subscription (e.g. the network connection
+				delivering the events has been closed). Only one value will ever be sent.
+				The error channel is closed by Unsubscribe.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Subscription-fold-method-Unsubscribe"><label for="Subscription-fold-method-Unsubscribe">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-39">Unsubscribe</a>()</label><span id='Subscription-fold-method-Unsubscribe-docs' class="fold-docs">
+				Unsubscribe cancels the sending of events to the data channel
+				and closes the error channel.
+</span></span></span>
+		<input type='checkbox' class="fold" id="Subscription-fold-results"><label for="Subscription-fold-results">As Outputs Of (<i>at least 3, all are exported</i>)</label><span id='Subscription-fold-results-items' class="fold-items"><span>
+			func <a href="#name-ChainReader">ChainReader</a>.<a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-64">SubscribeNewHead</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, ch chan&lt;- *<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Header">Header</a>) (<b>Subscription</b>, <a href="../../builtin.html#name-error">error</a>)</span><span>
+			func <a href="#name-LogFilterer">LogFilterer</a>.<a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-160">SubscribeFilterLogs</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, q <a href="#name-FilterQuery">FilterQuery</a>, ch chan&lt;- <a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Log">Log</a>) (<b>Subscription</b>, <a href="../../builtin.html#name-error">error</a>)</span><span>
+			func <a href="#name-PendingStateEventer">PendingStateEventer</a>.<a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-210">SubscribePendingTransactions</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, ch chan&lt;- *<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Transaction">Transaction</a>) (<b>Subscription</b>, <a href="../../builtin.html#name-error">error</a>)</span></span>
+
+</span></div><div class="anchor type-res" id="name-SyncProgress" data-popularity="75">	<input type='checkbox' class="fold" id="SyncProgress-fold-content"><label for="SyncProgress-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-100">SyncProgress</a> <i>(struct)</i></label><span id='SyncProgress-fold-content-docs' class="fold-docs">
+		SyncProgress gives progress indications when the node is synchronising with
+		the Ethereum network.
+
+		<input type='checkbox' class="fold" id="SyncProgress-fold-fields"><label for="SyncProgress-fold-fields">Fields (<i>total 5, all are exported</i>)</label><span id='SyncProgress-fold-fields-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="SyncProgress-fold-field-CurrentBlock"><label for="SyncProgress-fold-field-CurrentBlock"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-102">CurrentBlock</a> <i><a href="../../builtin.html#name-uint64">uint64</a></i></label><span id='SyncProgress-fold-field-CurrentBlock-docs' class="fold-docs">
+				// Current block number where sync is at
+</span></span><span>
+			<input type='checkbox' class="fold" id="SyncProgress-fold-field-HighestBlock"><label for="SyncProgress-fold-field-HighestBlock"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-103">HighestBlock</a> <i><a href="../../builtin.html#name-uint64">uint64</a></i></label><span id='SyncProgress-fold-field-HighestBlock-docs' class="fold-docs">
+				// Highest alleged block number in the chain
+</span></span><span>
+			<input type='checkbox' class="fold" id="SyncProgress-fold-field-KnownStates"><label for="SyncProgress-fold-field-KnownStates"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-105">KnownStates</a> <i><a href="../../builtin.html#name-uint64">uint64</a></i></label><span id='SyncProgress-fold-field-KnownStates-docs' class="fold-docs">
+				// Total number of state trie entries known about
+</span></span><span>
+			<input type='checkbox' class="fold" id="SyncProgress-fold-field-PulledStates"><label for="SyncProgress-fold-field-PulledStates"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-104">PulledStates</a> <i><a href="../../builtin.html#name-uint64">uint64</a></i></label><span id='SyncProgress-fold-field-PulledStates-docs' class="fold-docs">
+				// Number of state trie entries already downloaded
+</span></span><span>
+			<input type='checkbox' class="fold" id="SyncProgress-fold-field-StartingBlock"><label for="SyncProgress-fold-field-StartingBlock"><a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-101">StartingBlock</a> <i><a href="../../builtin.html#name-uint64">uint64</a></i></label><span id='SyncProgress-fold-field-StartingBlock-docs' class="fold-docs">
+				// Block number where sync began
+</span></span></span>
+		<input type='checkbox' class="fold" id="SyncProgress-fold-results"><label for="SyncProgress-fold-results">As Outputs Of (<i>at least one exported</i>)</label><span id='SyncProgress-fold-results-items' class="fold-items"><span>
+			func <a href="#name-ChainSyncReader">ChainSyncReader</a>.<a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-111">SyncProgress</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>) (*<b>SyncProgress</b>, <a href="../../builtin.html#name-error">error</a>)</span></span>
+
+</span></div><div class="anchor type-res" id="name-TransactionReader" data-popularity="100">	<input type='checkbox' class="fold" id="TransactionReader-fold-content"><label for="TransactionReader-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-76">TransactionReader</a> <b><i>(interface)</i></b></label><span id='TransactionReader-fold-content-docs' class="fold-docs">
+		TransactionReader provides access to past transactions and their receipts.
+		Implementations may impose arbitrary restrictions on the transactions and receipts that
+		can be retrieved. Historic transactions may not be available.
+
+		Avoid relying on this interface if possible. Contract logs (through the LogFilterer
+		interface) are more reliable and usually safer in the presence of chain
+		reorganisations.
+
+		The returned error is NotFound if the requested item does not exist.
+
+		<input type='checkbox' class="fold" id="TransactionReader-fold-methods"><label for="TransactionReader-fold-methods">Methods (<i>total 2, both are exported</i>)</label><span id='TransactionReader-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="TransactionReader-fold-method-TransactionByHash"><label for="TransactionReader-fold-method-TransactionByHash">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-81">TransactionByHash</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, txHash <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a>) (tx *<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Transaction">Transaction</a>, isPending <a href="../../builtin.html#name-bool">bool</a>, err <a href="../../builtin.html#name-error">error</a>)</label><span id='TransactionReader-fold-method-TransactionByHash-docs' class="fold-docs">
+				TransactionByHash checks the pool of pending transactions in addition to the
+				blockchain. The isPending return value indicates whether the transaction has been
+				mined yet. Note that the transaction may not be part of the canonical chain even if
+				it's not pending.
+</span></span><span>
+			<input type='checkbox' class="fold" id="TransactionReader-fold-method-TransactionReceipt"><label for="TransactionReader-fold-method-TransactionReceipt">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-85">TransactionReceipt</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, txHash <a href="go-ethereum/common.html">common</a>.<a href="go-ethereum/common.html#name-Hash">Hash</a>) (*<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Receipt">Receipt</a>, <a href="../../builtin.html#name-error">error</a>)</label><span id='TransactionReader-fold-method-TransactionReceipt-docs' class="fold-docs">
+				TransactionReceipt returns the receipt of a mined transaction. Note that the
+				transaction may not be included in the current canonical chain even if a receipt
+				exists.
+</span></span></span>
+
+</span></div><div class="anchor type-res" id="name-TransactionSender" data-popularity="50">	<input type='checkbox' class="fold" id="TransactionSender-fold-content"><label for="TransactionSender-fold-content"> type <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-171">TransactionSender</a> <b><i>(interface)</i></b></label><span id='TransactionSender-fold-content-docs' class="fold-docs">
+		TransactionSender wraps transaction sending. The SendTransaction method injects a
+		signed transaction into the pending transaction pool for execution. If the transaction
+		was a contract creation, the TransactionReceipt method can be used to retrieve the
+		contract address after the transaction has been mined.
+
+		The transaction must be signed and have a valid nonce to be included. Consumers of the
+		API can use package accounts to maintain local private keys and need can retrieve the
+		next available nonce using PendingNonceAt.
+
+		<input type='checkbox' class="fold" id="TransactionSender-fold-methods"><label for="TransactionSender-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='TransactionSender-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-172">SendTransaction</a>(ctx <a href="../../context.html">context</a>.<a href="../../context.html#name-Context">Context</a>, tx *<a href="go-ethereum/core/types.html">types</a>.<a href="go-ethereum/core/types.html#name-Transaction">Transaction</a>) <a href="../../builtin.html#name-error">error</a></span></span></span>
+
+</span></div></div>
+<div><span class="title value-res">Package-Level Variables<span class="title-stat"><i> (only one, which is exported)</i></span></span>
+
+<div class="anchor value-res" id="name-NotFound">	<input type='checkbox' class="fold" id="NotFound-fold-content"><label for="NotFound-fold-content">  var <a href="../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-30">NotFound</a> <a href="../../builtin.html#name-error">error</a></label><span id='NotFound-fold-content-docs' class="fold-docs">
+		NotFound is returned by API methods if the requested item does not exist.
+
+</span></div></div></code></pre><pre id="footer">
+<table><tr><td><img src="../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

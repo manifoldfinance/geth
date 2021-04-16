@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Package: github.com/ethereum/go-ethereum/common</title>
+<link href="../../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="package-details"><code><span style="font-size:xx-large;">package <b>common</b></span>
+
+<span class="title">Import Path</span>
+	<a href="../../../../index.html#pkg-github.com/ethereum/go-ethereum/common">github.com/ethereum/go-ethereum/common</a><i> (on <a href="https://pkg.go.dev/github.com/ethereum/go-ethereum/common" target="_blank">go.dev</a>)</i>
+
+<span class="title">Dependency Relation</span>
+	imports <a href="../../../../dep/github.com/ethereum/go-ethereum/common.html">19 packages</a>, and imported by <a href="../../../../dep/github.com/ethereum/go-ethereum/common.html#imported-by">4 packages</a>
+
+<div><span class="title">Involved Source Files</span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/common/big.go.html">big.go</a></span>
+	<input type='checkbox' class="fold" id="file-1-fold-content"><label for="file-1-fold-content">   <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#doc">d➜</a> <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html">bytes.go</a></label><span id='file-1-fold-content-items' class="fold-items">
+		Package common contains various helper functions.</span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/common/debug.go.html">debug.go</a></span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/common/format.go.html">format.go</a></span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/common/path.go.html">path.go</a></span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/common/size.go.html">size.go</a></span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/common/test_utils.go.html">test_utils.go</a></span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html">types.go</a></span></div>
+<span class="title type-res">Package-Level Type Names<span class="title-stat"><i> (total 8, all are exported)</i></span></span>
+
+<div id="exported-types-buttons" class="js-on">	/* sort exporteds by: <label id="sort-types-by-alphabet" class="button">alphabet</label> | <label id="sort-types-by-popularity" class="button">popularity</label> */</div><div id="exported-types"><div class="anchor type-res" id="name-Address" data-popularity="3115">	<input type='checkbox' class="fold" id="Address-fold-content"><label for="Address-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-201">Address</a> <i>([...]T)</i></label><span id='Address-fold-content-docs' class="fold-docs">
+		Address represents the 20 byte address of an Ethereum account.
+
+		<input type='checkbox' class="fold" id="Address-fold-methods"><label for="Address-fold-methods">Methods (<i>total 15, in which 13 are exported</i>)</label><span id='Address-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-Bytes"><label for="Address-fold-method-Bytes">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-229">Bytes</a>() []<a href="../../../builtin.html#name-byte">byte</a></label><span id='Address-fold-method-Bytes-docs' class="fold-docs">
+				Bytes gets the string representation of the underlying address.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-Format"><label for="Address-fold-method-Format">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-274">Format</a>(s <a href="../../../fmt.html">fmt</a>.<a href="../../../fmt.html#name-State">State</a>, c <a href="../../../builtin.html#name-rune">rune</a>)</label><span id='Address-fold-method-Format-docs' class="fold-docs">
+				Format implements fmt.Formatter.
+				Address supports the %v, %s, %v, %x, %X and %d format verbs.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-Hash"><label for="Address-fold-method-Hash">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-232">Hash</a>() <a href="#name-Hash">Hash</a></label><span id='Address-fold-method-Hash-docs' class="fold-docs">
+				Hash converts an address to a hash by left-padding it with zeros.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-Hex"><label for="Address-fold-method-Hex">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-235">Hex</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='Address-fold-method-Hex-docs' class="fold-docs">
+				Hex returns an EIP55-compliant hex string representation of the address.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-ImplementsGraphQLType"><label for="Address-fold-method-ImplementsGraphQLType">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-343">ImplementsGraphQLType</a>(name <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='Address-fold-method-ImplementsGraphQLType-docs' class="fold-docs">
+				ImplementsGraphQLType returns true if Hash implements the specified GraphQL type.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-MarshalText"><label for="Address-fold-method-MarshalText">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-310">MarshalText</a>() ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='Address-fold-method-MarshalText-docs' class="fold-docs">
+				MarshalText returns the hex representation of a.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-Scan"><label for="Address-fold-method-Scan">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-325">Scan</a>(src interface{}) <a href="../../../builtin.html#name-error">error</a></label><span id='Address-fold-method-Scan-docs' class="fold-docs">
+				Scan implements Scanner for database/sql.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-SetBytes"><label for="Address-fold-method-SetBytes">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-302">SetBytes</a>(b []<a href="../../../builtin.html#name-byte">byte</a>)</label><span id='Address-fold-method-SetBytes-docs' class="fold-docs">
+				SetBytes sets the address to the value of b.
+				If b is larger than len(a), b will be cropped from the left.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-String"><label for="Address-fold-method-String">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-240">String</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='Address-fold-method-String-docs' class="fold-docs">
+				String implements fmt.Stringer.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-UnmarshalGraphQL"><label for="Address-fold-method-UnmarshalGraphQL">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-346">UnmarshalGraphQL</a>(input interface{}) <a href="../../../builtin.html#name-error">error</a></label><span id='Address-fold-method-UnmarshalGraphQL-docs' class="fold-docs">
+				UnmarshalGraphQL unmarshals the provided GraphQL query data.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-UnmarshalJSON"><label for="Address-fold-method-UnmarshalJSON">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-320">UnmarshalJSON</a>(input []<a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='Address-fold-method-UnmarshalJSON-docs' class="fold-docs">
+				UnmarshalJSON parses a hash in hex syntax.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-UnmarshalText"><label for="Address-fold-method-UnmarshalText">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-315">UnmarshalText</a>(input []<a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='Address-fold-method-UnmarshalText-docs' class="fold-docs">
+				UnmarshalText parses a hash in hex syntax.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Address-fold-method-Value"><label for="Address-fold-method-Value">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-338">Value</a>() (<a href="../../../database/sql/driver.html">driver</a>.<a href="../../../database/sql/driver.html#name-Value">Value</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='Address-fold-method-Value-docs' class="fold-docs">
+				Value implements valuer for database/sql.
+</span></span>
+			<input type='checkbox' class="showhide" id="Address-showhide-methods"><i><label for="Address-showhide-methods" class="show-inline">/* 2 unexporteds ... */</label><label for="Address-showhide-methods" class="hide-inline">/* 2 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-244">checksumHex</a>() []<a href="../../../builtin.html#name-byte">byte</a></span></i></span><span class="hidden"><i>
+			<span class="nodocs">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-265">hex</a>() []<a href="../../../builtin.html#name-byte">byte</a></span></i></span></span>
+		<input type='checkbox' class="fold" id="Address-fold-impls"><label for="Address-fold-impls">Implements (<i>at least 9, in which 6 are exported</i>)</label><span id='Address-fold-impls-items' class="fold-items"><span>
+			 T : database/sql/driver.<a href="../../../database/sql/driver.html#name-Valuer">Valuer</a></span><span>
+			 T : encoding.<a href="../../../encoding.html#name-TextMarshaler">TextMarshaler</a></span><span>
+			*T : encoding.<a href="../../../encoding.html#name-TextUnmarshaler">TextUnmarshaler</a></span><span>
+			*T : encoding/json.<a href="../../../encoding/json.html#name-Unmarshaler">Unmarshaler</a></span><span>
+			 T : fmt.<a href="../../../fmt.html#name-Formatter">Formatter</a></span><span>
+			 T : fmt.<a href="../../../fmt.html#name-Stringer">Stringer</a></span>
+			<input type='checkbox' class="showhide" id="Address-showhide-impls"><i><label for="Address-showhide-impls" class="show-inline">/* 3+ unexporteds ... */</label><label for="Address-showhide-impls" class="hide-inline">/* 3+ unexporteds: */</label></i><span class="hidden"><i>
+			 T : github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-bytesBacked">bytesBacked</a></i></span><span class="hidden"><i>
+			 T : context.<a href="../../../context.html#name-stringer">stringer</a></i></span><span class="hidden"><i>
+			 T : runtime.<a href="../../../runtime.html#name-stringer">stringer</a></i></span></span>
+		<input type='checkbox' class="fold" id="Address-fold-results"><label for="Address-fold-results">As Outputs Of (<i>at least 18, in which 17 are exported</i>)</label><span id='Address-fold-results-items' class="fold-items"><span>
+			func <a href="#name-BigToAddress">BigToAddress</a>(b *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>) <b>Address</b></span><span>
+			func <a href="#name-BytesToAddress">BytesToAddress</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) <b>Address</b></span><span>
+			func <a href="#name-HexToAddress">HexToAddress</a>(s <a href="../../../builtin.html#name-string">string</a>) <b>Address</b></span><span>
+			func (*<a href="#name-MixedcaseAddress">MixedcaseAddress</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-408">Address</a>() <b>Address</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Sender">Sender</a>(signer <a href="core/types.html">types</a>.<a href="core/types.html#name-Signer">Signer</a>, tx *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>) (<b>Address</b>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-335">Coinbase</a>() <b>Address</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-EIP155Signer">EIP155Signer</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction_signing.go.html#line-127">Sender</a>(tx *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>) (<b>Address</b>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-FrontierSigner">FrontierSigner</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction_signing.go.html#line-218">Sender</a>(tx *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>) (<b>Address</b>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-HomesteadSigner">HomesteadSigner</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction_signing.go.html#line-182">Sender</a>(tx *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>) (<b>Address</b>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Message">Message</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction.go.html#line-435">From</a>() <b>Address</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Message">Message</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction.go.html#line-436">To</a>() *<b>Address</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Signer">Signer</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction_signing.go.html#line-95">Sender</a>(tx *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>) (<b>Address</b>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Transaction">Transaction</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction.go.html#line-196">To</a>() *<b>Address</b></span><span>
+			func github.com/ethereum/go-ethereum/crypto.<a href="crypto.html#name-CreateAddress">CreateAddress</a>(b <b>Address</b>, nonce <a href="../../../builtin.html#name-uint64">uint64</a>) <b>Address</b></span><span>
+			func github.com/ethereum/go-ethereum/crypto.<a href="crypto.html#name-CreateAddress2">CreateAddress2</a>(b <b>Address</b>, salt [32]<a href="../../../builtin.html#name-byte">byte</a>, inithash []<a href="../../../builtin.html#name-byte">byte</a>) <b>Address</b></span><span>
+			func github.com/ethereum/go-ethereum/crypto.<a href="crypto.html#name-PubkeyToAddress">PubkeyToAddress</a>(p <a href="../../../crypto/ecdsa.html">ecdsa</a>.<a href="../../../crypto/ecdsa.html#name-PublicKey">PublicKey</a>) <b>Address</b></span><span>
+			func github.com/ethereum/go-ethereum/params.<a href="params.html#name-DAODrainList">DAODrainList</a>() []<b>Address</b></span>
+			<input type='checkbox' class="showhide" id="Address-showhide-inputofs"><i><label for="Address-showhide-inputofs" class="show-inline">/* at least one unexported ... */</label><label for="Address-showhide-inputofs" class="hide-inline">/* at least one unexported: */</label></i><span class="hidden"><i>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-recoverPlain">recoverPlain</a>(sighash <a href="#name-Hash">Hash</a>, R, S, Vb *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, homestead <a href="../../../builtin.html#name-bool">bool</a>) (<b>Address</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span></span>
+		<input type='checkbox' class="fold" id="Address-fold-params"><label for="Address-fold-params">As Inputs Of (<i>at least 16, in which 15 are exported</i>)</label><span id='Address-fold-params-items' class="fold-items"><span>
+			func <a href="#name-NewMixedcaseAddress">NewMixedcaseAddress</a>(addr <b>Address</b>) <a href="#name-MixedcaseAddress">MixedcaseAddress</a></span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-ChainStateReader">ChainStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-92">BalanceAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <b>Address</b>, blockNumber *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>) (*<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-ChainStateReader">ChainStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-94">CodeAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <b>Address</b>, blockNumber *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>) ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-ChainStateReader">ChainStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-95">NonceAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <b>Address</b>, blockNumber *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>) (<a href="../../../builtin.html#name-uint64">uint64</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-ChainStateReader">ChainStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-93">StorageAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <b>Address</b>, key <a href="#name-Hash">Hash</a>, blockNumber *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>) ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-PendingStateReader">PendingStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-187">PendingBalanceAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <b>Address</b>) (*<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-PendingStateReader">PendingStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-189">PendingCodeAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <b>Address</b>) ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-PendingStateReader">PendingStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-190">PendingNonceAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <b>Address</b>) (<a href="../../../builtin.html#name-uint64">uint64</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-PendingStateReader">PendingStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-188">PendingStorageAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <b>Address</b>, key <a href="#name-Hash">Hash</a>) ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-NewMessage">NewMessage</a>(from <b>Address</b>, to *<b>Address</b>, nonce <a href="../../../builtin.html#name-uint64">uint64</a>, amount *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, gasLimit <a href="../../../builtin.html#name-uint64">uint64</a>, gasPrice *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, data []<a href="../../../builtin.html#name-byte">byte</a>, checkNonce <a href="../../../builtin.html#name-bool">bool</a>) <a href="core/types.html">types</a>.<a href="core/types.html#name-Message">Message</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-NewMessage">NewMessage</a>(from <b>Address</b>, to *<b>Address</b>, nonce <a href="../../../builtin.html#name-uint64">uint64</a>, amount *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, gasLimit <a href="../../../builtin.html#name-uint64">uint64</a>, gasPrice *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, data []<a href="../../../builtin.html#name-byte">byte</a>, checkNonce <a href="../../../builtin.html#name-bool">bool</a>) <a href="core/types.html">types</a>.<a href="core/types.html#name-Message">Message</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-NewTransaction">NewTransaction</a>(nonce <a href="../../../builtin.html#name-uint64">uint64</a>, to <b>Address</b>, amount *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, gasLimit <a href="../../../builtin.html#name-uint64">uint64</a>, gasPrice *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, data []<a href="../../../builtin.html#name-byte">byte</a>) *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-NewTransactionsByPriceAndNonce">NewTransactionsByPriceAndNonce</a>(signer <a href="core/types.html">types</a>.<a href="core/types.html#name-Signer">Signer</a>, txs map[<b>Address</b>]<a href="core/types.html">types</a>.<a href="core/types.html#name-Transactions">Transactions</a>) *<a href="core/types.html">types</a>.<a href="core/types.html#name-TransactionsByPriceAndNonce">TransactionsByPriceAndNonce</a></span><span>
+			func github.com/ethereum/go-ethereum/crypto.<a href="crypto.html#name-CreateAddress">CreateAddress</a>(b <b>Address</b>, nonce <a href="../../../builtin.html#name-uint64">uint64</a>) <b>Address</b></span><span>
+			func github.com/ethereum/go-ethereum/crypto.<a href="crypto.html#name-CreateAddress2">CreateAddress2</a>(b <b>Address</b>, salt [32]<a href="../../../builtin.html#name-byte">byte</a>, inithash []<a href="../../../builtin.html#name-byte">byte</a>) <b>Address</b></span>
+			<input type='checkbox' class="showhide" id="Address-showhide-outputofs"><i><label for="Address-showhide-outputofs" class="show-inline">/* at least one unexported ... */</label><label for="Address-showhide-outputofs" class="hide-inline">/* at least one unexported: */</label></i><span class="hidden"><i>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-newTransaction">newTransaction</a>(nonce <a href="../../../builtin.html#name-uint64">uint64</a>, to *<b>Address</b>, amount *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, gasLimit <a href="../../../builtin.html#name-uint64">uint64</a>, gasPrice *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, data []<a href="../../../builtin.html#name-byte">byte</a>) *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a></i></span></span>
+		<input type='checkbox' class="fold" id="Address-fold-values"><label for="Address-fold-values">As Types Of (<i>only one, which is exported</i>)</label><span id='Address-fold-values-items' class="fold-items"><span>
+			  var github.com/ethereum/go-ethereum/params.<a href="params.html#name-DAORefundContract">DAORefundContract</a></span></span>
+
+</span></div><div class="anchor type-res" id="name-Hash" data-popularity="3395">	<input type='checkbox' class="fold" id="Hash-fold-content"><label for="Hash-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-49">Hash</a> <i>([...]T)</i></label><span id='Hash-fold-content-docs' class="fold-docs">
+		Hash represents the 32 byte Keccak256 hash of arbitrary data.
+
+		<input type='checkbox' class="fold" id="Hash-fold-methods"><label for="Hash-fold-methods">Methods (<i>total 15, all are exported</i>)</label><span id='Hash-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-Big"><label for="Hash-fold-method-Big">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-71">Big</a>() *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></label><span id='Hash-fold-method-Big-docs' class="fold-docs">
+				Big converts a hash to a big integer.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-Bytes"><label for="Hash-fold-method-Bytes">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-68">Bytes</a>() []<a href="../../../builtin.html#name-byte">byte</a></label><span id='Hash-fold-method-Bytes-docs' class="fold-docs">
+				Bytes gets the byte representation of the underlying hash.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-Format"><label for="Hash-fold-method-Format">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-90">Format</a>(s <a href="../../../fmt.html">fmt</a>.<a href="../../../fmt.html#name-State">State</a>, c <a href="../../../builtin.html#name-rune">rune</a>)</label><span id='Hash-fold-method-Format-docs' class="fold-docs">
+				Format implements fmt.Formatter.
+				Hash supports the %v, %s, %v, %x, %X and %d format verbs.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-Generate"><label for="Hash-fold-method-Generate">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-144">Generate</a>(rand *<a href="../../../math/rand.html">rand</a>.<a href="../../../math/rand.html#name-Rand">Rand</a>, size <a href="../../../builtin.html#name-int">int</a>) <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a></label><span id='Hash-fold-method-Generate-docs' class="fold-docs">
+				Generate implements testing/quick.Generator.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-Hex"><label for="Hash-fold-method-Hex">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-74">Hex</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='Hash-fold-method-Hex-docs' class="fold-docs">
+				Hex converts a hash to a hex string.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-ImplementsGraphQLType"><label for="Hash-fold-method-ImplementsGraphQLType">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-171">ImplementsGraphQLType</a>(name <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='Hash-fold-method-ImplementsGraphQLType-docs' class="fold-docs">
+				ImplementsGraphQLType returns true if Hash implements the specified GraphQL type.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-MarshalText"><label for="Hash-fold-method-MarshalText">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-129">MarshalText</a>() ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='Hash-fold-method-MarshalText-docs' class="fold-docs">
+				MarshalText returns the hex representation of h.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-Scan"><label for="Hash-fold-method-Scan">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-153">Scan</a>(src interface{}) <a href="../../../builtin.html#name-error">error</a></label><span id='Hash-fold-method-Scan-docs' class="fold-docs">
+				Scan implements Scanner for database/sql.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-SetBytes"><label for="Hash-fold-method-SetBytes">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-135">SetBytes</a>(b []<a href="../../../builtin.html#name-byte">byte</a>)</label><span id='Hash-fold-method-SetBytes-docs' class="fold-docs">
+				SetBytes sets the hash to the value of b.
+				If b is larger than len(h), b will be cropped from the left.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-String"><label for="Hash-fold-method-String">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-84">String</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='Hash-fold-method-String-docs' class="fold-docs">
+				String implements the stringer interface and is used also by the logger when
+				doing full logging into a file.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-TerminalString"><label for="Hash-fold-method-TerminalString">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-78">TerminalString</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='Hash-fold-method-TerminalString-docs' class="fold-docs">
+				TerminalString implements log.TerminalStringer, formatting a string for console
+				output during logging.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-UnmarshalGraphQL"><label for="Hash-fold-method-UnmarshalGraphQL">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-174">UnmarshalGraphQL</a>(input interface{}) <a href="../../../builtin.html#name-error">error</a></label><span id='Hash-fold-method-UnmarshalGraphQL-docs' class="fold-docs">
+				UnmarshalGraphQL unmarshals the provided GraphQL query data.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-UnmarshalJSON"><label for="Hash-fold-method-UnmarshalJSON">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-124">UnmarshalJSON</a>(input []<a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='Hash-fold-method-UnmarshalJSON-docs' class="fold-docs">
+				UnmarshalJSON parses a hash in hex syntax.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-UnmarshalText"><label for="Hash-fold-method-UnmarshalText">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-119">UnmarshalText</a>(input []<a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='Hash-fold-method-UnmarshalText-docs' class="fold-docs">
+				UnmarshalText parses a hash in hex syntax.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Hash-fold-method-Value"><label for="Hash-fold-method-Value">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-166">Value</a>() (<a href="../../../database/sql/driver.html">driver</a>.<a href="../../../database/sql/driver.html#name-Value">Value</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='Hash-fold-method-Value-docs' class="fold-docs">
+				Value implements valuer for database/sql.
+</span></span></span>
+		<input type='checkbox' class="fold" id="Hash-fold-impls"><label for="Hash-fold-impls">Implements (<i>at least 9, in which 6 are exported</i>)</label><span id='Hash-fold-impls-items' class="fold-items"><span>
+			 T : database/sql/driver.<a href="../../../database/sql/driver.html#name-Valuer">Valuer</a></span><span>
+			 T : encoding.<a href="../../../encoding.html#name-TextMarshaler">TextMarshaler</a></span><span>
+			*T : encoding.<a href="../../../encoding.html#name-TextUnmarshaler">TextUnmarshaler</a></span><span>
+			*T : encoding/json.<a href="../../../encoding/json.html#name-Unmarshaler">Unmarshaler</a></span><span>
+			 T : fmt.<a href="../../../fmt.html#name-Formatter">Formatter</a></span><span>
+			 T : fmt.<a href="../../../fmt.html#name-Stringer">Stringer</a></span>
+			<input type='checkbox' class="showhide" id="Hash-showhide-impls"><i><label for="Hash-showhide-impls" class="show-inline">/* 3+ unexporteds ... */</label><label for="Hash-showhide-impls" class="hide-inline">/* 3+ unexporteds: */</label></i><span class="hidden"><i>
+			 T : github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-bytesBacked">bytesBacked</a></i></span><span class="hidden"><i>
+			 T : context.<a href="../../../context.html#name-stringer">stringer</a></i></span><span class="hidden"><i>
+			 T : runtime.<a href="../../../runtime.html#name-stringer">stringer</a></i></span></span>
+		<input type='checkbox' class="fold" id="Hash-fold-results"><label for="Hash-fold-results">As Outputs Of (<i>at least 23, in which 22 are exported</i>)</label><span id='Hash-fold-results-items' class="fold-items"><span>
+			func <a href="#name-BigToHash">BigToHash</a>(b *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>) <b>Hash</b></span><span>
+			func <a href="#name-BytesToHash">BytesToHash</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) <b>Hash</b></span><span>
+			func <a href="#name-HexToHash">HexToHash</a>(s <a href="../../../builtin.html#name-string">string</a>) <b>Hash</b></span><span>
+			func <a href="#name-Address">Address</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-232">Hash</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-CalcUncleHash">CalcUncleHash</a>(uncles []*<a href="core/types.html">types</a>.<a href="core/types.html#name-Header">Header</a>) <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-DeriveSha">DeriveSha</a>(list <a href="core/types.html">types</a>.<a href="core/types.html#name-DerivableList">DerivableList</a>, hasher <a href="core/types.html">types</a>.<a href="core/types.html#name-Hasher">Hasher</a>) <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-408">Hash</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-332">MixDigest</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-337">ParentHash</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-339">ReceiptHash</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-336">Root</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-338">TxHash</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-340">UncleHash</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-EIP155Signer">EIP155Signer</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction_signing.go.html#line-155">Hash</a>(tx *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>) <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-FrontierSigner">FrontierSigner</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction_signing.go.html#line-207">Hash</a>(tx *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>) <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Hasher">Hasher</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/derive_sha.go.html#line-33">Hash</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Header">Header</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-103">Hash</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Signer">Signer</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction_signing.go.html#line-100">Hash</a>(tx *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>) <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Transaction">Transaction</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction.go.html#line-206">Hash</a>() <b>Hash</b></span><span>
+			func github.com/ethereum/go-ethereum/crypto.<a href="crypto.html#name-HashData">HashData</a>(kh <a href="crypto.html">crypto</a>.<a href="crypto.html#name-KeccakState">KeccakState</a>, data []<a href="../../../builtin.html#name-byte">byte</a>) (h <b>Hash</b>)</span><span>
+			func github.com/ethereum/go-ethereum/crypto.<a href="crypto.html#name-Keccak256Hash">Keccak256Hash</a>(data ...[]<a href="../../../builtin.html#name-byte">byte</a>) (h <b>Hash</b>)</span><span>
+			func github.com/ethereum/go-ethereum/params.(*<a href="params.html#name-TrustedCheckpoint">TrustedCheckpoint</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/params/config.go.html#line-276">Hash</a>() <b>Hash</b></span>
+			<input type='checkbox' class="showhide" id="Hash-showhide-inputofs"><i><label for="Hash-showhide-inputofs" class="show-inline">/* at least one unexported ... */</label><label for="Hash-showhide-inputofs" class="hide-inline">/* at least one unexported: */</label></i><span class="hidden"><i>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-rlpHash">rlpHash</a>(x interface{}) (h <b>Hash</b>)</i></span></span>
+		<input type='checkbox' class="fold" id="Hash-fold-params"><label for="Hash-fold-params">As Inputs Of (<i>at least 13, in which 12 are exported</i>)</label><span id='Hash-fold-params-items' class="fold-items"><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-ChainReader">ChainReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-55">BlockByHash</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, hash <b>Hash</b>) (*<a href="core/types.html">types</a>.<a href="core/types.html#name-Block">Block</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-ChainReader">ChainReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-57">HeaderByHash</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, hash <b>Hash</b>) (*<a href="core/types.html">types</a>.<a href="core/types.html#name-Header">Header</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-ChainReader">ChainReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-59">TransactionCount</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, blockHash <b>Hash</b>) (<a href="../../../builtin.html#name-uint">uint</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-ChainReader">ChainReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-60">TransactionInBlock</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, blockHash <b>Hash</b>, index <a href="../../../builtin.html#name-uint">uint</a>) (*<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-ChainStateReader">ChainStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-93">StorageAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <a href="#name-Address">Address</a>, key <b>Hash</b>, blockNumber *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>) ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-PendingStateReader">PendingStateReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-188">PendingStorageAt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, account <a href="#name-Address">Address</a>, key <b>Hash</b>) ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-TransactionReader">TransactionReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-81">TransactionByHash</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, txHash <b>Hash</b>) (tx *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a>, isPending <a href="../../../builtin.html#name-bool">bool</a>, err <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum.<a href="../go-ethereum.html#name-TransactionReader">TransactionReader</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/interfaces.go.html#line-85">TransactionReceipt</a>(ctx <a href="../../../context.html">context</a>.<a href="../../../context.html#name-Context">Context</a>, txHash <b>Hash</b>) (*<a href="core/types.html">types</a>.<a href="core/types.html#name-Receipt">Receipt</a>, <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-316">Transaction</a>(hash <b>Hash</b>) *<a href="core/types.html">types</a>.<a href="core/types.html#name-Transaction">Transaction</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Receipts">Receipts</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/receipt.go.html#line-297">DeriveFields</a>(config *<a href="params.html">params</a>.<a href="params.html#name-ChainConfig">ChainConfig</a>, hash <b>Hash</b>, number <a href="../../../builtin.html#name-uint64">uint64</a>, txs <a href="core/types.html">types</a>.<a href="core/types.html#name-Transactions">Transactions</a>) <a href="../../../builtin.html#name-error">error</a></span><span>
+			func github.com/ethereum/go-ethereum/params.<a href="params.html#name-KnownDNSNetwork">KnownDNSNetwork</a>(genesis <b>Hash</b>, protocol <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-string">string</a></span><span>
+			func github.com/ethereum/go-ethereum/params.(*<a href="params.html#name-TrustedCheckpoint">TrustedCheckpoint</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/params/config.go.html#line-268">HashEqual</a>(hash <b>Hash</b>) <a href="../../../builtin.html#name-bool">bool</a></span>
+			<input type='checkbox' class="showhide" id="Hash-showhide-outputofs"><i><label for="Hash-showhide-outputofs" class="show-inline">/* at least one unexported ... */</label><label for="Hash-showhide-outputofs" class="hide-inline">/* at least one unexported: */</label></i><span class="hidden"><i>
+			func github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-recoverPlain">recoverPlain</a>(sighash <b>Hash</b>, R, S, Vb *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, homestead <a href="../../../builtin.html#name-bool">bool</a>) (<a href="#name-Address">Address</a>, <a href="../../../builtin.html#name-error">error</a>)</i></span></span>
+		<input type='checkbox' class="fold" id="Hash-fold-values"><label for="Hash-fold-values">As Types Of (<i>total 7, all are exported</i>)</label><span id='Hash-fold-values-items' class="fold-items"><span>
+			  var github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-EmptyRootHash">EmptyRootHash</a></span><span>
+			  var github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-EmptyUncleHash">EmptyUncleHash</a></span><span>
+			  var github.com/ethereum/go-ethereum/params.<a href="params.html#name-GoerliGenesisHash">GoerliGenesisHash</a></span><span>
+			  var github.com/ethereum/go-ethereum/params.<a href="params.html#name-MainnetGenesisHash">MainnetGenesisHash</a></span><span>
+			  var github.com/ethereum/go-ethereum/params.<a href="params.html#name-RinkebyGenesisHash">RinkebyGenesisHash</a></span><span>
+			  var github.com/ethereum/go-ethereum/params.<a href="params.html#name-RopstenGenesisHash">RopstenGenesisHash</a></span><span>
+			  var github.com/ethereum/go-ethereum/params.<a href="params.html#name-YoloV2GenesisHash">YoloV2GenesisHash</a></span></span>
+
+</span></div><div class="anchor type-res" id="name-MixedcaseAddress" data-popularity="700">	<input type='checkbox' class="fold" id="MixedcaseAddress-fold-content"><label for="MixedcaseAddress-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-372">MixedcaseAddress</a> <i>(struct)</i></label><span id='MixedcaseAddress-fold-content-docs' class="fold-docs">
+		MixedcaseAddress retains the original string, which may or may not be
+		correctly checksummed
+
+		<input type='checkbox' class="fold" id="MixedcaseAddress-fold-fields"><label for="MixedcaseAddress-fold-fields">Fields (<i>total 2, neither is exported</i>)</label><span id='MixedcaseAddress-fold-fields-items' class="fold-items">
+			<input type='checkbox' class="showhide" id="MixedcaseAddress-showhide-fields"><i><label for="MixedcaseAddress-showhide-fields" class="show-inline">/* 2 unexporteds ... */</label><label for="MixedcaseAddress-showhide-fields" class="hide-inline">/* 2 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-373">addr</a> <i><a href="#name-Address">Address</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-374">original</a> <i><a href="../../../builtin.html#name-string">string</a></i></span></i></span></span>
+		<input type='checkbox' class="fold" id="MixedcaseAddress-fold-methods"><label for="MixedcaseAddress-fold-methods">Methods (<i>total 6, all are exported</i>)</label><span id='MixedcaseAddress-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="MixedcaseAddress-fold-method-Address"><label for="MixedcaseAddress-fold-method-Address">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-408">Address</a>() <a href="#name-Address">Address</a></label><span id='MixedcaseAddress-fold-method-Address-docs' class="fold-docs">
+				Address returns the address
+</span></span><span>
+			<input type='checkbox' class="fold" id="MixedcaseAddress-fold-method-MarshalJSON"><label for="MixedcaseAddress-fold-method-MarshalJSON">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-400">MarshalJSON</a>() ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='MixedcaseAddress-fold-method-MarshalJSON-docs' class="fold-docs">
+				MarshalJSON marshals the original value
+</span></span><span>
+			<input type='checkbox' class="fold" id="MixedcaseAddress-fold-method-Original"><label for="MixedcaseAddress-fold-method-Original">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-426">Original</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='MixedcaseAddress-fold-method-Original-docs' class="fold-docs">
+				Original returns the mixed-case input string
+</span></span><span>
+			<input type='checkbox' class="fold" id="MixedcaseAddress-fold-method-String"><label for="MixedcaseAddress-fold-method-String">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-413">String</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='MixedcaseAddress-fold-method-String-docs' class="fold-docs">
+				String implements fmt.Stringer
+</span></span><span>
+			<input type='checkbox' class="fold" id="MixedcaseAddress-fold-method-UnmarshalJSON"><label for="MixedcaseAddress-fold-method-UnmarshalJSON">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-392">UnmarshalJSON</a>(input []<a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='MixedcaseAddress-fold-method-UnmarshalJSON-docs' class="fold-docs">
+				UnmarshalJSON parses MixedcaseAddress
+</span></span><span>
+			<input type='checkbox' class="fold" id="MixedcaseAddress-fold-method-ValidChecksum"><label for="MixedcaseAddress-fold-method-ValidChecksum">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-421">ValidChecksum</a>() <a href="../../../builtin.html#name-bool">bool</a></label><span id='MixedcaseAddress-fold-method-ValidChecksum-docs' class="fold-docs">
+				ValidChecksum returns true if the address has valid checksum
+</span></span></span>
+		<input type='checkbox' class="fold" id="MixedcaseAddress-fold-impls"><label for="MixedcaseAddress-fold-impls">Implements (<i>at least 5, in which 3 are exported</i>)</label><span id='MixedcaseAddress-fold-impls-items' class="fold-items"><span>
+			*T : encoding/json.<a href="../../../encoding/json.html#name-Marshaler">Marshaler</a></span><span>
+			*T : encoding/json.<a href="../../../encoding/json.html#name-Unmarshaler">Unmarshaler</a></span><span>
+			*T : fmt.<a href="../../../fmt.html#name-Stringer">Stringer</a></span>
+			<input type='checkbox' class="showhide" id="MixedcaseAddress-showhide-impls"><i><label for="MixedcaseAddress-showhide-impls" class="show-inline">/* 2+ unexporteds ... */</label><label for="MixedcaseAddress-showhide-impls" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			*T : context.<a href="../../../context.html#name-stringer">stringer</a></i></span><span class="hidden"><i>
+			*T : runtime.<a href="../../../runtime.html#name-stringer">stringer</a></i></span></span>
+		<input type='checkbox' class="fold" id="MixedcaseAddress-fold-results"><label for="MixedcaseAddress-fold-results">As Outputs Of (<i>at least 2, both are exported</i>)</label><span id='MixedcaseAddress-fold-results-items' class="fold-items"><span>
+			func <a href="#name-NewMixedcaseAddress">NewMixedcaseAddress</a>(addr <a href="#name-Address">Address</a>) <b>MixedcaseAddress</b></span><span>
+			func <a href="#name-NewMixedcaseAddressFromString">NewMixedcaseAddressFromString</a>(hexaddr <a href="../../../builtin.html#name-string">string</a>) (*<b>MixedcaseAddress</b>, <a href="../../../builtin.html#name-error">error</a>)</span></span>
+
+</span></div><div class="anchor type-res" id="name-PrettyAge" data-popularity="200">	<input type='checkbox' class="fold" id="PrettyAge-fold-content"><label for="PrettyAge-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/common/format.go.html#line-44">PrettyAge</a> <a href="../../../time.html">time</a>.<a href="../../../time.html#name-Time">Time</a> <i>(struct)</i></label><span id='PrettyAge-fold-content-docs' class="fold-docs">
+		PrettyAge is a pretty printed version of a time.Duration value that rounds
+		the values up to a single most significant unit, days/weeks/years included.
+
+		<input type='checkbox' class="fold" id="PrettyAge-fold-fields"><label for="PrettyAge-fold-fields">Fields (<i>total 3, none are exported</i>)</label><span id='PrettyAge-fold-fields-items' class="fold-items">
+			<input type='checkbox' class="showhide" id="PrettyAge-showhide-fields"><i><label for="PrettyAge-showhide-fields" class="show-inline">/* 3 unexporteds ... */</label><label for="PrettyAge-showhide-fields" class="hide-inline">/* 3 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/time/time.go.html#line-140">ext</a> <i><a href="../../../builtin.html#name-int64">int64</a></i></span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="PrettyAge-fold-field-loc"><label for="PrettyAge-fold-field-loc"><a href="../../../../src/time/time.go.html#line-147">loc</a> <i>*<a href="../../../time.html">time</a>.<a href="../../../time.html#name-Location">Location</a></i></label><span id='PrettyAge-fold-field-loc-docs' class="fold-docs">
+				loc specifies the Location that should be used to
+				determine the minute, hour, month, day, and year
+				that correspond to this Time.
+				The nil location means UTC.
+				All UTC times are represented with loc==nil, never loc==&amp;utcLoc.
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="PrettyAge-fold-field-wall"><label for="PrettyAge-fold-field-wall"><a href="../../../../src/time/time.go.html#line-139">wall</a> <i><a href="../../../builtin.html#name-uint64">uint64</a></i></label><span id='PrettyAge-fold-field-wall-docs' class="fold-docs">
+				wall and ext encode the wall time seconds, wall time nanoseconds,
+				and optional monotonic clock reading in nanoseconds.
+
+				From high to low bit position, wall encodes a 1-bit flag (hasMonotonic),
+				a 33-bit seconds field, and a 30-bit wall time nanoseconds field.
+				The nanoseconds field is in the range [0, 999999999].
+				If the hasMonotonic bit is 0, then the 33-bit field must be zero
+				and the full signed 64-bit wall seconds since Jan 1 year 1 is stored in ext.
+				If the hasMonotonic bit is 1, then the 33-bit field holds a 33-bit
+				unsigned wall seconds since Jan 1 year 1885, and ext holds a
+				signed 64-bit monotonic clock reading, nanoseconds since process start.
+</span></i></span></span>
+		<input type='checkbox' class="fold" id="PrettyAge-fold-methods"><label for="PrettyAge-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='PrettyAge-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="PrettyAge-fold-method-String"><label for="PrettyAge-fold-method-String">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/format.go.html#line-62">String</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='PrettyAge-fold-method-String-docs' class="fold-docs">
+				String implements the Stringer interface, allowing pretty printing of duration
+				values rounded to the most significant time unit.
+</span></span></span>
+		<input type='checkbox' class="fold" id="PrettyAge-fold-impls"><label for="PrettyAge-fold-impls">Implements (<i>at least 3, in which 1 are exported</i>)</label><span id='PrettyAge-fold-impls-items' class="fold-items"><span>
+			 T : fmt.<a href="../../../fmt.html#name-Stringer">Stringer</a></span>
+			<input type='checkbox' class="showhide" id="PrettyAge-showhide-impls"><i><label for="PrettyAge-showhide-impls" class="show-inline">/* 2+ unexporteds ... */</label><label for="PrettyAge-showhide-impls" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			 T : context.<a href="../../../context.html#name-stringer">stringer</a></i></span><span class="hidden"><i>
+			 T : runtime.<a href="../../../runtime.html#name-stringer">stringer</a></i></span></span>
+
+</span></div><div class="anchor type-res" id="name-PrettyDuration" data-popularity="200">	<input type='checkbox' class="fold" id="PrettyDuration-fold-content"><label for="PrettyDuration-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/common/format.go.html#line-28">PrettyDuration</a> <a href="../../../time.html">time</a>.<a href="../../../time.html#name-Duration">Duration</a> <i>(basic type)</i></label><span id='PrettyDuration-fold-content-docs' class="fold-docs">
+		PrettyDuration is a pretty printed version of a time.Duration value that cuts
+		the unnecessary precision off from the formatted textual representation.
+
+		<input type='checkbox' class="fold" id="PrettyDuration-fold-methods"><label for="PrettyDuration-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='PrettyDuration-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="PrettyDuration-fold-method-String"><label for="PrettyDuration-fold-method-String">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/format.go.html#line-34">String</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='PrettyDuration-fold-method-String-docs' class="fold-docs">
+				String implements the Stringer interface, allowing pretty printing of duration
+				values rounded to three decimals.
+</span></span></span>
+		<input type='checkbox' class="fold" id="PrettyDuration-fold-impls"><label for="PrettyDuration-fold-impls">Implements (<i>at least 3, in which 1 are exported</i>)</label><span id='PrettyDuration-fold-impls-items' class="fold-items"><span>
+			 T : fmt.<a href="../../../fmt.html#name-Stringer">Stringer</a></span>
+			<input type='checkbox' class="showhide" id="PrettyDuration-showhide-impls"><i><label for="PrettyDuration-showhide-impls" class="show-inline">/* 2+ unexporteds ... */</label><label for="PrettyDuration-showhide-impls" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			 T : context.<a href="../../../context.html#name-stringer">stringer</a></i></span><span class="hidden"><i>
+			 T : runtime.<a href="../../../runtime.html#name-stringer">stringer</a></i></span></span>
+
+</span></div><div class="anchor type-res" id="name-StorageSize" data-popularity="555">	<input type='checkbox' class="fold" id="StorageSize-fold-content"><label for="StorageSize-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/common/size.go.html#line-25">StorageSize</a> <a href="../../../builtin.html#name-float64">float64</a> <i>(basic type)</i></label><span id='StorageSize-fold-content-docs' class="fold-docs">
+		StorageSize is a wrapper around a float value that supports user friendly
+		formatting.
+
+		<input type='checkbox' class="fold" id="StorageSize-fold-methods"><label for="StorageSize-fold-methods">Methods (<i>total 2, both are exported</i>)</label><span id='StorageSize-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="StorageSize-fold-method-String"><label for="StorageSize-fold-method-String">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/size.go.html#line-28">String</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='StorageSize-fold-method-String-docs' class="fold-docs">
+				String implements the stringer interface.
+</span></span><span>
+			<input type='checkbox' class="fold" id="StorageSize-fold-method-TerminalString"><label for="StorageSize-fold-method-TerminalString">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/size.go.html#line-44">TerminalString</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='StorageSize-fold-method-TerminalString-docs' class="fold-docs">
+				TerminalString implements log.TerminalStringer, formatting a string for console
+				output during logging.
+</span></span></span>
+		<input type='checkbox' class="fold" id="StorageSize-fold-impls"><label for="StorageSize-fold-impls">Implements (<i>at least 3, in which 1 are exported</i>)</label><span id='StorageSize-fold-impls-items' class="fold-items"><span>
+			 T : fmt.<a href="../../../fmt.html#name-Stringer">Stringer</a></span>
+			<input type='checkbox' class="showhide" id="StorageSize-showhide-impls"><i><label for="StorageSize-showhide-impls" class="show-inline">/* 2+ unexporteds ... */</label><label for="StorageSize-showhide-impls" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			 T : context.<a href="../../../context.html#name-stringer">stringer</a></i></span><span class="hidden"><i>
+			 T : runtime.<a href="../../../runtime.html#name-stringer">stringer</a></i></span></span>
+		<input type='checkbox' class="fold" id="StorageSize-fold-results"><label for="StorageSize-fold-results">As Outputs Of (<i>at least 4, all are exported</i>)</label><span id='StorageSize-fold-results-items' class="fold-items"><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-350">Size</a>() <b>StorageSize</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Header">Header</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-111">Size</a>() <b>StorageSize</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Receipt">Receipt</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/receipt.go.html#line-173">Size</a>() <b>StorageSize</b></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Transaction">Transaction</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction.go.html#line-217">Size</a>() <b>StorageSize</b></span></span>
+		<input type='checkbox' class="fold" id="StorageSize-fold-values"><label for="StorageSize-fold-values">As Types Of (<i>only one, which is unexported</i>)</label><span id='StorageSize-fold-values-items' class="fold-items">
+			<input type='checkbox' class="showhide" id="StorageSize-showhide-values"><i><label for="StorageSize-showhide-values" class="show-inline">/* one unexported ... */</label><label for="StorageSize-showhide-values" class="hide-inline">/* one unexported: */</label></i><span class="hidden"><i>
+			  var github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-headerSize">headerSize</a></i></span></span>
+
+</span></div><div class="anchor type-res" id="name-UnprefixedAddress" data-popularity="200">	<input type='checkbox' class="fold" id="UnprefixedAddress-fold-content"><label for="UnprefixedAddress-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-358">UnprefixedAddress</a> <a href="#name-Address">Address</a> <i>([...]T)</i></label><span id='UnprefixedAddress-fold-content-docs' class="fold-docs">
+		UnprefixedAddress allows marshaling an Address without 0x prefix.
+
+		<input type='checkbox' class="fold" id="UnprefixedAddress-fold-methods"><label for="UnprefixedAddress-fold-methods">Methods (<i>total 2, both are exported</i>)</label><span id='UnprefixedAddress-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="UnprefixedAddress-fold-method-MarshalText"><label for="UnprefixedAddress-fold-method-MarshalText">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-366">MarshalText</a>() ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='UnprefixedAddress-fold-method-MarshalText-docs' class="fold-docs">
+				MarshalText encodes the address as hex.
+</span></span><span>
+			<input type='checkbox' class="fold" id="UnprefixedAddress-fold-method-UnmarshalText"><label for="UnprefixedAddress-fold-method-UnmarshalText">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-361">UnmarshalText</a>(input []<a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='UnprefixedAddress-fold-method-UnmarshalText-docs' class="fold-docs">
+				UnmarshalText decodes the address from hex. The 0x prefix is optional.
+</span></span></span>
+		<input type='checkbox' class="fold" id="UnprefixedAddress-fold-impls"><label for="UnprefixedAddress-fold-impls">Implements (<i>at least 2, both are exported</i>)</label><span id='UnprefixedAddress-fold-impls-items' class="fold-items"><span>
+			 T : encoding.<a href="../../../encoding.html#name-TextMarshaler">TextMarshaler</a></span><span>
+			*T : encoding.<a href="../../../encoding.html#name-TextUnmarshaler">TextUnmarshaler</a></span></span>
+
+</span></div><div class="anchor type-res" id="name-UnprefixedHash" data-popularity="200">	<input type='checkbox' class="fold" id="UnprefixedHash-fold-content"><label for="UnprefixedHash-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-186">UnprefixedHash</a> <a href="#name-Hash">Hash</a> <i>([...]T)</i></label><span id='UnprefixedHash-fold-content-docs' class="fold-docs">
+		UnprefixedHash allows marshaling a Hash without 0x prefix.
+
+		<input type='checkbox' class="fold" id="UnprefixedHash-fold-methods"><label for="UnprefixedHash-fold-methods">Methods (<i>total 2, both are exported</i>)</label><span id='UnprefixedHash-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="UnprefixedHash-fold-method-MarshalText"><label for="UnprefixedHash-fold-method-MarshalText">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-194">MarshalText</a>() ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='UnprefixedHash-fold-method-MarshalText-docs' class="fold-docs">
+				MarshalText encodes the hash as hex.
+</span></span><span>
+			<input type='checkbox' class="fold" id="UnprefixedHash-fold-method-UnmarshalText"><label for="UnprefixedHash-fold-method-UnmarshalText">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-189">UnmarshalText</a>(input []<a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='UnprefixedHash-fold-method-UnmarshalText-docs' class="fold-docs">
+				UnmarshalText decodes the hash from hex. The 0x prefix is optional.
+</span></span></span>
+		<input type='checkbox' class="fold" id="UnprefixedHash-fold-impls"><label for="UnprefixedHash-fold-impls">Implements (<i>at least 2, both are exported</i>)</label><span id='UnprefixedHash-fold-impls-items' class="fold-items"><span>
+			 T : encoding.<a href="../../../encoding.html#name-TextMarshaler">TextMarshaler</a></span><span>
+			*T : encoding.<a href="../../../encoding.html#name-TextUnmarshaler">TextUnmarshaler</a></span></span>
+
+</span></div></div>
+<div><span class="title value-res">Package-Level Functions<span class="title-stat"><i> (total 28, in which 24 are exported)</i></span></span>
+
+<div class="anchor value-res" id="name-AbsolutePath">	<input type='checkbox' class="fold" id="AbsolutePath-fold-content"><label for="AbsolutePath-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/path.go.html#line-44">AbsolutePath</a>(datadir <a href="../../../builtin.html#name-string">string</a>, filename <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-string">string</a></label><span id='AbsolutePath-fold-content-docs' class="fold-docs">
+		AbsolutePath returns datadir + filename, or filename if it is absolute.
+
+</span></div><div class="anchor value-res" id="name-BigToAddress">	<input type='checkbox' class="fold" id="BigToAddress-fold-content"><label for="BigToAddress-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-213">BigToAddress</a>(b *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>) <a href="#name-Address">Address</a></label><span id='BigToAddress-fold-content-docs' class="fold-docs">
+		BigToAddress returns Address with byte values of b.
+		If b is larger than len(h), b will be cropped from the left.
+
+</span></div><div class="anchor value-res" id="name-BigToHash">	<input type='checkbox' class="fold" id="BigToHash-fold-content"><label for="BigToHash-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-61">BigToHash</a>(b *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>) <a href="#name-Hash">Hash</a></label><span id='BigToHash-fold-content-docs' class="fold-docs">
+		BigToHash sets byte representation of b to hash.
+		If b is larger than len(h), b will be cropped from the left.
+
+</span></div><div class="anchor value-res" id="name-Bytes2Hex">	<input type='checkbox' class="fold" id="Bytes2Hex-fold-content"><label for="Bytes2Hex-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-71">Bytes2Hex</a>(d []<a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-string">string</a></label><span id='Bytes2Hex-fold-content-docs' class="fold-docs">
+		Bytes2Hex returns the hexadecimal encoding of d.
+
+</span></div><div class="anchor value-res" id="name-BytesToAddress">	<input type='checkbox' class="fold" id="BytesToAddress-fold-content"><label for="BytesToAddress-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-205">BytesToAddress</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) <a href="#name-Address">Address</a></label><span id='BytesToAddress-fold-content-docs' class="fold-docs">
+		BytesToAddress returns Address with value b.
+		If b is larger than len(h), b will be cropped from the left.
+
+</span></div><div class="anchor value-res" id="name-BytesToHash">	<input type='checkbox' class="fold" id="BytesToHash-fold-content"><label for="BytesToHash-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-53">BytesToHash</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) <a href="#name-Hash">Hash</a></label><span id='BytesToHash-fold-content-docs' class="fold-docs">
+		BytesToHash sets b to hash.
+		If b is larger than len(h), b will be cropped from the left.
+
+</span></div><div class="anchor value-res" id="name-CopyBytes">	<input type='checkbox' class="fold" id="CopyBytes-fold-content"><label for="CopyBytes-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-37">CopyBytes</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) (copiedBytes []<a href="../../../builtin.html#name-byte">byte</a>)</label><span id='CopyBytes-fold-content-docs' class="fold-docs">
+		CopyBytes returns an exact copy of the provided bytes.
+
+</span></div><div class="anchor value-res" id="name-FileExist">	<input type='checkbox' class="fold" id="FileExist-fold-content"><label for="FileExist-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/path.go.html#line-34">FileExist</a>(filePath <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='FileExist-fold-content-docs' class="fold-docs">
+		FileExist checks if a file exists at filePath.
+
+</span></div><div class="anchor value-res" id="name-FromHex">	<input type='checkbox' class="fold" id="FromHex-fold-content"><label for="FromHex-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-26">FromHex</a>(s <a href="../../../builtin.html#name-string">string</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='FromHex-fold-content-docs' class="fold-docs">
+		FromHex returns the bytes represented by the hexadecimal string s.
+		s may be prefixed with "0x".
+
+</span></div><div class="anchor value-res" id="name-Hex2Bytes">	<input type='checkbox' class="fold" id="Hex2Bytes-fold-content"><label for="Hex2Bytes-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-76">Hex2Bytes</a>(str <a href="../../../builtin.html#name-string">string</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='Hex2Bytes-fold-content-docs' class="fold-docs">
+		Hex2Bytes returns the bytes represented by the hexadecimal string str.
+
+</span></div><div class="anchor value-res" id="name-Hex2BytesFixed">	<input type='checkbox' class="fold" id="Hex2BytesFixed-fold-content"><label for="Hex2BytesFixed-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-82">Hex2BytesFixed</a>(str <a href="../../../builtin.html#name-string">string</a>, flen <a href="../../../builtin.html#name-int">int</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='Hex2BytesFixed-fold-content-docs' class="fold-docs">
+		Hex2BytesFixed returns bytes of a specified fixed length flen.
+
+</span></div><div class="anchor value-res" id="name-HexToAddress">	<input type='checkbox' class="fold" id="HexToAddress-fold-content"><label for="HexToAddress-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-217">HexToAddress</a>(s <a href="../../../builtin.html#name-string">string</a>) <a href="#name-Address">Address</a></label><span id='HexToAddress-fold-content-docs' class="fold-docs">
+		HexToAddress returns Address with byte values of s.
+		If s is larger than len(h), s will be cropped from the left.
+
+</span></div><div class="anchor value-res" id="name-HexToHash">	<input type='checkbox' class="fold" id="HexToHash-fold-content"><label for="HexToHash-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-65">HexToHash</a>(s <a href="../../../builtin.html#name-string">string</a>) <a href="#name-Hash">Hash</a></label><span id='HexToHash-fold-content-docs' class="fold-docs">
+		HexToHash sets byte representation of s to hash.
+		If b is larger than len(h), b will be cropped from the left.
+
+</span></div><div class="anchor value-res" id="name-IsHexAddress">	<input type='checkbox' class="fold" id="IsHexAddress-fold-content"><label for="IsHexAddress-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-221">IsHexAddress</a>(s <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='IsHexAddress-fold-content-docs' class="fold-docs">
+		IsHexAddress verifies whether a string can represent a valid hex-encoded
+		Ethereum address or not.
+
+</span></div><div class="anchor value-res" id="name-LeftPadBytes">	<input type='checkbox' class="fold" id="LeftPadBytes-fold-content"><label for="LeftPadBytes-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-108">LeftPadBytes</a>(slice []<a href="../../../builtin.html#name-byte">byte</a>, l <a href="../../../builtin.html#name-int">int</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='LeftPadBytes-fold-content-docs' class="fold-docs">
+		LeftPadBytes zero-pads slice to the left up to length l.
+
+</span></div><div class="anchor value-res" id="name-LoadJSON">	<input type='checkbox' class="fold" id="LoadJSON-fold-content"><label for="LoadJSON-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/test_utils.go.html#line-26">LoadJSON</a>(file <a href="../../../builtin.html#name-string">string</a>, val interface{}) <a href="../../../builtin.html#name-error">error</a></label><span id='LoadJSON-fold-content-docs' class="fold-docs">
+		LoadJSON reads the given file and unmarshals its content.
+
+</span></div><div class="anchor value-res" id="name-MakeName">	<input type='checkbox' class="fold" id="MakeName-fold-content"><label for="MakeName-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/path.go.html#line-29">MakeName</a>(name, version <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-string">string</a></label><span id='MakeName-fold-content-docs' class="fold-docs">
+		MakeName creates a node name that follows the ethereum convention
+		for such names. It adds the operation system name and Go runtime version
+		the name.
+
+</span></div><div class="anchor value-res" id="name-NewMixedcaseAddress">	<input type='checkbox' class="fold" id="NewMixedcaseAddress-fold-content"><label for="NewMixedcaseAddress-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-378">NewMixedcaseAddress</a>(addr <a href="#name-Address">Address</a>) <a href="#name-MixedcaseAddress">MixedcaseAddress</a></label><span id='NewMixedcaseAddress-fold-content-docs' class="fold-docs">
+		NewMixedcaseAddress constructor (mainly for testing)
+
+</span></div><div class="anchor value-res" id="name-NewMixedcaseAddressFromString">	<input type='checkbox' class="fold" id="NewMixedcaseAddressFromString-fold-content"><label for="NewMixedcaseAddressFromString-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-383">NewMixedcaseAddressFromString</a>(hexaddr <a href="../../../builtin.html#name-string">string</a>) (*<a href="#name-MixedcaseAddress">MixedcaseAddress</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='NewMixedcaseAddressFromString-fold-content-docs' class="fold-docs">
+		NewMixedcaseAddressFromString is mainly meant for unit-testing
+
+</span></div><div class="anchor value-res" id="name-PrintDepricationWarning">	<input type='checkbox' class="fold" id="PrintDepricationWarning-fold-content"><label for="PrintDepricationWarning-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/debug.go.html#line-41">PrintDepricationWarning</a>(str <a href="../../../builtin.html#name-string">string</a>)</label><span id='PrintDepricationWarning-fold-content-docs' class="fold-docs">
+		PrintDepricationWarning prinst the given string in a box using fmt.Println.
+
+</span></div><div class="anchor value-res" id="name-Report">	<input type='checkbox' class="fold" id="Report-fold-content"><label for="Report-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/debug.go.html#line-28">Report</a>(extra ...interface{})</label><span id='Report-fold-content-docs' class="fold-docs">
+		Report gives off a warning requesting the user to submit an issue to the github tracker.
+
+</span></div><div class="anchor value-res" id="name-RightPadBytes">	<input type='checkbox' class="fold" id="RightPadBytes-fold-content"><label for="RightPadBytes-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-96">RightPadBytes</a>(slice []<a href="../../../builtin.html#name-byte">byte</a>, l <a href="../../../builtin.html#name-int">int</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='RightPadBytes-fold-content-docs' class="fold-docs">
+		RightPadBytes zero-pads slice to the right up to length l.
+
+</span></div><div class="anchor value-res" id="name-TrimLeftZeroes">	<input type='checkbox' class="fold" id="TrimLeftZeroes-fold-content"><label for="TrimLeftZeroes-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-120">TrimLeftZeroes</a>(s []<a href="../../../builtin.html#name-byte">byte</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='TrimLeftZeroes-fold-content-docs' class="fold-docs">
+		TrimLeftZeroes returns a subslice of s without leading zeroes
+
+</span></div><div class="anchor value-res" id="name-TrimRightZeroes">	<input type='checkbox' class="fold" id="TrimRightZeroes-fold-content"><label for="TrimRightZeroes-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-131">TrimRightZeroes</a>(s []<a href="../../../builtin.html#name-byte">byte</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='TrimRightZeroes-fold-content-docs' class="fold-docs">
+		TrimRightZeroes returns a subslice of s without trailing zeroes
+
+</span></div>	<input type='checkbox' class="showhide" id="unexported-functions-showhide"><i><label for="unexported-functions-showhide" class="show-inline">/* 4 unexporteds ... */</label><label for="unexported-functions-showhide" class="hide-inline">/* 4 unexporteds: */</label></i><div class="anchor value-res hidden" id="name-findLine"><i>	<input type='checkbox' class="fold" id="findLine-fold-content"><label for="findLine-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/test_utils.go.html#line-42">findLine</a>(data []<a href="../../../builtin.html#name-byte">byte</a>, offset <a href="../../../builtin.html#name-int64">int64</a>) (line <a href="../../../builtin.html#name-int">int</a>)</label><span id='findLine-fold-content-docs' class="fold-docs">
+		findLine returns the line number for the given offset into data.
+
+</span></i></div><div class="anchor value-res hidden" id="name-has0xPrefix"><i>	<input type='checkbox' class="fold" id="has0xPrefix-fold-content"><label for="has0xPrefix-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-48">has0xPrefix</a>(str <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='has0xPrefix-fold-content-docs' class="fold-docs">
+		has0xPrefix validates str begins with '0x' or '0X'.
+
+</span></i></div><div class="anchor value-res hidden" id="name-isHex"><i>	<input type='checkbox' class="fold" id="isHex-fold-content"><label for="isHex-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-58">isHex</a>(str <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='isHex-fold-content-docs' class="fold-docs">
+		isHex validates whether each byte is valid hexadecimal string.
+
+</span></i></div><div class="anchor value-res hidden" id="name-isHexCharacter"><i>	<input type='checkbox' class="fold" id="isHexCharacter-fold-content"><label for="isHexCharacter-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/common/bytes.go.html#line-53">isHexCharacter</a>(c <a href="../../../builtin.html#name-byte">byte</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='isHexCharacter-fold-content-docs' class="fold-docs">
+		isHexCharacter returns bool of c being a valid hexadecimal.
+
+</span></i></div></div>
+<div><span class="title value-res">Package-Level Variables<span class="title-stat"><i> (total 11, in which 7 are exported)</i></span></span>
+
+<div class="anchor value-res" id="name-Big0">	<input type='checkbox' class="fold" id="Big0-fold-content"><label for="Big0-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/big.go.html#line-26">Big0</a> *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></label><span id='Big0-fold-content-docs' class="fold-docs">
+		Common big integers often used
+
+</span></div><div class="anchor value-res" id="name-Big1">	<input type='checkbox' class="fold" id="Big1-fold-content"><label for="Big1-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/big.go.html#line-23">Big1</a> *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></label><span id='Big1-fold-content-docs' class="fold-docs">
+		Common big integers often used
+
+</span></div><div class="anchor value-res" id="name-Big2">	<input type='checkbox' class="fold" id="Big2-fold-content"><label for="Big2-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/big.go.html#line-24">Big2</a> *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></label><span id='Big2-fold-content-docs' class="fold-docs">
+		Common big integers often used
+
+</span></div><div class="anchor value-res" id="name-Big256">	<input type='checkbox' class="fold" id="Big256-fold-content"><label for="Big256-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/big.go.html#line-28">Big256</a> *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></label><span id='Big256-fold-content-docs' class="fold-docs">
+		Common big integers often used
+
+</span></div><div class="anchor value-res" id="name-Big257">	<input type='checkbox' class="fold" id="Big257-fold-content"><label for="Big257-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/big.go.html#line-29">Big257</a> *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></label><span id='Big257-fold-content-docs' class="fold-docs">
+		Common big integers often used
+
+</span></div><div class="anchor value-res" id="name-Big3">	<input type='checkbox' class="fold" id="Big3-fold-content"><label for="Big3-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/big.go.html#line-25">Big3</a> *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></label><span id='Big3-fold-content-docs' class="fold-docs">
+		Common big integers often used
+
+</span></div><div class="anchor value-res" id="name-Big32">	<input type='checkbox' class="fold" id="Big32-fold-content"><label for="Big32-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/big.go.html#line-27">Big32</a> *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a></label><span id='Big32-fold-content-docs' class="fold-docs">
+		Common big integers often used
+
+</span></div>	<input type='checkbox' class="showhide" id="unexported-variables-showhide"><i><label for="unexported-variables-showhide" class="show-inline">/* 4 unexporteds ... */</label><label for="unexported-variables-showhide" class="hide-inline">/* 4 unexporteds: */</label></i><div class="anchor value-res hidden" id="name-addressT"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-45">addressT</a> <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></span></i></div><div class="anchor value-res hidden" id="name-ageUnits"><i>	<input type='checkbox' class="fold" id="ageUnits-fold-content"><label for="ageUnits-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/format.go.html#line-47">ageUnits</a> []struct{Size <a href="../../../time.html">time</a>.<a href="../../../time.html#name-Duration">Duration</a>; Symbol <a href="../../../builtin.html#name-string">string</a>}</label><span id='ageUnits-fold-content-docs' class="fold-docs">
+		ageUnits is a list of units the age pretty printing uses.
+
+</span></i></div><div class="anchor value-res hidden" id="name-hashT"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-44">hashT</a> <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></span></i></div><div class="anchor value-res hidden" id="name-prettyDurationRe"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/common/format.go.html#line-30">prettyDurationRe</a> *<a href="../../../regexp.html">regexp</a>.<a href="../../../regexp.html#name-Regexp">Regexp</a></span></i></div></div>
+<div><span class="title value-res">Package-Level Constants<span class="title-stat"><i> (total 2, both are exported)</i></span></span>
+
+<div class="anchor value-res" id="name-AddressLength">	<input type='checkbox' class="fold" id="AddressLength-fold-content"><label for="AddressLength-fold-content">const <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-40">AddressLength</a> = 20</label><span id='AddressLength-fold-content-docs' class="fold-docs">
+		AddressLength is the expected length of the address
+
+</span></div><div class="anchor value-res" id="name-HashLength">	<input type='checkbox' class="fold" id="HashLength-fold-content"><label for="HashLength-fold-content">const <a href="../../../../src/github.com/ethereum/go-ethereum/common/types.go.html#line-38">HashLength</a> = 32</label><span id='HashLength-fold-content-docs' class="fold-docs">
+		HashLength is the expected length of the hash
+
+</span></div></div></code></pre><pre id="footer">
+<table><tr><td><img src="../../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>

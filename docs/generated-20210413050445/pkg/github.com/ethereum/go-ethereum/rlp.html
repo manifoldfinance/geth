@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Package: github.com/ethereum/go-ethereum/rlp</title>
+<link href="../../../../css/light-v0.2.6.css" rel="stylesheet">
+<script src="../../../../jvs/golds-v0.2.6.js"></script>
+<body onload="onPageLoad()"><div>
+
+<pre id="package-details"><code><span style="font-size:xx-large;">package <b>rlp</b></span>
+
+<span class="title">Import Path</span>
+	<a href="../../../../index.html#pkg-github.com/ethereum/go-ethereum/rlp">github.com/ethereum/go-ethereum/rlp</a><i> (on <a href="https://pkg.go.dev/github.com/ethereum/go-ethereum/rlp" target="_blank">go.dev</a>)</i>
+
+<span class="title">Dependency Relation</span>
+	imports <a href="../../../../dep/github.com/ethereum/go-ethereum/rlp.html">10 packages</a>, and imported by <a href="../../../../dep/github.com/ethereum/go-ethereum/rlp.html#imported-by">2 packages</a>
+
+<div><span class="title">Involved Source Files</span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html">decode.go</a></span>
+	<input type='checkbox' class="fold" id="file-1-fold-content"><label for="file-1-fold-content">   <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/doc.go.html#doc">d➜</a> <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/doc.go.html">doc.go</a></label><span id='file-1-fold-content-items' class="fold-items">
+		Package rlp implements the RLP serialization format.
+
+		The purpose of RLP (Recursive Linear Prefix) is to encode arbitrarily nested arrays of
+		binary data, and RLP is the main encoding method used to serialize objects in Ethereum.
+		The only purpose of RLP is to encode structure; encoding specific atomic data types (eg.
+		strings, ints, floats) is left up to higher-order protocols. In Ethereum integers must be
+		represented in big endian binary form with no leading zeroes (thus making the integer
+		value zero equivalent to the empty string).
+
+		RLP values are distinguished by a type tag. The type tag precedes the value in the input
+		stream and defines the size and kind of the bytes that follow.
+
+		Encoding Rules
+
+		Package rlp uses reflection and encodes RLP based on the Go type of the value.
+
+		If the type implements the Encoder interface, Encode calls EncodeRLP. It does not
+		call EncodeRLP on nil pointer values.
+
+		To encode a pointer, the value being pointed to is encoded. A nil pointer to a struct
+		type, slice or array always encodes as an empty RLP list unless the slice or array has
+		elememt type byte. A nil pointer to any other value encodes as the empty string.
+
+		Struct values are encoded as an RLP list of all their encoded public fields. Recursive
+		struct types are supported.
+
+		To encode slices and arrays, the elements are encoded as an RLP list of the value's
+		elements. Note that arrays and slices with element type uint8 or byte are always encoded
+		as an RLP string.
+
+		A Go string is encoded as an RLP string.
+
+		An unsigned integer value is encoded as an RLP string. Zero always encodes as an empty RLP
+		string. big.Int values are treated as integers. Signed integers (int, int8, int16, ...)
+		are not supported and will return an error when encoding.
+
+		Boolean values are encoded as the unsigned integers zero (false) and one (true).
+
+		An interface value encodes as the value contained in the interface.
+
+		Floating point numbers, maps, channels and functions are not supported.
+
+		Decoding Rules
+
+		Decoding uses the following type-dependent rules:
+
+		If the type implements the Decoder interface, DecodeRLP is called.
+
+		To decode into a pointer, the value will be decoded as the element type of the pointer. If
+		the pointer is nil, a new value of the pointer's element type is allocated. If the pointer
+		is non-nil, the existing value will be reused. Note that package rlp never leaves a
+		pointer-type struct field as nil unless one of the "nil" struct tags is present.
+
+		To decode into a struct, decoding expects the input to be an RLP list. The decoded
+		elements of the list are assigned to each public field in the order given by the struct's
+		definition. The input list must contain an element for each decoded field. Decoding
+		returns an error if there are too few or too many elements for the struct.
+
+		To decode into a slice, the input must be a list and the resulting slice will contain the
+		input elements in order. For byte slices, the input must be an RLP string. Array types
+		decode similarly, with the additional restriction that the number of input elements (or
+		bytes) must match the array's defined length.
+
+		To decode into a Go string, the input must be an RLP string. The input bytes are taken
+		as-is and will not necessarily be valid UTF-8.
+
+		To decode into an unsigned integer type, the input must also be an RLP string. The bytes
+		are interpreted as a big endian representation of the integer. If the RLP string is larger
+		than the bit size of the type, decoding will return an error. Decode also supports
+		*big.Int. There is no size limit for big integers.
+
+		To decode into a boolean, the input must contain an unsigned integer of value zero (false)
+		or one (true).
+
+		To decode into an interface value, one of these types is stored in the value:
+
+			  []interface{}, for RLP lists
+			  []byte, for RLP strings
+
+		Non-empty interface types are not supported when decoding.
+		Signed integers, floating point numbers, maps, channels and functions cannot be decoded into.
+
+		Struct Tags
+
+		Package rlp honours certain struct tags: "-", "tail", "nil", "nilList" and "nilString".
+
+		The "-" tag ignores fields.
+
+		The "tail" tag, which may only be used on the last exported struct field, allows slurping
+		up any excess list elements into a slice. See examples for more details.
+
+		The "nil" tag applies to pointer-typed fields and changes the decoding rules for the field
+		such that input values of size zero decode as a nil pointer. This tag can be useful when
+		decoding recursive types.
+
+		    type StructWithOptionalFoo struct {
+		        Foo *[20]byte `rlp:"nil"`
+		    }
+
+		RLP supports two kinds of empty values: empty lists and empty strings. When using the
+		"nil" tag, the kind of empty value allowed for a type is chosen automatically. A struct
+		field whose Go type is a pointer to an unsigned integer, string, boolean or byte
+		array/slice expects an empty RLP string. Any other pointer field type encodes/decodes as
+		an empty RLP list.
+
+		The choice of null value can be made explicit with the "nilList" and "nilString" struct
+		tags. Using these tags encodes/decodes a Go nil pointer value as the kind of empty
+		RLP value defined by the tag.</span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html">encode.go</a></span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/iterator.go.html">iterator.go</a></span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html">raw.go</a></span>
+	<span class="nodocs">      <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html">typecache.go</a></span></div>
+<span class="title type-res">Package-Level Type Names<span class="title-stat"><i> (total 20, in which 6 are exported)</i></span></span>
+
+<div id="exported-types-buttons" class="js-on">	/* sort exporteds by: <label id="sort-types-by-alphabet" class="button">alphabet</label> | <label id="sort-types-by-popularity" class="button">popularity</label> */</div><div id="exported-types"><div class="anchor type-res" id="name-ByteReader" data-popularity="1250">	<input type='checkbox' class="fold" id="ByteReader-fold-content"><label for="ByteReader-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-530">ByteReader</a> <b><i>(interface)</i></b></label><span id='ByteReader-fold-content-docs' class="fold-docs">
+		ByteReader must be implemented by any input reader for a Stream. It
+		is implemented by e.g. bufio.Reader and bytes.Reader.
+
+		<input type='checkbox' class="fold" id="ByteReader-fold-methods"><label for="ByteReader-fold-methods">Methods (<i>total 2, both are exported</i>)</label><span id='ByteReader-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../../src/io/io.go.html#line-84">Read</a>(p []<a href="../../../builtin.html#name-byte">byte</a>) (n <a href="../../../builtin.html#name-int">int</a>, err <a href="../../../builtin.html#name-error">error</a>)</span></span><span>
+			<span class="nodocs">( T) <a href="../../../../src/io/io.go.html#line-258">ReadByte</a>() (<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</span></span></span>
+		<input type='checkbox' class="fold" id="ByteReader-fold-impledby"><label for="ByteReader-fold-impledby">Implemented By (<i>at least 7, in which 5 are exported</i>)</label><span id='ByteReader-fold-impledby-items' class="fold-items"><span>
+			*bufio.<a href="../../../bufio.html#name-Reader">Reader</a></span><span>
+			 bufio.<a href="../../../bufio.html#name-ReadWriter">ReadWriter</a></span><span>
+			*bytes.<a href="../../../bytes.html#name-Buffer">Buffer</a></span><span>
+			*bytes.<a href="../../../bytes.html#name-Reader">Reader</a></span><span>
+			*strings.<a href="../../../strings.html#name-Reader">Reader</a></span>
+			<input type='checkbox' class="showhide" id="ByteReader-showhide-impedBys"><i><label for="ByteReader-showhide-impedBys" class="show-inline">/* 2+ unexporteds ... */</label><label for="ByteReader-showhide-impedBys" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			*encoding/json.<a href="../../../encoding/json.html#name-encodeState">encodeState</a></i></span><span class="hidden"><i>
+			 math/big.<a href="../../../math/big.html#name-byteReader">byteReader</a></i></span></span>
+		<input type='checkbox' class="fold" id="ByteReader-fold-impls"><label for="ByteReader-fold-impls">Implements (<i>at least 2, both are exported</i>)</label><span id='ByteReader-fold-impls-items' class="fold-items"><span>
+			 T : io.<a href="../../../io.html#name-ByteReader">ByteReader</a></span><span>
+			 T : io.<a href="../../../io.html#name-Reader">Reader</a></span></span>
+
+</span></div><div class="anchor type-res" id="name-Decoder" data-popularity="1100">	<input type='checkbox' class="fold" id="Decoder-fold-content"><label for="Decoder-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-64">Decoder</a> <b><i>(interface)</i></b></label><span id='Decoder-fold-content-docs' class="fold-docs">
+		Decoder is implemented by types that require custom RLP decoding rules or need to decode
+		into private fields.
+
+		The DecodeRLP method should read one value from the given Stream. It is not forbidden to
+		read less or more, but it might be confusing.
+
+		<input type='checkbox' class="fold" id="Decoder-fold-methods"><label for="Decoder-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='Decoder-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-65">DecodeRLP</a>(*<a href="#name-Stream">Stream</a>) <a href="../../../builtin.html#name-error">error</a></span></span></span>
+		<input type='checkbox' class="fold" id="Decoder-fold-impledby"><label for="Decoder-fold-impledby">Implemented By (<i>at least 7, all are exported</i>)</label><span id='Decoder-fold-impledby-items' class="fold-items"><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Block">Block</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Log">Log</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-LogForStorage">LogForStorage</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Receipt">Receipt</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-ReceiptForStorage">ReceiptForStorage</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-StorageBlock">StorageBlock</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Transaction">Transaction</a></span></span>
+
+</span></div><div class="anchor type-res" id="name-Encoder" data-popularity="950">	<input type='checkbox' class="fold" id="Encoder-fold-content"><label for="Encoder-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-36">Encoder</a> <b><i>(interface)</i></b></label><span id='Encoder-fold-content-docs' class="fold-docs">
+		Encoder is implemented by types that require custom
+		encoding rules or want to encode private fields.
+
+		<input type='checkbox' class="fold" id="Encoder-fold-methods"><label for="Encoder-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='Encoder-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="Encoder-fold-method-EncodeRLP"><label for="Encoder-fold-method-EncodeRLP">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-45">EncodeRLP</a>(<a href="../../../io.html">io</a>.<a href="../../../io.html#name-Writer">Writer</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='Encoder-fold-method-EncodeRLP-docs' class="fold-docs">
+				EncodeRLP should write the RLP encoding of its receiver to w.
+				If the implementation is a pointer method, it may also be
+				called for nil pointers.
+
+				Implementations should generate valid RLP. The data written is
+				not verified at the moment, but a future version might. It is
+				recommended to write only a single value but writing multiple
+				values or no value at all is also permitted.
+</span></span></span>
+		<input type='checkbox' class="fold" id="Encoder-fold-impledby"><label for="Encoder-fold-impledby">Implemented By (<i>at least 6, all are exported</i>)</label><span id='Encoder-fold-impledby-items' class="fold-items"><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Block">Block</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Log">Log</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-LogForStorage">LogForStorage</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Receipt">Receipt</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-ReceiptForStorage">ReceiptForStorage</a></span><span>
+			*github.com/ethereum/go-ethereum/core/types.<a href="core/types.html#name-Transaction">Transaction</a></span></span>
+
+</span></div><div class="anchor type-res" id="name-Kind" data-popularity="625">	<input type='checkbox' class="fold" id="Kind-fold-content"><label for="Kind-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-507">Kind</a> <a href="../../../builtin.html#name-int">int</a> <i>(basic type)</i></label><span id='Kind-fold-content-docs' class="fold-docs">
+		Kind represents the kind of value contained in an RLP stream.
+
+		<input type='checkbox' class="fold" id="Kind-fold-methods"><label for="Kind-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='Kind-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-515">String</a>() <a href="../../../builtin.html#name-string">string</a></span></span></span>
+		<input type='checkbox' class="fold" id="Kind-fold-impls"><label for="Kind-fold-impls">Implements (<i>at least 3, in which 1 are exported</i>)</label><span id='Kind-fold-impls-items' class="fold-items"><span>
+			 T : fmt.<a href="../../../fmt.html#name-Stringer">Stringer</a></span>
+			<input type='checkbox' class="showhide" id="Kind-showhide-impls"><i><label for="Kind-showhide-impls" class="show-inline">/* 2+ unexporteds ... */</label><label for="Kind-showhide-impls" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			 T : context.<a href="../../../context.html#name-stringer">stringer</a></i></span><span class="hidden"><i>
+			 T : runtime.<a href="../../../runtime.html#name-stringer">stringer</a></i></span></span>
+		<input type='checkbox' class="fold" id="Kind-fold-results"><label for="Kind-fold-results">As Outputs Of (<i>at least 5, in which 2 are exported</i>)</label><span id='Kind-fold-results-items' class="fold-items"><span>
+			func <a href="#name-Split">Split</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) (k <b>Kind</b>, content, rest []<a href="../../../builtin.html#name-byte">byte</a>, err <a href="../../../builtin.html#name-error">error</a>)</span><span>
+			func (*<a href="#name-Stream">Stream</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-824">Kind</a>() (kind <b>Kind</b>, size <a href="../../../builtin.html#name-uint64">uint64</a>, err <a href="../../../builtin.html#name-error">error</a>)</span>
+			<input type='checkbox' class="showhide" id="Kind-showhide-inputofs"><i><label for="Kind-showhide-inputofs" class="show-inline">/* 3+ unexporteds ... */</label><label for="Kind-showhide-inputofs" class="hide-inline">/* 3+ unexporteds: */</label></i><span class="hidden"><i>
+			func <a href="#name-defaultNilKind">defaultNilKind</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <b>Kind</b></i></span><span class="hidden"><i>
+			func <a href="#name-readKind">readKind</a>(buf []<a href="../../../builtin.html#name-byte">byte</a>) (k <b>Kind</b>, tagsize, contentsize <a href="../../../builtin.html#name-uint64">uint64</a>, err <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func (*<a href="#name-Stream">Stream</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-857">readKind</a>() (kind <b>Kind</b>, size <a href="../../../builtin.html#name-uint64">uint64</a>, err <a href="../../../builtin.html#name-error">error</a>)</i></span></span>
+		<input type='checkbox' class="fold" id="Kind-fold-params"><label for="Kind-fold-params">As Inputs Of (<i>at least one unexported</i>)</label><span id='Kind-fold-params-items' class="fold-items">
+			<input type='checkbox' class="showhide" id="Kind-showhide-outputofs"><i><label for="Kind-showhide-outputofs" class="show-inline">/* at least one unexported ... */</label><label for="Kind-showhide-outputofs" class="hide-inline">/* at least one unexported: */</label></i><span class="hidden"><i>
+			func <a href="#name-makeNilPtrDecoder">makeNilPtrDecoder</a>(etype <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, etypeinfo *<a href="#name-typeinfo">typeinfo</a>, nilKind <b>Kind</b>) <a href="#name-decoder">decoder</a></i></span></span>
+		<input type='checkbox' class="fold" id="Kind-fold-values"><label for="Kind-fold-values">As Types Of (<i>total 3, all are exported</i>)</label><span id='Kind-fold-values-items' class="fold-items"><span>
+			const <a href="#name-Byte">Byte</a></span><span>
+			const <a href="#name-List">List</a></span><span>
+			const <a href="#name-String">String</a></span></span>
+
+</span></div><div class="anchor type-res" id="name-RawValue" data-popularity="35">	<input type='checkbox' class="fold" id="RawValue-fold-content"><label for="RawValue-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-27">RawValue</a> <i>([]T)</i></label><span id='RawValue-fold-content-docs' class="fold-docs">
+		RawValue represents an encoded RLP value and can be used to delay
+		RLP decoding or to precompute an encoding. Note that the decoder does
+		not verify whether the content of RawValues is valid RLP.
+
+		<input type='checkbox' class="fold" id="RawValue-fold-params"><label for="RawValue-fold-params">As Inputs Of (<i>at least one exported</i>)</label><span id='RawValue-fold-params-items' class="fold-items"><span>
+			func <a href="#name-NewListIterator">NewListIterator</a>(data <b>RawValue</b>) (*<a href="#name-listIterator">listIterator</a>, <a href="../../../builtin.html#name-error">error</a>)</span></span>
+
+</span></div><div class="anchor type-res" id="name-Stream" data-popularity="1635">	<input type='checkbox' class="fold" id="Stream-fold-content"><label for="Stream-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-547">Stream</a> <i>(struct)</i></label><span id='Stream-fold-content-docs' class="fold-docs">
+		Stream can be used for piecemeal decoding of an input stream. This
+		is useful if the input is very large or if the decoding rules for a
+		type depend on the input structure. Stream does not keep an
+		internal buffer. After decoding a value, the input reader will be
+		positioned just before the type information for the next value.
+
+		When decoding a list and the input position reaches the declared
+		length of the list, all operations will return error EOL.
+		The end of the list must be acknowledged using ListEnd to continue
+		reading the enclosing list.
+
+		Stream is not safe for concurrent use.
+
+		<input type='checkbox' class="fold" id="Stream-fold-fields"><label for="Stream-fold-fields">Fields (<i>total 9, none are exported</i>)</label><span id='Stream-fold-fields-items' class="fold-items">
+			<input type='checkbox' class="showhide" id="Stream-showhide-fields"><i><label for="Stream-showhide-fields" class="show-inline">/* 9 unexporteds ... */</label><label for="Stream-showhide-fields" class="hide-inline">/* 9 unexporteds: */</label></i><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="Stream-fold-field-byteval"><label for="Stream-fold-field-byteval"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-559">byteval</a> <i><a href="../../../builtin.html#name-byte">byte</a></i></label><span id='Stream-fold-field-byteval-docs' class="fold-docs">
+				// value of single byte in type tag
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="Stream-fold-field-kind"><label for="Stream-fold-field-kind"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-557">kind</a> <i><a href="#name-Kind">Kind</a></i></label><span id='Stream-fold-field-kind-docs' class="fold-docs">
+				// kind of value ahead
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="Stream-fold-field-kinderr"><label for="Stream-fold-field-kinderr"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-560">kinderr</a> <i><a href="../../../builtin.html#name-error">error</a></i></label><span id='Stream-fold-field-kinderr-docs' class="fold-docs">
+				// error from last readKind
+</span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-552">limited</a> <i><a href="../../../builtin.html#name-bool">bool</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-548">r</a> <i><a href="#name-ByteReader">ByteReader</a></i></span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="Stream-fold-field-remaining"><label for="Stream-fold-field-remaining"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-551">remaining</a> <i><a href="../../../builtin.html#name-uint64">uint64</a></i></label><span id='Stream-fold-field-remaining-docs' class="fold-docs">
+				number of bytes remaining to be read from r.
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="Stream-fold-field-size"><label for="Stream-fold-field-size"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-558">size</a> <i><a href="../../../builtin.html#name-uint64">uint64</a></i></label><span id='Stream-fold-field-size-docs' class="fold-docs">
+				// size of value ahead
+</span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-561">stack</a> <i>[]<a href="#name-listpos">listpos</a></i></span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="Stream-fold-field-uintbuf"><label for="Stream-fold-field-uintbuf"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-555">uintbuf</a> <i>[]<a href="../../../builtin.html#name-byte">byte</a></i></label><span id='Stream-fold-field-uintbuf-docs' class="fold-docs">
+				auxiliary buffer for integer decoding
+</span></i></span></span>
+		<input type='checkbox' class="fold" id="Stream-fold-methods"><label for="Stream-fold-methods">Methods (<i>total 15, in which 9 are exported</i>)</label><span id='Stream-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="Stream-fold-method-Bool"><label for="Stream-fold-method-Bool">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-693">Bool</a>() (<a href="../../../builtin.html#name-bool">bool</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='Stream-fold-method-Bool-docs' class="fold-docs">
+				Bool reads an RLP string of up to 1 byte and returns its contents
+				as a boolean. If the input does not contain an RLP string, the
+				returned error will be ErrExpectedString.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Stream-fold-method-Bytes"><label for="Stream-fold-method-Bytes">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-602">Bytes</a>() ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='Stream-fold-method-Bytes-docs' class="fold-docs">
+				Bytes reads an RLP string and returns its contents as a byte slice.
+				If the input does not contain an RLP string, the returned
+				error will be ErrExpectedString.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Stream-fold-method-Decode"><label for="Stream-fold-method-Decode">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-747">Decode</a>(val interface{}) <a href="../../../builtin.html#name-error">error</a></label><span id='Stream-fold-method-Decode-docs' class="fold-docs">
+				Decode decodes a value and stores the result in the value pointed
+				to by val. Please see the documentation for the Decode function
+				to learn about the decoding rules.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Stream-fold-method-Kind"><label for="Stream-fold-method-Kind">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-824">Kind</a>() (kind <a href="#name-Kind">Kind</a>, size <a href="../../../builtin.html#name-uint64">uint64</a>, err <a href="../../../builtin.html#name-error">error</a>)</label><span id='Stream-fold-method-Kind-docs' class="fold-docs">
+				Kind returns the kind and size of the next value in the
+				input stream.
+
+				The returned size is the number of bytes that make up the value.
+				For kind == Byte, the size is zero because the value is
+				contained in the type tag.
+
+				The first call to Kind will read size information from the input
+				reader and leave it positioned at the start of the actual bytes of
+				the value. Subsequent calls to Kind (until the value is decoded)
+				will not advance the input reader and return cached information.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Stream-fold-method-List"><label for="Stream-fold-method-List">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-711">List</a>() (size <a href="../../../builtin.html#name-uint64">uint64</a>, err <a href="../../../builtin.html#name-error">error</a>)</label><span id='Stream-fold-method-List-docs' class="fold-docs">
+				List starts decoding an RLP list. If the input does not contain a
+				list, the returned error will be ErrExpectedList. When the list's
+				end has been reached, any Stream operation will return EOL.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Stream-fold-method-ListEnd"><label for="Stream-fold-method-ListEnd">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-727">ListEnd</a>() <a href="../../../builtin.html#name-error">error</a></label><span id='Stream-fold-method-ListEnd-docs' class="fold-docs">
+				ListEnd returns to the enclosing list.
+				The input reader must be positioned at the end of a list.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Stream-fold-method-Raw"><label for="Stream-fold-method-Raw">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-626">Raw</a>() ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='Stream-fold-method-Raw-docs' class="fold-docs">
+				Raw reads a raw encoded value including RLP type information.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Stream-fold-method-Reset"><label for="Stream-fold-method-Reset">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-778">Reset</a>(r <a href="../../../io.html">io</a>.<a href="../../../io.html#name-Reader">Reader</a>, inputLimit <a href="../../../builtin.html#name-uint64">uint64</a>)</label><span id='Stream-fold-method-Reset-docs' class="fold-docs">
+				Reset discards any information about the current decoding context
+				and starts reading from r. This method is meant to facilitate reuse
+				of a preallocated Stream across many decoding operations.
+
+				If r does not also implement ByteReader, Stream will do its own
+				buffering.
+</span></span><span>
+			<input type='checkbox' class="fold" id="Stream-fold-method-Uint"><label for="Stream-fold-method-Uint">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-653">Uint</a>() (<a href="../../../builtin.html#name-uint64">uint64</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='Stream-fold-method-Uint-docs' class="fold-docs">
+				Uint reads an RLP string of up to 8 bytes and returns its contents
+				as an unsigned integer. If the input does not contain an RLP string, the
+				returned error will be ErrExpectedString.
+</span></span>
+			<input type='checkbox' class="showhide" id="Stream-showhide-methods"><i><label for="Stream-showhide-methods" class="show-inline">/* 6 unexporteds ... */</label><label for="Stream-showhide-methods" class="hide-inline">/* 6 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-960">readByte</a>() (<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-945">readFull</a>(buf []<a href="../../../builtin.html#name-byte">byte</a>) (err <a href="../../../builtin.html#name-error">error</a>)</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-857">readKind</a>() (kind <a href="#name-Kind">Kind</a>, size <a href="../../../builtin.html#name-uint64">uint64</a>, err <a href="../../../builtin.html#name-error">error</a>)</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-919">readUint</a>(size <a href="../../../builtin.html#name-byte">byte</a>) (<a href="../../../builtin.html#name-uint64">uint64</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-657">uint</a>(maxbits <a href="../../../builtin.html#name-int">int</a>) (<a href="../../../builtin.html#name-uint64">uint64</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-971">willRead</a>(n <a href="../../../builtin.html#name-uint64">uint64</a>) <a href="../../../builtin.html#name-error">error</a></span></i></span></span>
+		<input type='checkbox' class="fold" id="Stream-fold-results"><label for="Stream-fold-results">As Outputs Of (<i>at least 2, both are exported</i>)</label><span id='Stream-fold-results-items' class="fold-items"><span>
+			func <a href="#name-NewListStream">NewListStream</a>(r <a href="../../../io.html">io</a>.<a href="../../../io.html#name-Reader">Reader</a>, len <a href="../../../builtin.html#name-uint64">uint64</a>) *<b>Stream</b></span><span>
+			func <a href="#name-NewStream">NewStream</a>(r <a href="../../../io.html">io</a>.<a href="../../../io.html#name-Reader">Reader</a>, inputLimit <a href="../../../builtin.html#name-uint64">uint64</a>) *<b>Stream</b></span></span>
+		<input type='checkbox' class="fold" id="Stream-fold-params"><label for="Stream-fold-params">As Inputs Of (<i>at least 21, in which 8 are exported</i>)</label><span id='Stream-fold-params-items' class="fold-items"><span>
+			func <a href="#name-Decoder">Decoder</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-65">DecodeRLP</a>(*<b>Stream</b>) <a href="../../../builtin.html#name-error">error</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Block">Block</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-281">DecodeRLP</a>(s *<b>Stream</b>) <a href="../../../builtin.html#name-error">error</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Log">Log</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/log.go.html#line-92">DecodeRLP</a>(s *<b>Stream</b>) <a href="../../../builtin.html#name-error">error</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-LogForStorage">LogForStorage</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/log.go.html#line-117">DecodeRLP</a>(s *<b>Stream</b>) <a href="../../../builtin.html#name-error">error</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Receipt">Receipt</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/receipt.go.html#line-135">DecodeRLP</a>(s *<b>Stream</b>) <a href="../../../builtin.html#name-error">error</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-ReceiptForStorage">ReceiptForStorage</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/receipt.go.html#line-203">DecodeRLP</a>(s *<b>Stream</b>) <a href="../../../builtin.html#name-error">error</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-StorageBlock">StorageBlock</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/block.go.html#line-302">DecodeRLP</a>(s *<b>Stream</b>) <a href="../../../builtin.html#name-error">error</a></span><span>
+			func github.com/ethereum/go-ethereum/core/types.(*<a href="core/types.html#name-Transaction">Transaction</a>).<a href="../../../../src/github.com/ethereum/go-ethereum/core/types/transaction.go.html#line-137">DecodeRLP</a>(s *<b>Stream</b>) <a href="../../../builtin.html#name-error">error</a></span>
+			<input type='checkbox' class="showhide" id="Stream-showhide-outputofs"><i><label for="Stream-showhide-outputofs" class="show-inline">/* 13+ unexporteds ... */</label><label for="Stream-showhide-outputofs" class="hide-inline">/* 13+ unexporteds: */</label></i><span class="hidden"><i>
+			func <a href="#name-decodeBigInt">decodeBigInt</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeBigIntNoPtr">decodeBigIntNoPtr</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeBool">decodeBool</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeByteArray">decodeByteArray</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeByteSlice">decodeByteSlice</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeDecoder">decodeDecoder</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeInterface">decodeInterface</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeListArray">decodeListArray</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, elemdec <a href="#name-decoder">decoder</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeListSlice">decodeListSlice</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, elemdec <a href="#name-decoder">decoder</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeRawValue">decodeRawValue</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeSliceElems">decodeSliceElems</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, elemdec <a href="#name-decoder">decoder</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeString">decodeString</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeUint">decodeUint</a>(s *<b>Stream</b>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></i></span></span>
+
+</span></div></div><div>	<input type='checkbox' class="showhide" id="unexported-typenames-showhide"><i><label for="unexported-typenames-showhide" class="show-inline">/* 14 unexporteds ... */</label><label for="unexported-typenames-showhide" class="hide-inline">/* 14 unexporteds: */</label></i><div class="anchor type-res hidden" id="name-decodeError" data-popularity="100">	<input type='checkbox' class="fold" id="decodeError-fold-content"><label for="decodeError-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-104">decodeError</a> <i>(struct)</i></label><span id='decodeError-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="decodeError-fold-fields"><label for="decodeError-fold-fields">Fields (<i>total 3, none are exported</i>)</label><span id='decodeError-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="decodeError-showhide-fields"><i><label for="decodeError-showhide-fields" class="show-inline">/* 3 unexporteds ... */</label><label for="decodeError-showhide-fields" class="hide-inline">/* 3 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-107">ctx</a> <i>[]<a href="../../../builtin.html#name-string">string</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-105">msg</a> <i><a href="../../../builtin.html#name-string">string</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-106">typ</a> <i><a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></i></span></i></span></span>
+		<input type='checkbox' class="fold" id="decodeError-fold-methods"><label for="decodeError-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='decodeError-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-110">Error</a>() <a href="../../../builtin.html#name-string">string</a></span></span></span>
+		<input type='checkbox' class="fold" id="decodeError-fold-impls"><label for="decodeError-fold-impls">Implements (<i>at least one exported</i>)</label><span id='decodeError-fold-impls-items' class="fold-items"><span>
+			*T : <a href="../../../builtin.html#name-error">error</a></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-decoder" data-popularity="630">	<input type='checkbox' class="fold" id="decoder-fold-content"><label for="decoder-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-63">decoder</a> <i>(func)</i></label><span id='decoder-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="decoder-fold-results"><label for="decoder-fold-results">As Outputs Of (<i>at least 7, none are exported</i>)</label><span id='decoder-fold-results-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="decoder-showhide-inputofs"><i><label for="decoder-showhide-inputofs" class="show-inline">/* 7+ unexporteds ... */</label><label for="decoder-showhide-inputofs" class="hide-inline">/* 7+ unexporteds: */</label></i><span class="hidden"><i>
+			func <a href="#name-cachedDecoder">cachedDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (<b>decoder</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeDecoder">makeDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <a href="#name-tags">tags</a>) (dec <b>decoder</b>, err <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeListDecoder">makeListDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tag <a href="#name-tags">tags</a>) (<b>decoder</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeNilPtrDecoder">makeNilPtrDecoder</a>(etype <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, etypeinfo *<a href="#name-typeinfo">typeinfo</a>, nilKind <a href="#name-Kind">Kind</a>) <b>decoder</b></i></span><span class="hidden"><i>
+			func <a href="#name-makePtrDecoder">makePtrDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tag <a href="#name-tags">tags</a>) (<b>decoder</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeSimplePtrDecoder">makeSimplePtrDecoder</a>(etype <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, etypeinfo *<a href="#name-typeinfo">typeinfo</a>) <b>decoder</b></i></span><span class="hidden"><i>
+			func <a href="#name-makeStructDecoder">makeStructDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (<b>decoder</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span></span>
+		<input type='checkbox' class="fold" id="decoder-fold-params"><label for="decoder-fold-params">As Inputs Of (<i>at least 3, none are exported</i>)</label><span id='decoder-fold-params-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="decoder-showhide-outputofs"><i><label for="decoder-showhide-outputofs" class="show-inline">/* 3+ unexporteds ... */</label><label for="decoder-showhide-outputofs" class="hide-inline">/* 3+ unexporteds: */</label></i><span class="hidden"><i>
+			func <a href="#name-decodeListArray">decodeListArray</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, elemdec <b>decoder</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeListSlice">decodeListSlice</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, elemdec <b>decoder</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-decodeSliceElems">decodeSliceElems</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, elemdec <b>decoder</b>) <a href="../../../builtin.html#name-error">error</a></i></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-encbuf" data-popularity="1055">	<input type='checkbox' class="fold" id="encbuf-fold-content"><label for="encbuf-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-126">encbuf</a> <i>(struct)</i></label><span id='encbuf-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="encbuf-fold-fields"><label for="encbuf-fold-fields">Fields (<i>total 5, none are exported</i>)</label><span id='encbuf-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="encbuf-showhide-fields"><i><label for="encbuf-showhide-fields" class="show-inline">/* 5 unexporteds ... */</label><label for="encbuf-showhide-fields" class="hide-inline">/* 5 unexporteds: */</label></i><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encbuf-fold-field-bufvalue"><label for="encbuf-fold-field-bufvalue"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-131">bufvalue</a> <i><a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a></i></label><span id='encbuf-fold-field-bufvalue-docs' class="fold-docs">
+				// used in writeByteArrayCopy
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encbuf-fold-field-lheads"><label for="encbuf-fold-field-lheads"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-128">lheads</a> <i>[]<a href="#name-listhead">listhead</a></i></label><span id='encbuf-fold-field-lheads-docs' class="fold-docs">
+				// all list headers
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encbuf-fold-field-lhsize"><label for="encbuf-fold-field-lhsize"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-129">lhsize</a> <i><a href="../../../builtin.html#name-int">int</a></i></label><span id='encbuf-fold-field-lhsize-docs' class="fold-docs">
+				// sum of sizes of all encoded list headers
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encbuf-fold-field-sizebuf"><label for="encbuf-fold-field-sizebuf"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-130">sizebuf</a> <i>[9]<a href="../../../builtin.html#name-byte">byte</a></i></label><span id='encbuf-fold-field-sizebuf-docs' class="fold-docs">
+				// auxiliary buffer for uint encoding
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encbuf-fold-field-str"><label for="encbuf-fold-field-str"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-127">str</a> <i>[]<a href="../../../builtin.html#name-byte">byte</a></i></label><span id='encbuf-fold-field-str-docs' class="fold-docs">
+				// string data, contains everything except list headers
+</span></i></span></span>
+		<input type='checkbox' class="fold" id="encbuf-fold-methods"><label for="encbuf-fold-methods">Methods (<i>total 11, in which 1 are exported</i>)</label><span id='encbuf-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="encbuf-fold-method-Write"><label for="encbuf-fold-method-Write">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-149">Write</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) (<a href="../../../builtin.html#name-int">int</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='encbuf-fold-method-Write-docs' class="fold-docs">
+				encbuf implements io.Writer so it can be passed it into EncodeRLP.
+</span></span>
+			<input type='checkbox' checked class="showhide" id="encbuf-showhide-methods"><i><label for="encbuf-showhide-methods" class="show-inline">/* 10 unexporteds ... */</label><label for="encbuf-showhide-methods" class="hide-inline">/* 10 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-154">encode</a>(val interface{}) <a href="../../../builtin.html#name-error">error</a></span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-173">encodeString</a>(b []<a href="../../../builtin.html#name-byte">byte</a>)</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-163">encodeStringHeader</a>(size <a href="../../../builtin.html#name-int">int</a>)</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-183">encodeUint</a>(i <a href="../../../builtin.html#name-uint64">uint64</a>)</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encbuf-fold-method-list"><label for="encbuf-fold-method-list">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-199">list</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='encbuf-fold-method-list-docs' class="fold-docs">
+				list adds a new list header to the header stack. It returns the index
+				of the header. The caller must call listEnd with this index after encoding
+				the content of the list.
+</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-204">listEnd</a>(index <a href="../../../builtin.html#name-int">int</a>)</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-142">reset</a>()</span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-214">size</a>() <a href="../../../builtin.html#name-int">int</a></span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-218">toBytes</a>() []<a href="../../../builtin.html#name-byte">byte</a></span></i></span><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-236">toWriter</a>(out <a href="../../../io.html">io</a>.<a href="../../../io.html#name-Writer">Writer</a>) (err <a href="../../../builtin.html#name-error">error</a>)</span></i></span></span>
+		<input type='checkbox' class="fold" id="encbuf-fold-impls"><label for="encbuf-fold-impls">Implements (<i>at least one exported</i>)</label><span id='encbuf-fold-impls-items' class="fold-items"><span>
+			*T : io.<a href="../../../io.html#name-Writer">Writer</a></span></span>
+		<input type='checkbox' class="fold" id="encbuf-fold-params"><label for="encbuf-fold-params">As Inputs Of (<i>at least 13, none are exported</i>)</label><span id='encbuf-fold-params-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="encbuf-showhide-outputofs"><i><label for="encbuf-showhide-outputofs" class="show-inline">/* 13+ unexporteds ... */</label><label for="encbuf-showhide-outputofs" class="hide-inline">/* 13+ unexporteds: */</label></i><span class="hidden"><i>
+			func <a href="#name-writeBigInt">writeBigInt</a>(i *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeBigIntNoPtr">writeBigIntNoPtr</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeBigIntPtr">writeBigIntPtr</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeBool">writeBool</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeByteArrayCopy">writeByteArrayCopy</a>(length <a href="../../../builtin.html#name-int">int</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>)</i></span><span class="hidden"><i>
+			func <a href="#name-writeBytes">writeBytes</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeInterface">writeInterface</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeLengthOneByteArray">writeLengthOneByteArray</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeLengthZeroByteArray">writeLengthZeroByteArray</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeNamedByteArray">writeNamedByteArray</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeRawValue">writeRawValue</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeString">writeString</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span><span class="hidden"><i>
+			func <a href="#name-writeUint">writeUint</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<b>encbuf</b>) <a href="../../../builtin.html#name-error">error</a></i></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-encReader" data-popularity="150">	<input type='checkbox' class="fold" id="encReader-fold-content"><label for="encReader-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-262">encReader</a> <i>(struct)</i></label><span id='encReader-fold-content-docs' class="fold-docs">
+		encReader is the io.Reader returned by EncodeToReader.
+		It releases its encbuf at EOF.
+
+		<input type='checkbox' class="fold" id="encReader-fold-fields"><label for="encReader-fold-fields">Fields (<i>total 4, none are exported</i>)</label><span id='encReader-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="encReader-showhide-fields"><i><label for="encReader-showhide-fields" class="show-inline">/* 4 unexporteds ... */</label><label for="encReader-showhide-fields" class="hide-inline">/* 4 unexporteds: */</label></i><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encReader-fold-field-buf"><label for="encReader-fold-field-buf"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-263">buf</a> <i>*<a href="#name-encbuf">encbuf</a></i></label><span id='encReader-fold-field-buf-docs' class="fold-docs">
+				// the buffer we're reading from. this is nil when we're at EOF.
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encReader-fold-field-lhpos"><label for="encReader-fold-field-lhpos"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-264">lhpos</a> <i><a href="../../../builtin.html#name-int">int</a></i></label><span id='encReader-fold-field-lhpos-docs' class="fold-docs">
+				// index of list header that we're reading
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encReader-fold-field-piece"><label for="encReader-fold-field-piece"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-266">piece</a> <i>[]<a href="../../../builtin.html#name-byte">byte</a></i></label><span id='encReader-fold-field-piece-docs' class="fold-docs">
+				// next piece to be read
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encReader-fold-field-strpos"><label for="encReader-fold-field-strpos"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-265">strpos</a> <i><a href="../../../builtin.html#name-int">int</a></i></label><span id='encReader-fold-field-strpos-docs' class="fold-docs">
+				// current position in string buffer
+</span></i></span></span>
+		<input type='checkbox' class="fold" id="encReader-fold-methods"><label for="encReader-fold-methods">Methods (<i>total 2, in which 1 are exported</i>)</label><span id='encReader-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-269">Read</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) (n <a href="../../../builtin.html#name-int">int</a>, err <a href="../../../builtin.html#name-error">error</a>)</span></span>
+			<input type='checkbox' checked class="showhide" id="encReader-showhide-methods"><i><label for="encReader-showhide-methods" class="show-inline">/* one unexported ... */</label><label for="encReader-showhide-methods" class="hide-inline">/* one unexported: */</label></i><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="encReader-fold-method-next"><label for="encReader-fold-method-next">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-294">next</a>() []<a href="../../../builtin.html#name-byte">byte</a></label><span id='encReader-fold-method-next-docs' class="fold-docs">
+				next returns the next piece of data to be read.
+				it returns nil at EOF.
+</span></i></span></span>
+		<input type='checkbox' class="fold" id="encReader-fold-impls"><label for="encReader-fold-impls">Implements (<i>at least one exported</i>)</label><span id='encReader-fold-impls-items' class="fold-items"><span>
+			*T : io.<a href="../../../io.html#name-Reader">Reader</a></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-field" data-popularity="75">	<input type='checkbox' class="fold" id="field-fold-content"><label for="field-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-106">field</a> <i>(struct)</i></label><span id='field-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="field-fold-fields"><label for="field-fold-fields">Fields (<i>total 2, neither is exported</i>)</label><span id='field-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="field-showhide-fields"><i><label for="field-showhide-fields" class="show-inline">/* 2 unexporteds ... */</label><label for="field-showhide-fields" class="hide-inline">/* 2 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-107">index</a> <i><a href="../../../builtin.html#name-int">int</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-108">info</a> <i>*<a href="#name-typeinfo">typeinfo</a></i></span></i></span></span>
+		<input type='checkbox' class="fold" id="field-fold-results"><label for="field-fold-results">As Outputs Of (<i>at least one unexported</i>)</label><span id='field-fold-results-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="field-showhide-inputofs"><i><label for="field-showhide-inputofs" class="show-inline">/* at least one unexported ... */</label><label for="field-showhide-inputofs" class="hide-inline">/* at least one unexported: */</label></i><span class="hidden"><i>
+			func <a href="#name-structFields">structFields</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (fields []<b>field</b>, err <a href="../../../builtin.html#name-error">error</a>)</i></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-listhead" data-popularity="50">	<input type='checkbox' class="fold" id="listhead-fold-content"><label for="listhead-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-94">listhead</a> <i>(struct)</i></label><span id='listhead-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="listhead-fold-fields"><label for="listhead-fold-fields">Fields (<i>total 2, neither is exported</i>)</label><span id='listhead-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="listhead-showhide-fields"><i><label for="listhead-showhide-fields" class="show-inline">/* 2 unexporteds ... */</label><label for="listhead-showhide-fields" class="hide-inline">/* 2 unexporteds: */</label></i><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="listhead-fold-field-offset"><label for="listhead-fold-field-offset"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-95">offset</a> <i><a href="../../../builtin.html#name-int">int</a></i></label><span id='listhead-fold-field-offset-docs' class="fold-docs">
+				// index of this header in string data
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="listhead-fold-field-size"><label for="listhead-fold-field-size"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-96">size</a> <i><a href="../../../builtin.html#name-int">int</a></i></label><span id='listhead-fold-field-size-docs' class="fold-docs">
+				// total size of encoded data (including list headers)
+</span></i></span></span>
+		<input type='checkbox' class="fold" id="listhead-fold-methods"><label for="listhead-fold-methods">Methods (<i>only one, which is unexported</i>)</label><span id='listhead-fold-methods-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="listhead-showhide-methods"><i><label for="listhead-showhide-methods" class="show-inline">/* one unexported ... */</label><label for="listhead-showhide-methods" class="hide-inline">/* one unexported: */</label></i><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="listhead-fold-method-encode"><label for="listhead-fold-method-encode">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-101">encode</a>(buf []<a href="../../../builtin.html#name-byte">byte</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='listhead-fold-method-encode-docs' class="fold-docs">
+				encode writes head to the given buffer, which must be at least
+				9 bytes long. It returns the encoded bytes.
+</span></i></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-listIterator" data-popularity="225">	<input type='checkbox' class="fold" id="listIterator-fold-content"><label for="listIterator-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/iterator.go.html#line-19">listIterator</a> <i>(struct)</i></label><span id='listIterator-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="listIterator-fold-fields"><label for="listIterator-fold-fields">Fields (<i>total 3, none are exported</i>)</label><span id='listIterator-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="listIterator-showhide-fields"><i><label for="listIterator-showhide-fields" class="show-inline">/* 3 unexporteds ... */</label><label for="listIterator-showhide-fields" class="hide-inline">/* 3 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/iterator.go.html#line-20">data</a> <i>[]<a href="../../../builtin.html#name-byte">byte</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/iterator.go.html#line-22">err</a> <i><a href="../../../builtin.html#name-error">error</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/iterator.go.html#line-21">next</a> <i>[]<a href="../../../builtin.html#name-byte">byte</a></i></span></i></span></span>
+		<input type='checkbox' class="fold" id="listIterator-fold-methods"><label for="listIterator-fold-methods">Methods (<i>total 3, all are exported</i>)</label><span id='listIterator-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/iterator.go.html#line-58">Err</a>() <a href="../../../builtin.html#name-error">error</a></span></span><span>
+			<input type='checkbox' class="fold" id="listIterator-fold-method-Next"><label for="listIterator-fold-method-Next">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/iterator.go.html#line-42">Next</a>() <a href="../../../builtin.html#name-bool">bool</a></label><span id='listIterator-fold-method-Next-docs' class="fold-docs">
+				Next forwards the iterator one step, returns true if it was not at end yet
+</span></span><span>
+			<input type='checkbox' class="fold" id="listIterator-fold-method-Value"><label for="listIterator-fold-method-Value">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/iterator.go.html#line-54">Value</a>() []<a href="../../../builtin.html#name-byte">byte</a></label><span id='listIterator-fold-method-Value-docs' class="fold-docs">
+				Value returns the current value
+</span></span></span>
+		<input type='checkbox' class="fold" id="listIterator-fold-results"><label for="listIterator-fold-results">As Outputs Of (<i>at least one exported</i>)</label><span id='listIterator-fold-results-items' class="fold-items"><span>
+			func <a href="#name-NewListIterator">NewListIterator</a>(data <a href="#name-RawValue">RawValue</a>) (*<b>listIterator</b>, <a href="../../../builtin.html#name-error">error</a>)</span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-listpos" data-popularity="0">	<input type='checkbox' class="fold" id="listpos-fold-content"><label for="listpos-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-564">listpos</a> <i>(struct)</i></label><span id='listpos-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="listpos-fold-fields"><label for="listpos-fold-fields">Fields (<i>total 2, neither is exported</i>)</label><span id='listpos-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="listpos-showhide-fields"><i><label for="listpos-showhide-fields" class="show-inline">/* 2 unexporteds ... */</label><label for="listpos-showhide-fields" class="hide-inline">/* 2 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-564">pos</a> <i><a href="../../../builtin.html#name-uint64">uint64</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-564">size</a> <i><a href="../../../builtin.html#name-uint64">uint64</a></i></span></i></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-structFieldError" data-popularity="100">	<input type='checkbox' class="fold" id="structFieldError-fold-content"><label for="structFieldError-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-129">structFieldError</a> <i>(struct)</i></label><span id='structFieldError-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="structFieldError-fold-fields"><label for="structFieldError-fold-fields">Fields (<i>total 3, none are exported</i>)</label><span id='structFieldError-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="structFieldError-showhide-fields"><i><label for="structFieldError-showhide-fields" class="show-inline">/* 3 unexporteds ... */</label><label for="structFieldError-showhide-fields" class="hide-inline">/* 3 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-132">err</a> <i><a href="../../../builtin.html#name-error">error</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-131">field</a> <i><a href="../../../builtin.html#name-int">int</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-130">typ</a> <i><a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></i></span></i></span></span>
+		<input type='checkbox' class="fold" id="structFieldError-fold-methods"><label for="structFieldError-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='structFieldError-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-135">Error</a>() <a href="../../../builtin.html#name-string">string</a></span></span></span>
+		<input type='checkbox' class="fold" id="structFieldError-fold-impls"><label for="structFieldError-fold-impls">Implements (<i>at least one exported</i>)</label><span id='structFieldError-fold-impls-items' class="fold-items"><span>
+			 T : <a href="../../../builtin.html#name-error">error</a></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-structTagError" data-popularity="100">	<input type='checkbox' class="fold" id="structTagError-fold-content"><label for="structTagError-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-139">structTagError</a> <i>(struct)</i></label><span id='structTagError-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="structTagError-fold-fields"><label for="structTagError-fold-fields">Fields (<i>total 4, none are exported</i>)</label><span id='structTagError-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="structTagError-showhide-fields"><i><label for="structTagError-showhide-fields" class="show-inline">/* 4 unexporteds ... */</label><label for="structTagError-showhide-fields" class="hide-inline">/* 4 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-141">err</a> <i><a href="../../../builtin.html#name-string">string</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-141">field</a> <i><a href="../../../builtin.html#name-string">string</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-141">tag</a> <i><a href="../../../builtin.html#name-string">string</a></i></span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-140">typ</a> <i><a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></i></span></i></span></span>
+		<input type='checkbox' class="fold" id="structTagError-fold-methods"><label for="structTagError-fold-methods">Methods (<i>only one, which is exported</i>)</label><span id='structTagError-fold-methods-items' class="fold-items"><span>
+			<span class="nodocs">( T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-144">Error</a>() <a href="../../../builtin.html#name-string">string</a></span></span></span>
+		<input type='checkbox' class="fold" id="structTagError-fold-impls"><label for="structTagError-fold-impls">Implements (<i>at least one exported</i>)</label><span id='structTagError-fold-impls-items' class="fold-items"><span>
+			 T : <a href="../../../builtin.html#name-error">error</a></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-tags" data-popularity="355">	<input type='checkbox' class="fold" id="tags-fold-content"><label for="tags-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-39">tags</a> <i>(struct)</i></label><span id='tags-fold-content-docs' class="fold-docs">
+		tags represents struct tags.
+
+		<input type='checkbox' class="fold" id="tags-fold-fields"><label for="tags-fold-fields">Fields (<i>total 4, none are exported</i>)</label><span id='tags-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="tags-showhide-fields"><i><label for="tags-showhide-fields" class="show-inline">/* 4 unexporteds ... */</label><label for="tags-showhide-fields" class="hide-inline">/* 4 unexporteds: */</label></i><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="tags-fold-field-ignored"><label for="tags-fold-field-ignored"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-53">ignored</a> <i><a href="../../../builtin.html#name-bool">bool</a></i></label><span id='tags-fold-field-ignored-docs' class="fold-docs">
+				rlp:"-" ignores fields.
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="tags-fold-field-nilKind"><label for="tags-fold-field-nilKind"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-45">nilKind</a> <i><a href="#name-Kind">Kind</a></i></label><span id='tags-fold-field-nilKind-docs' class="fold-docs">
+				This controls whether nil pointers are encoded/decoded as empty strings
+				or empty lists.
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="tags-fold-field-nilOK"><label for="tags-fold-field-nilOK"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-41">nilOK</a> <i><a href="../../../builtin.html#name-bool">bool</a></i></label><span id='tags-fold-field-nilOK-docs' class="fold-docs">
+				rlp:"nil" controls whether empty input results in a nil pointer.
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="tags-fold-field-tail"><label for="tags-fold-field-tail"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-50">tail</a> <i><a href="../../../builtin.html#name-bool">bool</a></i></label><span id='tags-fold-field-tail-docs' class="fold-docs">
+				rlp:"tail" controls whether this field swallows additional list
+				elements. It can only be set for the last field, which must be
+				of slice type.
+</span></i></span></span>
+		<input type='checkbox' class="fold" id="tags-fold-results"><label for="tags-fold-results">As Outputs Of (<i>at least one unexported</i>)</label><span id='tags-fold-results-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="tags-showhide-inputofs"><i><label for="tags-showhide-inputofs" class="show-inline">/* at least one unexported ... */</label><label for="tags-showhide-inputofs" class="hide-inline">/* at least one unexported: */</label></i><span class="hidden"><i>
+			func <a href="#name-parseStructTag">parseStructTag</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, fi, lastPublic <a href="../../../builtin.html#name-int">int</a>) (<b>tags</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span></span>
+		<input type='checkbox' class="fold" id="tags-fold-params"><label for="tags-fold-params">As Inputs Of (<i>at least 8, none are exported</i>)</label><span id='tags-fold-params-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="tags-showhide-outputofs"><i><label for="tags-showhide-outputofs" class="show-inline">/* 8+ unexporteds ... */</label><label for="tags-showhide-outputofs" class="hide-inline">/* 8+ unexporteds: */</label></i><span class="hidden"><i>
+			func <a href="#name-cachedTypeInfo">cachedTypeInfo</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <b>tags</b>) *<a href="#name-typeinfo">typeinfo</a></i></span><span class="hidden"><i>
+			func <a href="#name-cachedTypeInfo1">cachedTypeInfo1</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <b>tags</b>) *<a href="#name-typeinfo">typeinfo</a></i></span><span class="hidden"><i>
+			func <a href="#name-makeDecoder">makeDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <b>tags</b>) (dec <a href="#name-decoder">decoder</a>, err <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeListDecoder">makeListDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tag <b>tags</b>) (<a href="#name-decoder">decoder</a>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makePtrDecoder">makePtrDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tag <b>tags</b>) (<a href="#name-decoder">decoder</a>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makePtrWriter">makePtrWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, ts <b>tags</b>) (<a href="#name-writer">writer</a>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeSliceWriter">makeSliceWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, ts <b>tags</b>) (<a href="#name-writer">writer</a>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeWriter">makeWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, ts <b>tags</b>) (<a href="#name-writer">writer</a>, <a href="../../../builtin.html#name-error">error</a>)</i></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-typeinfo" data-popularity="270">	<input type='checkbox' class="fold" id="typeinfo-fold-content"><label for="typeinfo-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-31">typeinfo</a> <i>(struct)</i></label><span id='typeinfo-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="typeinfo-fold-fields"><label for="typeinfo-fold-fields">Fields (<i>total 4, none are exported</i>)</label><span id='typeinfo-fold-fields-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="typeinfo-showhide-fields"><i><label for="typeinfo-showhide-fields" class="show-inline">/* 4 unexporteds ... */</label><label for="typeinfo-showhide-fields" class="hide-inline">/* 4 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-32">decoder</a> <i><a href="#name-decoder">decoder</a></i></span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="typeinfo-fold-field-decoderErr"><label for="typeinfo-fold-field-decoderErr"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-33">decoderErr</a> <i><a href="../../../builtin.html#name-error">error</a></i></label><span id='typeinfo-fold-field-decoderErr-docs' class="fold-docs">
+				// error from makeDecoder
+</span></i></span><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-34">writer</a> <i><a href="#name-writer">writer</a></i></span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="typeinfo-fold-field-writerErr"><label for="typeinfo-fold-field-writerErr"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-35">writerErr</a> <i><a href="../../../builtin.html#name-error">error</a></i></label><span id='typeinfo-fold-field-writerErr-docs' class="fold-docs">
+				// error from makeWriter
+</span></i></span></span>
+		<input type='checkbox' class="fold" id="typeinfo-fold-methods"><label for="typeinfo-fold-methods">Methods (<i>only one, which is unexported</i>)</label><span id='typeinfo-fold-methods-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="typeinfo-showhide-methods"><i><label for="typeinfo-showhide-methods" class="show-inline">/* one unexported ... */</label><label for="typeinfo-showhide-methods" class="hide-inline">/* one unexported: */</label></i><span class="hidden"><i>
+			<span class="nodocs">(*T) <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-194">generate</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <a href="#name-tags">tags</a>)</span></i></span></span>
+		<input type='checkbox' class="fold" id="typeinfo-fold-results"><label for="typeinfo-fold-results">As Outputs Of (<i>at least 2, neither is exported</i>)</label><span id='typeinfo-fold-results-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="typeinfo-showhide-inputofs"><i><label for="typeinfo-showhide-inputofs" class="show-inline">/* 2+ unexporteds ... */</label><label for="typeinfo-showhide-inputofs" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			func <a href="#name-cachedTypeInfo">cachedTypeInfo</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <a href="#name-tags">tags</a>) *<b>typeinfo</b></i></span><span class="hidden"><i>
+			func <a href="#name-cachedTypeInfo1">cachedTypeInfo1</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <a href="#name-tags">tags</a>) *<b>typeinfo</b></i></span></span>
+		<input type='checkbox' class="fold" id="typeinfo-fold-params"><label for="typeinfo-fold-params">As Inputs Of (<i>at least 2, neither is exported</i>)</label><span id='typeinfo-fold-params-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="typeinfo-showhide-outputofs"><i><label for="typeinfo-showhide-outputofs" class="show-inline">/* 2+ unexporteds ... */</label><label for="typeinfo-showhide-outputofs" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			func <a href="#name-makeNilPtrDecoder">makeNilPtrDecoder</a>(etype <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, etypeinfo *<b>typeinfo</b>, nilKind <a href="#name-Kind">Kind</a>) <a href="#name-decoder">decoder</a></i></span><span class="hidden"><i>
+			func <a href="#name-makeSimplePtrDecoder">makeSimplePtrDecoder</a>(etype <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, etypeinfo *<b>typeinfo</b>) <a href="#name-decoder">decoder</a></i></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-typekey" data-popularity="1750">	<input type='checkbox' class="fold" id="typekey-fold-content"><label for="typekey-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-58">typekey</a> <i>(struct)</i></label><span id='typekey-fold-content-docs' class="fold-docs">
+		typekey is the key of a type in typeCache. It includes the struct tags because
+		they might generate a different decoder.
+
+		<input type='checkbox' class="fold" id="typekey-fold-fields"><label for="typekey-fold-fields">Fields (<i>total 6, in which 1 are exported</i>)</label><span id='typekey-fold-fields-items' class="fold-items"><span>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-59">Type</a> <i><a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></i></span></span>
+			<input type='checkbox' checked class="showhide" id="typekey-showhide-fields"><i><label for="typekey-showhide-fields" class="show-inline">/* 5 unexporteds ... */</label><label for="typekey-showhide-fields" class="hide-inline">/* 5 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-60">tags</a> <i><a href="#name-tags">tags</a></i></span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="typekey-fold-field-ignored"><label for="typekey-fold-field-ignored"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-60" class="path-duplicate">tags</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-53">ignored</a> <i><a href="../../../builtin.html#name-bool">bool</a></i></label><span id='typekey-fold-field-ignored-docs' class="fold-docs">
+				rlp:"-" ignores fields.
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="typekey-fold-field-nilKind"><label for="typekey-fold-field-nilKind"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-60" class="path-duplicate">tags</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-45">nilKind</a> <i><a href="#name-Kind">Kind</a></i></label><span id='typekey-fold-field-nilKind-docs' class="fold-docs">
+				This controls whether nil pointers are encoded/decoded as empty strings
+				or empty lists.
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="typekey-fold-field-nilOK"><label for="typekey-fold-field-nilOK"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-60" class="path-duplicate">tags</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-41">nilOK</a> <i><a href="../../../builtin.html#name-bool">bool</a></i></label><span id='typekey-fold-field-nilOK-docs' class="fold-docs">
+				rlp:"nil" controls whether empty input results in a nil pointer.
+</span></i></span><span class="hidden"><i>
+			<input type='checkbox' class="fold" id="typekey-fold-field-tail"><label for="typekey-fold-field-tail"><a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-60" class="path-duplicate">tags</a>.<a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-50">tail</a> <i><a href="../../../builtin.html#name-bool">bool</a></i></label><span id='typekey-fold-field-tail-docs' class="fold-docs">
+				rlp:"tail" controls whether this field swallows additional list
+				elements. It can only be set for the last field, which must be
+				of slice type.
+</span></i></span></span>
+		<input type='checkbox' class="fold" id="typekey-fold-methods"><label for="typekey-fold-methods">Methods (<i>total 31, in which 29 are exported</i>)</label><span id='typekey-fold-methods-items' class="fold-items"><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Align"><label for="typekey-fold-method-Align">( T) <a href="../../../../src/reflect/type.go.html#line-43">Align</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='typekey-fold-method-Align-docs' class="fold-docs">
+				Align returns the alignment in bytes of a value of
+				this type when allocated in memory.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-AssignableTo"><label for="typekey-fold-method-AssignableTo">( T) <a href="../../../../src/reflect/type.go.html#line-106">AssignableTo</a>(u <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='typekey-fold-method-AssignableTo-docs' class="fold-docs">
+				AssignableTo reports whether a value of the type is assignable to type u.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Bits"><label for="typekey-fold-method-Bits">( T) <a href="../../../../src/reflect/type.go.html#line-129">Bits</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='typekey-fold-method-Bits-docs' class="fold-docs">
+				Bits returns the size of the type in bits.
+				It panics if the type's Kind is not one of the
+				sized or unsized Int, Uint, Float, or Complex kinds.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-ChanDir"><label for="typekey-fold-method-ChanDir">( T) <a href="../../../../src/reflect/type.go.html#line-133">ChanDir</a>() <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-ChanDir">ChanDir</a></label><span id='typekey-fold-method-ChanDir-docs' class="fold-docs">
+				ChanDir returns a channel type's direction.
+				It panics if the type's Kind is not Chan.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Comparable"><label for="typekey-fold-method-Comparable">( T) <a href="../../../../src/reflect/type.go.html#line-112">Comparable</a>() <a href="../../../builtin.html#name-bool">bool</a></label><span id='typekey-fold-method-Comparable-docs' class="fold-docs">
+				Comparable reports whether values of this type are comparable.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-ConvertibleTo"><label for="typekey-fold-method-ConvertibleTo">( T) <a href="../../../../src/reflect/type.go.html#line-109">ConvertibleTo</a>(u <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='typekey-fold-method-ConvertibleTo-docs' class="fold-docs">
+				ConvertibleTo reports whether a value of the type is convertible to type u.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Elem"><label for="typekey-fold-method-Elem">( T) <a href="../../../../src/reflect/type.go.html#line-151">Elem</a>() <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></label><span id='typekey-fold-method-Elem-docs' class="fold-docs">
+				Elem returns a type's element type.
+				It panics if the type's Kind is not Array, Chan, Map, Ptr, or Slice.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Field"><label for="typekey-fold-method-Field">( T) <a href="../../../../src/reflect/type.go.html#line-156">Field</a>(i <a href="../../../builtin.html#name-int">int</a>) <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-StructField">StructField</a></label><span id='typekey-fold-method-Field-docs' class="fold-docs">
+				Field returns a struct type's i'th field.
+				It panics if the type's Kind is not Struct.
+				It panics if i is not in the range [0, NumField()).
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-FieldAlign"><label for="typekey-fold-method-FieldAlign">( T) <a href="../../../../src/reflect/type.go.html#line-47">FieldAlign</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='typekey-fold-method-FieldAlign-docs' class="fold-docs">
+				FieldAlign returns the alignment in bytes of a value of
+				this type when used as a field in a struct.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-FieldByIndex"><label for="typekey-fold-method-FieldByIndex">( T) <a href="../../../../src/reflect/type.go.html#line-162">FieldByIndex</a>(index []<a href="../../../builtin.html#name-int">int</a>) <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-StructField">StructField</a></label><span id='typekey-fold-method-FieldByIndex-docs' class="fold-docs">
+				FieldByIndex returns the nested field corresponding
+				to the index sequence. It is equivalent to calling Field
+				successively for each index i.
+				It panics if the type's Kind is not Struct.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-FieldByName"><label for="typekey-fold-method-FieldByName">( T) <a href="../../../../src/reflect/type.go.html#line-166">FieldByName</a>(name <a href="../../../builtin.html#name-string">string</a>) (<a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-StructField">StructField</a>, <a href="../../../builtin.html#name-bool">bool</a>)</label><span id='typekey-fold-method-FieldByName-docs' class="fold-docs">
+				FieldByName returns the struct field with the given name
+				and a boolean indicating if the field was found.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-FieldByNameFunc"><label for="typekey-fold-method-FieldByNameFunc">( T) <a href="../../../../src/reflect/type.go.html#line-180">FieldByNameFunc</a>(match func(<a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-bool">bool</a>) (<a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-StructField">StructField</a>, <a href="../../../builtin.html#name-bool">bool</a>)</label><span id='typekey-fold-method-FieldByNameFunc-docs' class="fold-docs">
+				FieldByNameFunc returns the struct field with a name
+				that satisfies the match function and a boolean indicating if
+				the field was found.
+
+				FieldByNameFunc considers the fields in the struct itself
+				and then the fields in any embedded structs, in breadth first order,
+				stopping at the shallowest nesting depth containing one or more
+				fields satisfying the match function. If multiple fields at that depth
+				satisfy the match function, they cancel each other
+				and FieldByNameFunc returns no match.
+				This behavior mirrors Go's handling of name lookup in
+				structs containing embedded fields.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Implements"><label for="typekey-fold-method-Implements">( T) <a href="../../../../src/reflect/type.go.html#line-103">Implements</a>(u <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="../../../builtin.html#name-bool">bool</a></label><span id='typekey-fold-method-Implements-docs' class="fold-docs">
+				Implements reports whether the type implements the interface type u.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-In"><label for="typekey-fold-method-In">( T) <a href="../../../../src/reflect/type.go.html#line-185">In</a>(i <a href="../../../builtin.html#name-int">int</a>) <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></label><span id='typekey-fold-method-In-docs' class="fold-docs">
+				In returns the type of a function type's i'th input parameter.
+				It panics if the type's Kind is not Func.
+				It panics if i is not in the range [0, NumIn()).
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-IsVariadic"><label for="typekey-fold-method-IsVariadic">( T) <a href="../../../../src/reflect/type.go.html#line-147">IsVariadic</a>() <a href="../../../builtin.html#name-bool">bool</a></label><span id='typekey-fold-method-IsVariadic-docs' class="fold-docs">
+				IsVariadic reports whether a function type's final input parameter
+				is a "..." parameter. If so, t.In(t.NumIn() - 1) returns the parameter's
+				implicit actual type []T.
+
+				For concreteness, if t represents func(x int, y ... float64), then
+
+					t.NumIn() == 2
+					t.In(0) is the reflect.Type for "int"
+					t.In(1) is the reflect.Type for "[]float64"
+					t.IsVariadic() == true
+
+				IsVariadic panics if the type's Kind is not Func.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Key"><label for="typekey-fold-method-Key">( T) <a href="../../../../src/reflect/type.go.html#line-189">Key</a>() <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></label><span id='typekey-fold-method-Key-docs' class="fold-docs">
+				Key returns a map type's key type.
+				It panics if the type's Kind is not Map.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Kind"><label for="typekey-fold-method-Kind">( T) <a href="../../../../src/reflect/type.go.html#line-100">Kind</a>() <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Kind">Kind</a></label><span id='typekey-fold-method-Kind-docs' class="fold-docs">
+				Kind returns the specific kind of this type.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Len"><label for="typekey-fold-method-Len">( T) <a href="../../../../src/reflect/type.go.html#line-193">Len</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='typekey-fold-method-Len-docs' class="fold-docs">
+				Len returns an array type's length.
+				It panics if the type's Kind is not Array.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Method"><label for="typekey-fold-method-Method">( T) <a href="../../../../src/reflect/type.go.html#line-60">Method</a>(<a href="../../../builtin.html#name-int">int</a>) <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Method">Method</a></label><span id='typekey-fold-method-Method-docs' class="fold-docs">
+				Method returns the i'th method in the type's method set.
+				It panics if i is not in the range [0, NumMethod()).
+
+				For a non-interface type T or *T, the returned Method's Type and Func
+				fields describe a function whose first argument is the receiver,
+				and only exported methods are accessible.
+
+				For an interface type, the returned Method's Type field gives the
+				method signature, without a receiver, and the Func field is nil.
+
+				Methods are sorted in lexicographic order.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-MethodByName"><label for="typekey-fold-method-MethodByName">( T) <a href="../../../../src/reflect/type.go.html#line-70">MethodByName</a>(<a href="../../../builtin.html#name-string">string</a>) (<a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Method">Method</a>, <a href="../../../builtin.html#name-bool">bool</a>)</label><span id='typekey-fold-method-MethodByName-docs' class="fold-docs">
+				MethodByName returns the method with that name in the type's
+				method set and a boolean indicating if the method was found.
+
+				For a non-interface type T or *T, the returned Method's Type and Func
+				fields describe a function whose first argument is the receiver.
+
+				For an interface type, the returned Method's Type field gives the
+				method signature, without a receiver, and the Func field is nil.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Name"><label for="typekey-fold-method-Name">( T) <a href="../../../../src/reflect/type.go.html#line-79">Name</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='typekey-fold-method-Name-docs' class="fold-docs">
+				Name returns the type's name within its package for a defined type.
+				For other (non-defined) types it returns the empty string.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-NumField"><label for="typekey-fold-method-NumField">( T) <a href="../../../../src/reflect/type.go.html#line-197">NumField</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='typekey-fold-method-NumField-docs' class="fold-docs">
+				NumField returns a struct type's field count.
+				It panics if the type's Kind is not Struct.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-NumIn"><label for="typekey-fold-method-NumIn">( T) <a href="../../../../src/reflect/type.go.html#line-201">NumIn</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='typekey-fold-method-NumIn-docs' class="fold-docs">
+				NumIn returns a function type's input parameter count.
+				It panics if the type's Kind is not Func.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-NumMethod"><label for="typekey-fold-method-NumMethod">( T) <a href="../../../../src/reflect/type.go.html#line-75">NumMethod</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='typekey-fold-method-NumMethod-docs' class="fold-docs">
+				NumMethod returns the number of methods accessible using Method.
+
+				Note that NumMethod counts unexported methods only for interface types.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-NumOut"><label for="typekey-fold-method-NumOut">( T) <a href="../../../../src/reflect/type.go.html#line-205">NumOut</a>() <a href="../../../builtin.html#name-int">int</a></label><span id='typekey-fold-method-NumOut-docs' class="fold-docs">
+				NumOut returns a function type's output parameter count.
+				It panics if the type's Kind is not Func.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Out"><label for="typekey-fold-method-Out">( T) <a href="../../../../src/reflect/type.go.html#line-210">Out</a>(i <a href="../../../builtin.html#name-int">int</a>) <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></label><span id='typekey-fold-method-Out-docs' class="fold-docs">
+				Out returns the type of a function type's i'th output parameter.
+				It panics if the type's Kind is not Func.
+				It panics if i is not in the range [0, NumOut()).
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-PkgPath"><label for="typekey-fold-method-PkgPath">( T) <a href="../../../../src/reflect/type.go.html#line-86">PkgPath</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='typekey-fold-method-PkgPath-docs' class="fold-docs">
+				PkgPath returns a defined type's package path, that is, the import path
+				that uniquely identifies the package, such as "encoding/base64".
+				If the type was predeclared (string, error) or not defined (*T, struct{},
+				[]int, or A where A is an alias for a non-defined type), the package path
+				will be the empty string.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-Size"><label for="typekey-fold-method-Size">( T) <a href="../../../../src/reflect/type.go.html#line-90">Size</a>() <a href="../../../builtin.html#name-uintptr">uintptr</a></label><span id='typekey-fold-method-Size-docs' class="fold-docs">
+				Size returns the number of bytes needed to store
+				a value of the given type; it is analogous to unsafe.Sizeof.
+</span></span><span>
+			<input type='checkbox' class="fold" id="typekey-fold-method-String"><label for="typekey-fold-method-String">( T) <a href="../../../../src/reflect/type.go.html#line-97">String</a>() <a href="../../../builtin.html#name-string">string</a></label><span id='typekey-fold-method-String-docs' class="fold-docs">
+				String returns a string representation of the type.
+				The string representation may use shortened package names
+				(e.g., base64 instead of "encoding/base64") and is not
+				guaranteed to be unique among types. To test for type identity,
+				compare the Types directly.
+</span></span>
+			<input type='checkbox' checked class="showhide" id="typekey-showhide-methods"><i><label for="typekey-showhide-methods" class="show-inline">/* 2 unexporteds ... */</label><label for="typekey-showhide-methods" class="hide-inline">/* 2 unexporteds: */</label></i><span class="hidden"><i>
+			<span class="nodocs">( T) <a href="../../../../src/reflect/type.go.html#line-212">common</a>() *<a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-rtype">rtype</a></span></i></span><span class="hidden"><i>
+			<span class="nodocs">( T) <a href="../../../../src/reflect/type.go.html#line-213">uncommon</a>() *<a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-uncommonType">uncommonType</a></span></i></span></span>
+		<input type='checkbox' class="fold" id="typekey-fold-impls"><label for="typekey-fold-impls">Implements (<i>at least 4, in which 2 are exported</i>)</label><span id='typekey-fold-impls-items' class="fold-items"><span>
+			 T : fmt.<a href="../../../fmt.html#name-Stringer">Stringer</a></span><span>
+			 T : reflect.<a href="../../../reflect.html#name-Type">Type</a></span>
+			<input type='checkbox' checked class="showhide" id="typekey-showhide-impls"><i><label for="typekey-showhide-impls" class="show-inline">/* 2+ unexporteds ... */</label><label for="typekey-showhide-impls" class="hide-inline">/* 2+ unexporteds: */</label></i><span class="hidden"><i>
+			 T : context.<a href="../../../context.html#name-stringer">stringer</a></i></span><span class="hidden"><i>
+			 T : runtime.<a href="../../../runtime.html#name-stringer">stringer</a></i></span></span>
+
+</span></div><div class="anchor type-res hidden" id="name-writer" data-popularity="525">	<input type='checkbox' class="fold" id="writer-fold-content"><label for="writer-fold-content"> type <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-65">writer</a> <i>(func)</i></label><span id='writer-fold-content-docs' class="fold-docs">
+
+		<input type='checkbox' class="fold" id="writer-fold-results"><label for="writer-fold-results">As Outputs Of (<i>at least 7, none are exported</i>)</label><span id='writer-fold-results-items' class="fold-items">
+			<input type='checkbox' checked class="showhide" id="writer-showhide-inputofs"><i><label for="writer-showhide-inputofs" class="show-inline">/* 7+ unexporteds ... */</label><label for="writer-showhide-inputofs" class="hide-inline">/* 7+ unexporteds: */</label></i><span class="hidden"><i>
+			func <a href="#name-cachedWriter">cachedWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (<b>writer</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeByteArrayWriter">makeByteArrayWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <b>writer</b></i></span><span class="hidden"><i>
+			func <a href="#name-makeEncoderWriter">makeEncoderWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <b>writer</b></i></span><span class="hidden"><i>
+			func <a href="#name-makePtrWriter">makePtrWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, ts <a href="#name-tags">tags</a>) (<b>writer</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeSliceWriter">makeSliceWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, ts <a href="#name-tags">tags</a>) (<b>writer</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeStructWriter">makeStructWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (<b>writer</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span><span class="hidden"><i>
+			func <a href="#name-makeWriter">makeWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, ts <a href="#name-tags">tags</a>) (<b>writer</b>, <a href="../../../builtin.html#name-error">error</a>)</i></span></span>
+
+</span></div></div>
+<div><span class="title value-res">Package-Level Functions<span class="title-stat"><i> (total 72, in which 15 are exported)</i></span></span>
+
+<div class="anchor value-res" id="name-AppendUint64">	<input type='checkbox' class="fold" id="AppendUint64-fold-content"><label for="AppendUint64-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-185">AppendUint64</a>(b []<a href="../../../builtin.html#name-byte">byte</a>, i <a href="../../../builtin.html#name-uint64">uint64</a>) []<a href="../../../builtin.html#name-byte">byte</a></label><span id='AppendUint64-fold-content-docs' class="fold-docs">
+		AppendUint64 appends the RLP encoding of i to b, and returns the resulting slice.
+
+</span></div><div class="anchor value-res" id="name-CountValues">	<input type='checkbox' class="fold" id="CountValues-fold-content"><label for="CountValues-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-100">CountValues</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) (<a href="../../../builtin.html#name-int">int</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='CountValues-fold-content-docs' class="fold-docs">
+		CountValues counts the number of encoded values in b.
+
+</span></div><div class="anchor value-res" id="name-Decode">	<input type='checkbox' class="fold" id="Decode-fold-content"><label for="Decode-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-78">Decode</a>(r <a href="../../../io.html">io</a>.<a href="../../../io.html#name-Reader">Reader</a>, val interface{}) <a href="../../../builtin.html#name-error">error</a></label><span id='Decode-fold-content-docs' class="fold-docs">
+		Decode parses RLP-encoded data from r and stores the result in the value pointed to by
+		val. Please see package-level documentation for the decoding rules. Val must be a
+		non-nil pointer.
+
+		If r does not implement ByteReader, Decode will do its own buffering.
+
+		Note that Decode does not set an input limit for all readers and may be vulnerable to
+		panics cause by huge value sizes. If you need an input limit, use
+
+		    NewStream(r, limit).Decode(val)
+
+</span></div><div class="anchor value-res" id="name-DecodeBytes">	<input type='checkbox' class="fold" id="DecodeBytes-fold-content"><label for="DecodeBytes-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-88">DecodeBytes</a>(b []<a href="../../../builtin.html#name-byte">byte</a>, val interface{}) <a href="../../../builtin.html#name-error">error</a></label><span id='DecodeBytes-fold-content-docs' class="fold-docs">
+		DecodeBytes parses RLP data from b into val. Please see package-level documentation for
+		the decoding rules. The input must contain exactly one value and no trailing data.
+
+</span></div><div class="anchor value-res" id="name-Encode">	<input type='checkbox' class="fold" id="Encode-fold-content"><label for="Encode-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-53">Encode</a>(w <a href="../../../io.html">io</a>.<a href="../../../io.html#name-Writer">Writer</a>, val interface{}) <a href="../../../builtin.html#name-error">error</a></label><span id='Encode-fold-content-docs' class="fold-docs">
+		Encode writes the RLP encoding of val to w. Note that Encode may
+		perform many small writes in some cases. Consider making w
+		buffered.
+
+		Please see package-level documentation of encoding rules.
+
+</span></div><div class="anchor value-res" id="name-EncodeToBytes">	<input type='checkbox' class="fold" id="EncodeToBytes-fold-content"><label for="EncodeToBytes-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-70">EncodeToBytes</a>(val interface{}) ([]<a href="../../../builtin.html#name-byte">byte</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='EncodeToBytes-fold-content-docs' class="fold-docs">
+		EncodeToBytes returns the RLP encoding of val.
+		Please see package-level documentation for the encoding rules.
+
+</span></div><div class="anchor value-res" id="name-EncodeToReader">	<input type='checkbox' class="fold" id="EncodeToReader-fold-content"><label for="EncodeToReader-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-85">EncodeToReader</a>(val interface{}) (size <a href="../../../builtin.html#name-int">int</a>, r <a href="../../../io.html">io</a>.<a href="../../../io.html#name-Reader">Reader</a>, err <a href="../../../builtin.html#name-error">error</a>)</label><span id='EncodeToReader-fold-content-docs' class="fold-docs">
+		EncodeToReader returns a reader from which the RLP encoding of val
+		can be read. The returned size is the total size of the encoded
+		data.
+
+		Please see the documentation of Encode for the encoding rules.
+
+</span></div><div class="anchor value-res" id="name-ListSize">	<input type='checkbox' class="fold" id="ListSize-fold-content"><label for="ListSize-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-33">ListSize</a>(contentSize <a href="../../../builtin.html#name-uint64">uint64</a>) <a href="../../../builtin.html#name-uint64">uint64</a></label><span id='ListSize-fold-content-docs' class="fold-docs">
+		ListSize returns the encoded size of an RLP list with the given
+		content size.
+
+</span></div><div class="anchor value-res" id="name-NewListIterator">	<input type='checkbox' class="fold" id="NewListIterator-fold-content"><label for="NewListIterator-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/iterator.go.html#line-26">NewListIterator</a>(data <a href="#name-RawValue">RawValue</a>) (*<a href="#name-listIterator">listIterator</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='NewListIterator-fold-content-docs' class="fold-docs">
+		NewListIterator creates an iterator for the (list) represented by data
+
+</span></div><div class="anchor value-res" id="name-NewListStream">	<input type='checkbox' class="fold" id="NewListStream-fold-content"><label for="NewListStream-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-591">NewListStream</a>(r <a href="../../../io.html">io</a>.<a href="../../../io.html#name-Reader">Reader</a>, len <a href="../../../builtin.html#name-uint64">uint64</a>) *<a href="#name-Stream">Stream</a></label><span id='NewListStream-fold-content-docs' class="fold-docs">
+		NewListStream creates a new stream that pretends to be positioned
+		at an encoded list of the given length.
+
+</span></div><div class="anchor value-res" id="name-NewStream">	<input type='checkbox' class="fold" id="NewStream-fold-content"><label for="NewStream-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-583">NewStream</a>(r <a href="../../../io.html">io</a>.<a href="../../../io.html#name-Reader">Reader</a>, inputLimit <a href="../../../builtin.html#name-uint64">uint64</a>) *<a href="#name-Stream">Stream</a></label><span id='NewStream-fold-content-docs' class="fold-docs">
+		NewStream creates a new decoding stream reading from r.
+
+		If r implements the ByteReader interface, Stream will
+		not introduce any buffering.
+
+		For non-toplevel values, Stream returns ErrElemTooLarge
+		for values that do not fit into the enclosing list.
+
+		Stream supports an optional input limit. If a limit is set, the
+		size of any toplevel value will be checked against the remaining
+		input length. Stream operations that encounter a value exceeding
+		the remaining input length will return ErrValueTooLarge. The limit
+		can be set by passing a non-zero value for inputLimit.
+
+		If r is a bytes.Reader or strings.Reader, the input limit is set to
+		the length of r's underlying data unless an explicit limit is
+		provided.
+
+</span></div><div class="anchor value-res" id="name-Split">	<input type='checkbox' class="fold" id="Split-fold-content"><label for="Split-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-39">Split</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) (k <a href="#name-Kind">Kind</a>, content, rest []<a href="../../../builtin.html#name-byte">byte</a>, err <a href="../../../builtin.html#name-error">error</a>)</label><span id='Split-fold-content-docs' class="fold-docs">
+		Split returns the content of first RLP value and any
+		bytes after the value as subslices of b.
+
+</span></div><div class="anchor value-res" id="name-SplitList">	<input type='checkbox' class="fold" id="SplitList-fold-content"><label for="SplitList-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-88">SplitList</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) (content, rest []<a href="../../../builtin.html#name-byte">byte</a>, err <a href="../../../builtin.html#name-error">error</a>)</label><span id='SplitList-fold-content-docs' class="fold-docs">
+		SplitList splits b into the content of a list and any remaining
+		bytes after the list.
+
+</span></div><div class="anchor value-res" id="name-SplitString">	<input type='checkbox' class="fold" id="SplitString-fold-content"><label for="SplitString-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-49">SplitString</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) (content, rest []<a href="../../../builtin.html#name-byte">byte</a>, err <a href="../../../builtin.html#name-error">error</a>)</label><span id='SplitString-fold-content-docs' class="fold-docs">
+		SplitString splits b into the content of an RLP string
+		and any remaining bytes after the string.
+
+</span></div><div class="anchor value-res" id="name-SplitUint64">	<input type='checkbox' class="fold" id="SplitUint64-fold-content"><label for="SplitUint64-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-62">SplitUint64</a>(b []<a href="../../../builtin.html#name-byte">byte</a>) (x <a href="../../../builtin.html#name-uint64">uint64</a>, rest []<a href="../../../builtin.html#name-byte">byte</a>, err <a href="../../../builtin.html#name-error">error</a>)</label><span id='SplitUint64-fold-content-docs' class="fold-docs">
+		SplitUint64 decodes an integer at the beginning of b.
+		It also returns the remaining data after the integer in 'rest'.
+
+</span></div>	<input type='checkbox' class="showhide" id="unexported-functions-showhide"><i><label for="unexported-functions-showhide" class="show-inline">/* 57 unexporteds ... */</label><label for="unexported-functions-showhide" class="hide-inline">/* 57 unexporteds: */</label></i><div class="anchor value-res hidden" id="name-addErrorContext"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-139">addErrorContext</a>(err <a href="../../../builtin.html#name-error">error</a>, ctx <a href="../../../builtin.html#name-string">string</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-cachedDecoder"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-67">cachedDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (<a href="#name-decoder">decoder</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-cachedTypeInfo"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-77">cachedTypeInfo</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <a href="#name-tags">tags</a>) *<a href="#name-typeinfo">typeinfo</a></span></i></div><div class="anchor value-res hidden" id="name-cachedTypeInfo1"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-90">cachedTypeInfo1</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <a href="#name-tags">tags</a>) *<a href="#name-typeinfo">typeinfo</a></span></i></div><div class="anchor value-res hidden" id="name-cachedWriter"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-72">cachedWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (<a href="#name-writer">writer</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-decodeBigInt"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-222">decodeBigInt</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeBigIntNoPtr"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-218">decodeBigIntNoPtr</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeBool"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-200">decodeBool</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeByteArray"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-346">decodeByteArray</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeByteSlice"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-337">decodeByteSlice</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeDecoder"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-502">decodeDecoder</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeInterface"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-478">decodeInterface</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeListArray"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-318">decodeListArray</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, elemdec <a href="#name-decoder">decoder</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeListSlice"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-274">decodeListSlice</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, elemdec <a href="#name-decoder">decoder</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeRawValue"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-181">decodeRawValue</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeSliceElems"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-289">decodeSliceElems</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, elemdec <a href="#name-decoder">decoder</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeString"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-209">decodeString</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-decodeUint"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-190">decodeUint</a>(s *<a href="#name-Stream">Stream</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-defaultNilKind"><i>	<input type='checkbox' class="fold" id="defaultNilKind-fold-content"><label for="defaultNilKind-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-201">defaultNilKind</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="#name-Kind">Kind</a></label><span id='defaultNilKind-fold-content-docs' class="fold-docs">
+		defaultNilKind determines whether a nil pointer to typ encodes/decodes
+		as an empty string or empty list.
+
+</span></i></div><div class="anchor value-res hidden" id="name-headsize"><i>	<input type='checkbox' class="fold" id="headsize-fold-content"><label for="headsize-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-107">headsize</a>(size <a href="../../../builtin.html#name-uint64">uint64</a>) <a href="../../../builtin.html#name-int">int</a></label><span id='headsize-fold-content-docs' class="fold-docs">
+		headsize returns the size of a list or string header
+		for a value of the given size.
+
+</span></i></div><div class="anchor value-res hidden" id="name-intsize"><i>	<input type='checkbox' class="fold" id="intsize-fold-content"><label for="intsize-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-667">intsize</a>(i <a href="../../../builtin.html#name-uint64">uint64</a>) (size <a href="../../../builtin.html#name-int">int</a>)</label><span id='intsize-fold-content-docs' class="fold-docs">
+		intsize computes the minimum number of bytes required to store i.
+
+</span></i></div><div class="anchor value-res hidden" id="name-isByte"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-213">isByte</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="../../../builtin.html#name-bool">bool</a></span></i></div><div class="anchor value-res hidden" id="name-isByteArray"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-217">isByteArray</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="../../../builtin.html#name-bool">bool</a></span></i></div><div class="anchor value-res hidden" id="name-isUint"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-209">isUint</a>(k <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Kind">Kind</a>) <a href="../../../builtin.html#name-bool">bool</a></span></i></div><div class="anchor value-res hidden" id="name-lastPublicField"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-184">lastPublicField</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="../../../builtin.html#name-int">int</a></span></i></div><div class="anchor value-res hidden" id="name-makeByteArrayWriter"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-434">makeByteArrayWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="#name-writer">writer</a></span></i></div><div class="anchor value-res hidden" id="name-makeDecoder"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-151">makeDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tags <a href="#name-tags">tags</a>) (dec <a href="#name-decoder">decoder</a>, err <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-makeEncoderWriter"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-589">makeEncoderWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="#name-writer">writer</a></span></i></div><div class="anchor value-res hidden" id="name-makeListDecoder"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-240">makeListDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tag <a href="#name-tags">tags</a>) (<a href="#name-decoder">decoder</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-makeNilPtrDecoder"><i>	<input type='checkbox' class="fold" id="makeNilPtrDecoder-fold-content"><label for="makeNilPtrDecoder-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-441">makeNilPtrDecoder</a>(etype <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, etypeinfo *<a href="#name-typeinfo">typeinfo</a>, nilKind <a href="#name-Kind">Kind</a>) <a href="#name-decoder">decoder</a></label><span id='makeNilPtrDecoder-fold-content-docs' class="fold-docs">
+		makeNilPtrDecoder creates a decoder that decodes empty values as nil. Non-empty
+		values are decoded into a value of the element type, just like makePtrDecoder does.
+
+		This decoder is used for pointer-typed struct fields with struct tag "nil".
+
+</span></i></div><div class="anchor value-res hidden" id="name-makePtrDecoder"><i>	<input type='checkbox' class="fold" id="makePtrDecoder-fold-content"><label for="makePtrDecoder-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-411">makePtrDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, tag <a href="#name-tags">tags</a>) (<a href="#name-decoder">decoder</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='makePtrDecoder-fold-content-docs' class="fold-docs">
+		makePtrDecoder creates a decoder that decodes into the pointer's element type.
+
+</span></i></div><div class="anchor value-res hidden" id="name-makePtrWriter"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-562">makePtrWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, ts <a href="#name-tags">tags</a>) (<a href="#name-writer">writer</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-makeSimplePtrDecoder"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-424">makeSimplePtrDecoder</a>(etype <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, etypeinfo *<a href="#name-typeinfo">typeinfo</a>) <a href="#name-decoder">decoder</a></span></i></div><div class="anchor value-res hidden" id="name-makeSliceWriter"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-519">makeSliceWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, ts <a href="#name-tags">tags</a>) (<a href="#name-writer">writer</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-makeStructDecoder"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-383">makeStructDecoder</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (<a href="#name-decoder">decoder</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-makeStructWriter"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-539">makeStructWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (<a href="#name-writer">writer</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-makeWriter"><i>	<input type='checkbox' class="fold" id="makeWriter-fold-content"><label for="makeWriter-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-330">makeWriter</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, ts <a href="#name-tags">tags</a>) (<a href="#name-writer">writer</a>, <a href="../../../builtin.html#name-error">error</a>)</label><span id='makeWriter-fold-content-docs' class="fold-docs">
+		makeWriter creates a writer function for the given type.
+
+</span></i></div><div class="anchor value-res hidden" id="name-parseStructTag"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-148">parseStructTag</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>, fi, lastPublic <a href="../../../builtin.html#name-int">int</a>) (<a href="#name-tags">tags</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-puthead"><i>	<input type='checkbox' class="fold" id="puthead-fold-content"><label for="puthead-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-116">puthead</a>(buf []<a href="../../../builtin.html#name-byte">byte</a>, smalltag, largetag <a href="../../../builtin.html#name-byte">byte</a>, size <a href="../../../builtin.html#name-uint64">uint64</a>) <a href="../../../builtin.html#name-int">int</a></label><span id='puthead-fold-content-docs' class="fold-docs">
+		puthead writes a list or string header to buf.
+		buf must be at least 9 bytes long.
+
+</span></i></div><div class="anchor value-res hidden" id="name-putint"><i>	<input type='checkbox' class="fold" id="putint-fold-content"><label for="putint-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-609">putint</a>(b []<a href="../../../builtin.html#name-byte">byte</a>, i <a href="../../../builtin.html#name-uint64">uint64</a>) (size <a href="../../../builtin.html#name-int">int</a>)</label><span id='putint-fold-content-docs' class="fold-docs">
+		putint writes i to the beginning of b in big endian byte
+		order, using the least number of bytes needed to represent i.
+
+</span></i></div><div class="anchor value-res hidden" id="name-readKind"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-112">readKind</a>(buf []<a href="../../../builtin.html#name-byte">byte</a>) (k <a href="#name-Kind">Kind</a>, tagsize, contentsize <a href="../../../builtin.html#name-uint64">uint64</a>, err <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-readSize"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-153">readSize</a>(b []<a href="../../../builtin.html#name-byte">byte</a>, slen <a href="../../../builtin.html#name-byte">byte</a>) (<a href="../../../builtin.html#name-uint64">uint64</a>, <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-structFields"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-111">structFields</a>(typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) (fields []<a href="#name-field">field</a>, err <a href="../../../builtin.html#name-error">error</a>)</span></i></div><div class="anchor value-res hidden" id="name-wrapStreamError"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-121">wrapStreamError</a>(err <a href="../../../builtin.html#name-error">error</a>, typ <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeBigInt"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-400">writeBigInt</a>(i *<a href="../../../math/big.html">big</a>.<a href="../../../math/big.html#name-Int">Int</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeBigIntNoPtr"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-392">writeBigIntNoPtr</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeBigIntPtr"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-383">writeBigIntPtr</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeBool"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-374">writeBool</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeByteArrayCopy"><i>	<input type='checkbox' class="fold" id="writeByteArrayCopy-fold-content"><label for="writeByteArrayCopy-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-467">writeByteArrayCopy</a>(length <a href="../../../builtin.html#name-int">int</a>, val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>)</label><span id='writeByteArrayCopy-fold-content-docs' class="fold-docs">
+		writeByteArrayCopy encodes byte arrays using reflect.Copy. This is
+		the fast path for [N]byte where N &gt; 1.
+
+</span></i></div><div class="anchor value-res hidden" id="name-writeBytes"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-427">writeBytes</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeInterface"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-503">writeInterface</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeLengthOneByteArray"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-455">writeLengthOneByteArray</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeLengthZeroByteArray"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-450">writeLengthZeroByteArray</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeNamedByteArray"><i>	<input type='checkbox' class="fold" id="writeNamedByteArray-fold-content"><label for="writeNamedByteArray-fold-content"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-477">writeNamedByteArray</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></label><span id='writeNamedByteArray-fold-content-docs' class="fold-docs">
+		writeNamedByteArray encodes byte arrays with named element type.
+		This exists because reflect.Copy can't be used with such types.
+
+</span></i></div><div class="anchor value-res hidden" id="name-writeRawValue"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-364">writeRawValue</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeString"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-491">writeString</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-writeUint"><i>	<span class="nodocs"> func <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-369">writeUint</a>(val <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Value">Value</a>, w *<a href="#name-encbuf">encbuf</a>) <a href="../../../builtin.html#name-error">error</a></span></i></div></div>
+<div><span class="title value-res">Package-Level Variables<span class="title-stat"><i> (total 25, in which 10 are exported)</i></span></span>
+
+<div class="anchor value-res" id="name-EmptyList">	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-31">EmptyList</a> []<a href="../../../builtin.html#name-byte">byte</a></span></div><div class="anchor value-res" id="name-EmptyString">	<input type='checkbox' class="fold" id="EmptyString-fold-content"><label for="EmptyString-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-30">EmptyString</a> []<a href="../../../builtin.html#name-byte">byte</a></label><span id='EmptyString-fold-content-docs' class="fold-docs">
+		Common encoded values.
+		These are useful when implementing EncodeRLP.
+
+</span></div><div class="anchor value-res" id="name-EOL">	<input type='checkbox' class="fold" id="EOL-fold-content"><label for="EOL-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-36">EOL</a> <a href="../../../builtin.html#name-error">error</a></label><span id='EOL-fold-content-docs' class="fold-docs">
+		EOL is returned when the end of the current list
+		has been reached during streaming.
+
+</span></div><div class="anchor value-res" id="name-ErrCanonInt">	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-41">ErrCanonInt</a> <a href="../../../builtin.html#name-error">error</a></span></div><div class="anchor value-res" id="name-ErrCanonSize">	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-42">ErrCanonSize</a> <a href="../../../builtin.html#name-error">error</a></span></div><div class="anchor value-res" id="name-ErrElemTooLarge">	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-43">ErrElemTooLarge</a> <a href="../../../builtin.html#name-error">error</a></span></div><div class="anchor value-res" id="name-ErrExpectedList">	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-40">ErrExpectedList</a> <a href="../../../builtin.html#name-error">error</a></span></div><div class="anchor value-res" id="name-ErrExpectedString">	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-39">ErrExpectedString</a> <a href="../../../builtin.html#name-error">error</a></span></div><div class="anchor value-res" id="name-ErrMoreThanOneValue">	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-45">ErrMoreThanOneValue</a> <a href="../../../builtin.html#name-error">error</a></span></div><div class="anchor value-res" id="name-ErrValueTooLarge">	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-44">ErrValueTooLarge</a> <a href="../../../builtin.html#name-error">error</a></span></div>	<input type='checkbox' class="showhide" id="unexported-variables-showhide"><i><label for="unexported-variables-showhide" class="show-inline">/* 15 unexporteds ... */</label><label for="unexported-variables-showhide" class="hide-inline">/* 15 unexporteds: */</label></i><div class="anchor value-res hidden" id="name-bigInt"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-148">bigInt</a> <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></span></i></div><div class="anchor value-res hidden" id="name-byteType"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-432">byteType</a> <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></span></i></div><div class="anchor value-res hidden" id="name-decoderInterface"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-147">decoderInterface</a> <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></span></i></div><div class="anchor value-res hidden" id="name-encbufPool"><i>	<input type='checkbox' class="fold" id="encbufPool-fold-content"><label for="encbufPool-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-135">encbufPool</a> <a href="../../../sync.html">sync</a>.<a href="../../../sync.html#name-Pool">Pool</a></label><span id='encbufPool-fold-content-docs' class="fold-docs">
+		encbufs are pooled.
+
+</span></i></div><div class="anchor value-res hidden" id="name-encoderInterface"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-327">encoderInterface</a> <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></span></i></div><div class="anchor value-res hidden" id="name-errDecodeIntoNil"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-52">errDecodeIntoNil</a> <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-errNoPointer"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-51">errNoPointer</a> <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-errNotAtEOL"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-49">errNotAtEOL</a> <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-errNotInList"><i>	<input type='checkbox' class="fold" id="errNotInList-fold-content"><label for="errNotInList-fold-content">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-48">errNotInList</a> <a href="../../../builtin.html#name-error">error</a></label><span id='errNotInList-fold-content-docs' class="fold-docs">
+		internal errors
+
+</span></i></div><div class="anchor value-res hidden" id="name-errUintOverflow"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-50">errUintOverflow</a> <a href="../../../builtin.html#name-error">error</a></span></i></div><div class="anchor value-res hidden" id="name-ifsliceType"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-476">ifsliceType</a> <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></span></i></div><div class="anchor value-res hidden" id="name-rawValueType"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/raw.go.html#line-29">rawValueType</a> <a href="../../../reflect.html">reflect</a>.<a href="../../../reflect.html#name-Type">Type</a></span></i></div><div class="anchor value-res hidden" id="name-streamPool"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-54">streamPool</a> <a href="../../../sync.html">sync</a>.<a href="../../../sync.html#name-Pool">Pool</a></span></i></div><div class="anchor value-res hidden" id="name-typeCache"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-28">typeCache</a> map[<a href="#name-typekey">typekey</a>]*<a href="#name-typeinfo">typeinfo</a></span></i></div><div class="anchor value-res hidden" id="name-typeCacheMutex"><i>	<span class="nodocs">  var <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/typecache.go.html#line-27">typeCacheMutex</a> <a href="../../../sync.html">sync</a>.<a href="../../../sync.html#name-RWMutex">RWMutex</a></span></i></div></div>
+<div><span class="title value-res">Package-Level Constants<span class="title-stat"><i> (total 4, in which 3 are exported)</i></span></span>
+
+<div class="anchor value-res" id="name-Byte">	<span class="nodocs">const <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-510">Byte</a> <a href="#name-Kind">Kind</a> = 0</span></div><div class="anchor value-res" id="name-List">	<span class="nodocs">const <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-512">List</a> <a href="#name-Kind">Kind</a> = 2</span></div><div class="anchor value-res" id="name-String">	<span class="nodocs">const <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/decode.go.html#line-511">String</a> <a href="#name-Kind">Kind</a> = 1</span></div>	<input type='checkbox' class="showhide" id="unexported-constants-showhide"><i><label for="unexported-constants-showhide" class="show-inline">/* one unexported ... */</label><label for="unexported-constants-showhide" class="hide-inline">/* one unexported: */</label></i><div class="anchor value-res hidden" id="name-wordBytes"><i>	<input type='checkbox' class="fold" id="wordBytes-fold-content"><label for="wordBytes-fold-content">const <a href="../../../../src/github.com/ethereum/go-ethereum/rlp/encode.go.html#line-398">wordBytes</a> = 8</label><span id='wordBytes-fold-content-docs' class="fold-docs">
+		wordBytes is the number of bytes in a big.Word
+
+</span></i></div></div></code></pre><pre id="footer">
+<table><tr><td><img src="../../../../png/go101-twitter.png"></td>
+<td>The pages are generated with <a href="https://go101.org/article/tool-golds.html"><b>Golds</b></a> <i>v0.2.6</i>. (GOOS=darwin GOARCH=amd64)
+<b>Golds</b> is a <a href="https://go101.org">Go 101</a> project developed by <a href="https://tapirgames.com">Tapir Liu</a>.
+PR and bug reports are welcome and can be submitted to <a href="https://github.com/go101/golds">the issue list</a>.
+Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> (reachable from the left QR code) to get the latest news of <b>Golds</b>.</td></tr></table></pre>
