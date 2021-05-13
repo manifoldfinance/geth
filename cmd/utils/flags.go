@@ -1697,7 +1697,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	CheckExclusive(ctx, DeveloperFlag, DeveloperPoWFlag, LegacyTestnetFlag, RopstenFlag, RinkebyFlag, GoerliFlag, YoloV2Flag, ClassicFlag, KottiFlag, MordorFlag, EthersocialFlag, SocialFlag)
 	CheckExclusive(ctx, LegacyLightServFlag, LightServeFlag, SyncModeFlag, "light")
 	CheckExclusive(ctx, DeveloperFlag, DeveloperPoWFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
-	CheckExclusive(ctx, GCModeFlag, "archive", TxLookupLimitFlag)
 	// todo(rjl493456442) make it available for les server
 	// Ancient tx indices pruning is not available for les server now
 	// since light client relies on the server for transaction status query.
