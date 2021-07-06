@@ -9,6 +9,7 @@ import (
   // "github.com/ethereum/go-ethereum/node"
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/eth"
+  "github.com/ethereum/go-ethereum/eth/ethconfig"
   "github.com/ethereum/go-ethereum/eth/filters"
   "github.com/ethereum/go-ethereum/ethdb"
   "github.com/ethereum/go-ethereum/ethdb/cdc"
@@ -139,7 +140,7 @@ func (r *Replica) APIs() []rpc.API {
 		}, {
       Namespace: "eth",
       Version:   "1.0",
-      Service:   filters.NewPublicFilterAPI(r.GetBackend(), false),
+      Service:   filters.NewPublicFilterAPI(r.GetBackend(), false, 30 * time.Second),
       Public:    true,
     }, {
       Namespace: "net",
@@ -209,7 +210,7 @@ func NewReplica(db ethdb.Database, config *eth.Config, stack *node.Node, transac
   quit := make(chan struct{})
   halted := make(chan struct{})
   chainConfig, _, _ := core.SetupGenesisBlock(db, config.Genesis)
-  engine := eth.CreateConsensusEngine(stack, chainConfig, &config.Ethash, []string{}, true, db)
+  engine := ethconfig.CreateConsensusEngine(stack, chainConfig, &config.Ethash, []string{}, true, db)
   hc, err := core.NewHeaderChain(db, chainConfig, engine, func() bool { return false })
   if err != nil {
     return nil, err

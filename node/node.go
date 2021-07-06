@@ -146,6 +146,14 @@ func New(conf *Config) (*Node, error) {
 		node.server.Config.NodeDatabase = node.config.NodeDB()
 	}
 
+	// Check HTTP/WS prefixes are valid.
+	if err := validatePrefix("HTTP", conf.HTTPPathPrefix); err != nil {
+		return nil, err
+	}
+	if err := validatePrefix("WebSocket", conf.WSPathPrefix); err != nil {
+		return nil, err
+	}
+
 	// Configure RPC servers.
 	node.http = newHTTPServer(node.log, conf.HTTPTimeouts)
 	node.ws = newHTTPServer(node.log, rpc.DefaultHTTPTimeouts)
@@ -170,12 +178,13 @@ func (n *Node) Start() error {
 		return ErrNodeStopped
 	}
 	n.state = runningState
-	err := n.startNetworking()
+	// open networking and RPC endpoints
+	err := n.openEndpoints()
 	lifecycles := make([]Lifecycle, len(n.lifecycles))
 	copy(lifecycles, n.lifecycles)
 	n.lock.Unlock()
 
-	// Check if networking startup failed.
+	// Check if endpoint startup failed.
 	if err != nil {
 		n.doClose(nil)
 		return err
@@ -258,12 +267,14 @@ func (n *Node) doClose(errs []error) error {
 	}
 }
 
-// startNetworking starts all network endpoints.
-func (n *Node) startNetworking() error {
+// openEndpoints starts all network and RPC endpoints.
+func (n *Node) openEndpoints() error {
+	// start networking endpoints
 	n.log.Info("Starting peer-to-peer node", "instance", n.server.Name)
 	if err := n.server.Start(); err != nil {
 		return convertFileLockError(err)
 	}
+	// start RPC endpoints
 	err := n.startRPC()
 	if err != nil {
 		n.stopRPC()
@@ -403,6 +414,7 @@ func (n *Node) startRPC() error {
 			CorsAllowedOrigins: n.config.HTTPCors,
 			Vhosts:             n.config.HTTPVirtualHosts,
 			Modules:            n.config.HTTPModules,
+			prefix:             n.config.HTTPPathPrefix,
 		}
 		if err := n.http.setListenAddr(n.config.HTTPHost, n.config.HTTPPort); err != nil {
 			return err
@@ -418,6 +430,7 @@ func (n *Node) startRPC() error {
 		config := wsConfig{
 			Modules: n.config.WSModules,
 			Origins: n.config.WSOrigins,
+			prefix:  n.config.WSPathPrefix,
 		}
 		if err := server.setListenAddr(n.config.WSHost, n.config.WSPort); err != nil {
 			return err
@@ -514,6 +527,7 @@ func (n *Node) RegisterHandler(name, path string, handler http.Handler) {
 	if n.state != initializingState {
 		panic("can't register HTTP handler on running/stopped node")
 	}
+
 	n.http.mux.Handle(path, handler)
 	n.http.handlerNames[path] = name
 }
@@ -570,17 +584,18 @@ func (n *Node) IPCEndpoint() string {
 	return n.ipc.endpoint
 }
 
-// HTTPEndpoint returns the URL of the HTTP server.
+// HTTPEndpoint returns the URL of the HTTP server. Note that this URL does not
+// contain the JSON-RPC path prefix set by HTTPPathPrefix.
 func (n *Node) HTTPEndpoint() string {
 	return "http://" + n.http.listenAddr()
 }
 
-// WSEndpoint retrieves the current WS endpoint used by the protocol stack.
+// WSEndpoint returns the current JSON-RPC over WebSocket endpoint.
 func (n *Node) WSEndpoint() string {
 	if n.http.wsAllowed() {
-		return "ws://" + n.http.listenAddr()
+		return "ws://" + n.http.listenAddr() + n.http.wsConfig.prefix
 	}
-	return "ws://" + n.ws.listenAddr()
+	return "ws://" + n.ws.listenAddr() + n.ws.wsConfig.prefix
 }
 
 // EventMux retrieves the event multiplexer used by all the network services in
@@ -592,7 +607,7 @@ func (n *Node) EventMux() *event.TypeMux {
 // OpenDatabase opens an existing database with the given name (or creates one if no
 // previous can be found) from within the node's instance directory. If the node is
 // ephemeral, a memory database is returned.
-func (n *Node) OpenDatabase(name string, cache, handles int, namespace string) (ethdb.Database, error) {
+func (n *Node) OpenDatabase(name string, cache, handles int, namespace string, readonly bool) (ethdb.Database, error) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 	if n.state == closedState {
@@ -604,7 +619,7 @@ func (n *Node) OpenDatabase(name string, cache, handles int, namespace string) (
 	if n.config.DataDir == "" {
 		db = rawdb.NewMemoryDatabase()
 	} else {
-		db, err = rawdb.NewLevelDBDatabase(n.ResolvePath(name), cache, handles, namespace)
+		db, err = rawdb.NewLevelDBDatabase(n.ResolvePath(name), cache, handles, namespace, readonly)
 	}
 
  if n.config.KafkaLogBroker != "" {
@@ -626,7 +641,7 @@ func (n *Node) OpenDatabase(name string, cache, handles int, namespace string) (
 func (n *Node) OpenDatabaseWithOverlayAndFreezer(name string, underlayCache, overlayCache, handles int, freezer, overlayPath, namespace string) (ethdb.Database, error) {
 	var chainKv ethdb.KeyValueStore
 	var err error
-	chainKv, err = rawdb.NewLevelDBDatabase(n.config.ResolvePath(name), underlayCache, handles, namespace)
+	chainKv, err = rawdb.NewLevelDBDatabase(n.config.ResolvePath(name), underlayCache, handles, namespace, false)
 	// chainKv, err := sctx.OpenRawDatabaseWithFreezer("chaindata", cfg.Eth.DatabaseCache, cfg.Eth.DatabaseHandles, freezer, "eth/db/chaindata/")
 	if err != nil { return nil, err  }
 	if overlayPath != "" {
@@ -639,7 +654,7 @@ func (n *Node) OpenDatabaseWithOverlayAndFreezer(name string, underlayCache, ove
 			overlayKv = memorydb.New()
 		} else {
 			log.Info("Cache size", "dbcache", overlayCache)
-			overlayKv, err = rawdb.NewLevelDBDatabase(overlayPath, overlayCache, handles, "eth/db/chaindata/overlay")
+			overlayKv, err = rawdb.NewLevelDBDatabase(overlayPath, overlayCache, handles, "eth/db/chaindata/overlay", false)
 		}
 		if err != nil {
 			return nil, err
@@ -660,7 +675,7 @@ func (n *Node) OpenDatabaseWithOverlayAndFreezer(name string, underlayCache, ove
 		log.Info("Non-s3 path", "path", freezer)
 		freezer = n.config.ResolvePath(freezer)
 	}
-	db, err := rawdb.NewDatabaseWithFreezer(chainKv, freezer, "eth/db/chaindata")
+	db, err := rawdb.NewDatabaseWithFreezer(chainKv, freezer, "eth/db/chaindata", false)
 	if err != nil { return nil, err }
 	if n.config.KafkaLogBroker != "" {
     producer, err := cdc.NewKafkaLogProducerFromURL(
@@ -679,12 +694,12 @@ func (n *Node) OpenDatabaseWithOverlayAndFreezer(name string, underlayCache, ove
 // also attaching a chain freezer to it that moves ancient chain data from the
 // database to immutable append-only files. If the node is an ephemeral one, a
 // memory database is returned.
-func (n *Node) OpenDatabaseWithFreezerRemote(name string, cache, handles int, freezerURL string) (ethdb.Database, error) {
+func (n *Node) OpenDatabaseWithFreezerRemote(name string, cache, handles int, freezerURL string, readonly bool) (ethdb.Database, error) {
 	if n.config.DataDir == "" {
 		return rawdb.NewMemoryDatabase(), nil
 	}
 	root := n.config.ResolvePath(name)
-	return rawdb.NewLevelDBDatabaseWithFreezerRemote(root, cache, handles, freezerURL)
+	return rawdb.NewLevelDBDatabaseWithFreezerRemote(root, cache, handles, freezerURL, readonly)
 }
 
 // OpenDatabaseWithFreezer opens an existing database with the given name (or
@@ -692,7 +707,7 @@ func (n *Node) OpenDatabaseWithFreezerRemote(name string, cache, handles int, fr
 // also attaching a chain freezer to it that moves ancient chain data from the
 // database to immutable append-only files. If the node is an ephemeral one, a
 // memory database is returned.
-func (n *Node) OpenDatabaseWithFreezer(name string, cache, handles int, freezer, namespace string) (ethdb.Database, error) {
+func (n *Node) OpenDatabaseWithFreezer(name string, cache, handles int, freezer, namespace string, readonly bool) (ethdb.Database, error) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 	if n.state == closedState {
@@ -717,7 +732,7 @@ func (n *Node) OpenDatabaseWithFreezer(name string, cache, handles int, freezer,
 			log.Info("Non-s3 path", "path", freezer)
 			freezer = n.ResolvePath(freezer)
 		}
-		db, err = rawdb.NewLevelDBDatabaseWithFreezer(root, cache, handles, freezer, namespace)
+		db, err = rawdb.NewLevelDBDatabaseWithFreezer(root, cache, handles, freezer, namespace, readonly)
 	}
   if n.config.KafkaLogBroker != "" {
     producer, err := cdc.NewKafkaLogProducerFromURL(

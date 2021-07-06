@@ -161,7 +161,7 @@ func (backend *ReplicaBackend) GetTd(ctx context.Context, blockHash common.Hash)
   return backend.hc.GetTdByHash(blockHash)
 }
 	// Use core.NewEVMContext and vm.NewEVM - Will need custom ChainContext implementation
-func (backend *ReplicaBackend) GetEVM(ctx context.Context, msg core.Message, state *state.StateDB, header *types.Header) (*vm.EVM, func() error, error) {
+func (backend *ReplicaBackend) GetEVM(ctx context.Context, msg core.Message, state *state.StateDB, header *types.Header, vmConfig *vm.Config) (*vm.EVM, func() error, error) {
   vmError := func() error {
     if backend.evmSemaphore != nil {
       <-backend.evmSemaphore
@@ -172,8 +172,12 @@ func (backend *ReplicaBackend) GetEVM(ctx context.Context, msg core.Message, sta
     return ctx.Err()
   }
 
-  context := core.NewEVMContext(msg, header, backend.bc, nil)
-  evm := vm.NewEVM(context, state, backend.chainConfig, *backend.bc.GetVMConfig())
+  txContext := core.NewEVMTxContext(msg)
+  evmContext := core.NewEVMBlockContext(header, backend.bc, nil)
+  if vmConfig == nil {
+    vmConfig = backend.bc.GetVMConfig()
+  }
+  evm := vm.NewEVM(evmContext, txContext, state, backend.chainConfig, *vmConfig)
   if backend.evmSemaphore != nil {
     backend.evmSemaphore <- struct{}{}
   }
@@ -255,7 +259,7 @@ func (backend *ReplicaBackend) SendTx(ctx context.Context, signedTx *types.Trans
   }
 
   // Should supply enough intrinsic gas
-  gas, err := core.IntrinsicGas(signedTx.Data(), signedTx.To() == nil, true, backend.chainConfig.IsEnabled(backend.chainConfig.GetEIP2028Transition, header.Number))
+  gas, err := core.IntrinsicGas(signedTx.Data(), signedTx.AccessList(), signedTx.To() == nil, true, backend.chainConfig.IsEnabled(backend.chainConfig.GetEIP2028Transition, header.Number))
   if err != nil {
     return err
   }
@@ -591,6 +595,10 @@ func (backend *ReplicaBackend) findCommonAncestor(newHead, oldHead *types.Block)
       return oldHead, reverted, newBlocks, fmt.Errorf("Reached genesis without finding common ancestor")
     }
   }
+}
+
+func (backend *ReplicaBackend) UnprotectedAllowed() bool {
+  return true
 }
 
 func (backend *ReplicaBackend) HeaderByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Header, error) {
