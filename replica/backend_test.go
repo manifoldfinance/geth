@@ -67,8 +67,8 @@ func TestProtocolVersion(t *testing.T) {
   if err != nil {
     t.Fatalf(err.Error())
   }
-  if netId := backend.ProtocolVersion(); netId != 1137 {
-    t.Errorf("Network ID, expected 1137 got %v", netId)
+  if netId := backend.ProtocolVersion(); netId != 1337 {
+    t.Errorf("Network ID, expected 1337 got %v", netId)
   }
 }
 
@@ -200,8 +200,8 @@ func TestStateAndHeaderByNumber(t *testing.T) {
   if header.Number.Int64() != 0 {
     t.Errorf("Unexpected header number: %v", header.Number)
   }
-  if err := state.Reset(header.Root); err != nil {
-    t.Errorf(err.Error())
+  if state == nil {
+    t.Errorf("Unexpected nil state")
   }
 }
 
@@ -275,13 +275,13 @@ func TestGetEVM(t *testing.T) {
   if err != nil {
     t.Fatalf(err.Error())
   }
-  msg := types.NewMessage(common.Address{}, &common.Address{}, 0, new(big.Int), 0, new(big.Int), []byte{}, false)
+  msg := types.NewMessage(common.Address{}, &common.Address{}, 0, new(big.Int), 0, new(big.Int), []byte{}, nil, false)
   state, header, err := backend.StateAndHeaderByNumber(context.Background(), rpc.EarliestBlockNumber)
   if err != nil {
     t.Fatalf(err.Error())
   }
   ctx, _ := context.WithTimeout(context.Background(), 5 * time.Millisecond)
-  evm, vmErr, err := backend.GetEVM(ctx, msg, state, header)
+  evm, vmErr, err := backend.GetEVM(ctx, msg, state, header, nil)
   if err != nil {
     t.Fatalf(err.Error())
   }
@@ -422,7 +422,7 @@ func TestPublicFilterAPI(t *testing.T) {
   if err != nil {
     t.Fatalf(err.Error())
   }
-  filterAPI := filters.NewPublicFilterAPI(backend, false)
+  filterAPI := filters.NewPublicFilterAPI(backend, false, time.Second)
   header, err := backend.HeaderByNumber(context.Background(), rpc.EarliestBlockNumber)
   if err != nil {
     t.Fatalf(err.Error())
@@ -483,8 +483,8 @@ func TestChainConfig(t *testing.T) {
     t.Fatalf(err.Error())
   }
   chainConfig := backend.ChainConfig()
-  if chainConfig.GetChainID().Int64() != 1137 {
-    t.Errorf("Unexpected chainConfig value %v != 1137", chainConfig.GetChainID())
+  if chainConfig.GetChainID().Int64() != 1337 {
+    t.Errorf("Unexpected chainConfig value %v != 1337", chainConfig.GetChainID())
   }
 }
 

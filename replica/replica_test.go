@@ -2,7 +2,7 @@
 
 import (
   "github.com/ethereum/go-ethereum/consensus/ethash"
-  "github.com/ethereum/go-ethereum/eth"
+  "github.com/ethereum/go-ethereum/eth/ethconfig"
   "github.com/ethereum/go-ethereum/core/rawdb"
   "github.com/ethereum/go-ethereum/ethdb/cdc"
   "github.com/ethereum/go-ethereum/rpc"
@@ -14,7 +14,7 @@ func TestReplicaConstants(t *testing.T) {
   _, consumer := cdc.MockLogPair()
   transactionProducer := &MockTransactionProducer{}
   db := rawdb.NewMemoryDatabase()
-  config := eth.DefaultConfig
+  config := ethconfig.Defaults
   config.Ethash.PowMode = ethash.ModeFake
   replicaNode, err := NewReplica(db, &config, nil, transactionProducer, consumer, nil, false, 0, 0, 0, rpc.HTTPTimeouts{}, 0, "", true)
   if err != nil {
@@ -36,7 +36,7 @@ func TestReplicaAPIs(t *testing.T) {
   _, consumer := cdc.MockLogPair()
   transactionProducer := &MockTransactionProducer{}
   db := rawdb.NewMemoryDatabase()
-  config := eth.DefaultConfig
+  config := ethconfig.Defaults
   config.Ethash.PowMode = ethash.ModeFake
   replicaNode, err := NewReplica(db, &config, nil, transactionProducer, consumer, nil, false, 0, 0, 0, rpc.HTTPTimeouts{}, 0, "", true)
   if err != nil {
